@@ -1,0 +1,98 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+  
+    <TargetFramework>net9.0</TargetFramework>
+
+    <!-- 🔹 Язык C# 10+ (достаточно для SPT) -->
+    <LangVersion>12.0</LangVersion>
+
+    <!-- 🔹 Только твой DLL -->
+    <AssemblyName>QuestFilterMod</AssemblyName>
+    <RootNamespace>QuestFilterMod</RootNamespace>
+
+    <!-- 🔹 Библиотека -->
+    <OutputType>Library</OutputType>
+
+    <!-- 🔹 Версия мода -->
+    <Version></Version>
+
+    <!-- 🔹 Путь вывода (например, для spt build) -->
+    <OutputPath>bin\$(Configuration)\$(TargetFramework)\</OutputPath>
+
+    <!-- 🔹 Не добавляй платформу в путь -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+
+    <!-- 🔹 x64 только! -->
+    <PlatformTarget>x64</PlatformTarget>
+
+    <!-- 🔹 Не копировать зависимости! -->
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+
+    <!-- 🔹 Не генерировать AssemblyInfo (SPT CLI сам добавит) -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- 🔥 Не копировать ручные ссылки (.dll) -->
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>false</GenerateBindingRedirectsOutputType>
+    <!-- 🔹 Современные фичи -->
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyVersion></AssemblyVersion>
+    <FileVersion></FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SPTarkov.Common" Version="4.0.13" />
+    <PackageReference Include="SPTarkov.DI" Version="4.0.13" />
+    <PackageReference Include="SPTarkov.Reflection" Version="4.0.13" />
+    <PackageReference Include="SPTarkov.Server.Core" Version="4.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 🔥 Добавляем <Private>false</Private>, чтобы НЕ копировать .dll -->
+    <Reference Include="Assembly-CSharp">
+      <HintPath>G:\Games\Escape from Tarkov\EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="FikaServer">
+      <HintPath>G:\Games\Escape from Tarkov\SPT\user\mods\fika-server\FikaServer.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="FikaShared">
+      <HintPath>G:\Games\Escape from Tarkov\SPT\user\mods\fika-server\FikaShared.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>G:\Games\Escape from Tarkov\EscapeFromTarkov_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json.UnityConverters">
+      <HintPath>G:\Games\Escape from Tarkov\EscapeFromTarkov_Data\Managed\Newtonsoft.Json.UnityConverters.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SemanticVersioning">
+      <HintPath>G:\Games\Escape from Tarkov\SPT\SemanticVersioning.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>G:\Games\Escape from Tarkov\EscapeFromTarkov_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="RandomQuestConfig.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="RandomQuests\README.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="README.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+
+</Project>

@@ -1,0 +1,35 @@
+{
+  "Enabled": true,
+  "TargetTraderId": "579dc571d53a0658a154fbec",
+  "ExcludeArenaQuests": true,
+  "Debug": false,
+  "CleanDroppedItems": true,
+  "QuestTypes": [ "Completion", "Discover", "Elimination", "Experience", "Exploration", "Loyalty", "Merchant", "Multi", "PickUp", "Skill", "Standing", "WeaponAssembly" ],
+  "RemoveQuests": true,
+  "RemoveStartConditionsQuest": false,
+  "RemoveFinishConditionTypes": [],
+  "RemoveRepeatableQuests": false,
+  "GenerateRandomQuests": {
+    "enable": false,
+    "count": 5
+  },
+  "RandomQuests": {
+    "count": 0,
+    "location": {
+      "any": 0,
+      "Bigmap": 0,
+      "Factory4Day": 0,
+      "Factory4Night": 0,
+      "Interchange": 0,
+      "Laboratory": 0,
+      "Lighthouse": 0,
+      "RezervBase": 0,
+      "Sandbox": 0,
+      "SandboxHigh": 0,
+      "Shoreline": 0,
+      "TarkovStreets": 0,
+      "Woods": 0,
+      "Labyrinth": 0
+    }
+  }
+}
