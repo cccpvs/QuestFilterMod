@@ -41,6 +41,12 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>G:\Games\Escape from Tarkov\EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>G:\Games\Escape from Tarkov\EscapeFromTarkov_Data\Managed\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json.UnityConverters">
+      <HintPath>G:\Games\Escape from Tarkov\EscapeFromTarkov_Data\Managed\Newtonsoft.Json.UnityConverters.dll</HintPath>
+    </Reference>
     <Reference Include="SemanticVersioning">
       <HintPath>G:\Games\Escape from Tarkov\SPT\SemanticVersioning.dll</HintPath>
     </Reference>
@@ -61,9 +67,15 @@
     <None Update="config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="RandomQuests\Data\QuestConfig.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="README.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="RandomQuests\Data\" />
   </ItemGroup>
 
 

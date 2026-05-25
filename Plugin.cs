@@ -1,4 +1,6 @@
-﻿using SPTarkov.DI.Annotations;
+﻿using QuestFilterMod.QuestFilter;
+using QuestFilterMod.RandomQuests;
+using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.Models.Logging;
 using SPTarkov.Server.Core.Models.Utils;
@@ -7,6 +9,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace QuestFilterMod;
 
@@ -16,47 +19,125 @@ public class Plugin : IOnUpdate
     private readonly ISptLogger<Plugin> _logger;
     private readonly DatabaseService _databaseService;
     private readonly string _configPath;
+
     private QuestFilterConfig _config = null!;
-    private readonly QuestFilterService _questFilterService;
+    private RandomQuestGenerator _randomQuestGenerator = null!; // без readonly
+    private QuestFilterService _questFilterService = null!;     // без readonly
     private bool _applied = false;
 
     public Plugin(ISptLogger<Plugin> logger, DatabaseService databaseService)
     {
         _logger = logger;
         _databaseService = databaseService;
+
         _configPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "config.json");
-        _questFilterService = new QuestFilterService(logger, databaseService);
+
+        _logger.Info("[QuestFilterMod] Plugin инициализирован.");
     }
+
+    private bool _loggedWaitingTables = false;
+    private bool _loggedWaitingQuests = false;
+    private bool _loggedWaitingLocations = false;
 
     public async Task<bool> OnUpdate(long secondsSinceLastRun)
     {
         try
         {
-            if (!_applied)
+            if (_applied) return true;
+
+            var tables = _databaseService.GetTables();
+            if (tables == null)
             {
-                var tables = _databaseService.GetTables();
-                if (tables != null)
+                if (!_loggedWaitingTables)
                 {
-                    LoadConfig();
-                    _questFilterService.ApplyFilters(_config);
-                    _applied = true;
+                    _logger.Info("[QuestFilterMod] Ожидаю загрузки Tables...");
+                    _loggedWaitingTables = true;
                 }
+                return true;
             }
-            return true;
+
+            var quests = _databaseService.GetQuests();
+            if (quests == null || quests.Count == 0)
+            {
+                if (!_loggedWaitingQuests)
+                {
+                    _logger.Info("[QuestFilterMod] Ожидаю загрузки квестов...");
+                    _loggedWaitingQuests = true;
+                }
+                return true;
+            }
+
+            var locations = _databaseService.GetLocations();
+            if (locations == null)
+            {
+                if (!_loggedWaitingLocations)
+                {
+                    _logger.Info("[QuestFilterMod] Ожидаю загрузки локаций...");
+                    _loggedWaitingLocations = true;
+                }
+                return true;
+            }
+
+            // ✅ Создаём сервисы
+            if (_randomQuestGenerator == null && _questFilterService == null)
+            {
+                
+                _randomQuestGenerator = new RandomQuestGenerator(_logger, _databaseService);
+                _questFilterService = new QuestFilterService(_logger, _databaseService, _randomQuestGenerator);
+            }
+
+            LoadConfig();
+
+            // 🔥 ВАЖНО: делаем копию ВСЕХ квестов ДО фильтрации
+            var allQuestsSnapshot = quests.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+            // ✅ Применяем фильтры (может удалить квесты)
+            _questFilterService.ApplyFilters(_config);
+
+            _applied = true;
+            _logger.Info("[QuestFilterMod] ✅ Фильтрация квестов успешно применена.");
+            _logger.Info("[QuestFilterMod] 🚀 Мод полностью инициализирован.");
         }
         catch (Exception ex)
         {
-            _logger.Error($"[QuestFilterMod] Ошибка в OnUpdate: {ex.Message}");
-            return true;
+            _logger.Error($"[QuestFilterMod] Ошибка в OnUpdate: {ex.Message}\n{ex.StackTrace}");
         }
+
+        return true;
     }
 
     private void LoadConfig()
     {
         if (!File.Exists(_configPath))
         {
-            _logger.Error("[QuestFilterMod] ❌ Конфиг не найден!");
+            _logger.Error("[QuestFilterMod] ❌ Конфиг не найден! Создаю стандартный.");
+
             _config = new QuestFilterConfig();
+
+            var exampleConfig = new QuestFilterConfig
+            {
+                Enabled = true,
+                Debug = true,
+                TargetTraderId = "",
+                QuestTypes = new() { "PickUp" },
+                RemoveOtherQuests = false,
+                RemoveStartConditions = false,
+                ExcludeArenaQuests = true,
+                RemoveFinishConditionTypes = new(),
+                GenerateRandomQuests = new()
+                {
+                    Enable = true,
+                    Count = 3,
+                    OnlyRandom = true
+                }
+            };
+
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            var json = JsonSerializer.Serialize(exampleConfig, options);
+            File.WriteAllText(_configPath, json);
+
+            _config = exampleConfig;
+            _logger.Info("[QuestFilterMod] Пример config.json создан.");
             return;
         }
 
@@ -69,7 +150,7 @@ public class Plugin : IOnUpdate
             if (_config.Debug)
             {
                 _logger.Info("[QuestFilterMod] ✅ Конфиг загружен.");
-                _logger.Info($"[QuestFilterMod][CONFIG] Enabled={_config.Enabled}, Trader={_config.TargetTraderId}");
+                _logger.Info($"[QuestFilterMod][CONFIG] Enabled={_config.Enabled}, GenerateRandom={_config.GenerateRandomQuests.Enable}");
             }
         }
         catch (Exception ex)

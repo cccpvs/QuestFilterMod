@@ -6,6 +6,12 @@
   "questTypes": [ "Completion", "Discover", "Elimination", "Experience", "Exploration", "Loyalty", "Merchant", "Multi", "PickUp", "Skill", "Standing", "WeaponAssembly" ],
   "removeOtherQuests": true,
   "removeStartConditions": false,
+  "RemoveFinishConditionTypes": [ "Elimination" ],
+  "GenerateRandomQuests": {
+    "enable": true,
+    "count": 5,
+    "onlyRandom" : true
+  },
   "RandomQuests": {
     "count": 5,
     "location": {
