@@ -37,8 +37,6 @@ public class GenerateRandomQuestsConfig
     [JsonPropertyName("count")]
     public int Count { get; set; } = 3;
 
-    [JsonPropertyName("onlyRandom")]
-    public bool OnlyRandom { get; set; } = false;
 }
 
 public class QuestFilterConfig

@@ -24,6 +24,8 @@ public class QuestFilterService
     private readonly DatabaseService _databaseService;
     private readonly RandomQuestGenerator _randomQuestGenerator;
 
+    private bool _hasAppliedFilters = false;
+
     public QuestFilterService(
         ISptLogger<Plugin> logger,
         DatabaseService databaseService,
@@ -61,6 +63,15 @@ public class QuestFilterService
 
     public void ApplyFilters(QuestFilterConfig config)
     {
+        // 🔒 Защита от повторного вызова
+        if (_hasAppliedFilters)
+        {
+            _logger.Info("[QuestFilterService] Фильтры уже применены. Пропускаем повторную обработку.");
+            return;
+        }
+
+        _hasAppliedFilters = true;
+
         if (!config.Enabled) return;
 
         var quests = _databaseService.GetQuests();
@@ -102,19 +113,23 @@ public class QuestFilterService
                 {
                     generatedQuests.Add(randomQuest);
                     generatedCount++;
+
+                    // 🔥 Добавляем сразу в базу ДО ModifyQuests
+                    if (!quests.ContainsKey(randomQuest.Id))
+                    {
+                        quests[randomQuest.Id] = randomQuest;
+                    }
+
                     _logger.Info($"[QuestFilterService] Сгенерирован квест: '{randomQuest.Name}' (ID: {randomQuest.Id}, локация: {LocationMapper.GetLocationName(randomQuest.Location)})");
                 }
             }
 
             _logger.Info($"[QuestFilterService] Готово: сгенерировано {generatedCount} случайных квестов.");
 
-            if (config.GenerateRandomQuests.OnlyRandom)
-            {
-                selectedQuests.Clear();
-            }
-
+            // Добавляем в selectedQuests, чтобы ModifyQuests знал, что их нужно оставить
             selectedQuests.AddRange(generatedQuests);
         }
+        
 
         ModifyQuests(quests, selectedQuests, config);
 
@@ -131,7 +146,6 @@ public class QuestFilterService
                     quest.Rewards[status] = new List<Reward>();
             }
 
-            _randomQuestGenerator.AddQuestToLocale(tables, quest);
 
             if (!quests.ContainsKey(quest.Id))
                 quests[quest.Id] = quest;
@@ -158,7 +172,7 @@ public class QuestFilterService
         var random = new Random();
         var selected = new List<Quest>();
 
-        // Группируем по локациям через LocationMapper
+        // Группируем по локациям
         var grouped = allQuests.GroupBy(q => LocationMapper.GetLocationName(q.Location))
                               .ToDictionary(g => g.Key, g => g.ToList());
 
@@ -168,8 +182,19 @@ public class QuestFilterService
             .Select(p => p.GetValue(config.RandomQuests.Location))
             .Any(v => v is int count && count > 0);
 
+        // 🔥 Ключевое изменение: если включена генерация случайных квестов и нет фильтров — НЕ возвращаем все квесты!
         if (!hasLocationFilters && config.RandomQuests.Count == 0)
         {
+            // Но если включена генерация случайных квестов — не возвращаем стандартные автоматически
+            if (config.GenerateRandomQuests.Enable && config.GenerateRandomQuests.Count > 0)
+            {
+                if (config.Debug)
+                    _logger.Info("[QuestFilterMod][MODE] Режим только случайных квестов: стандартные квесты НЕ добавляются");
+
+                return new List<Quest>(); // Пусто — только сгенерированные будут добавлены позже
+            }
+
+            // Иначе — оставляем поведение по умолчанию (все квесты)
             if (config.Debug)
                 _logger.Info($"[QuestFilterMod][MODE] Режим 'все квесты': оставлено {allQuests.Count} квестов по типу");
 
@@ -233,17 +258,20 @@ public class QuestFilterService
     {
         var selectedIds = selectedQuests.Select(q => q.Id).ToHashSet();
 
+        var countRemoveQuest = 0;
         // Удаление лишних квестов
         if (config.RemoveOtherQuests)
         {
+            
             var toRemove = allQuests.Values.Where(q => !selectedIds.Contains(q.Id)).ToList();
             foreach (var q in toRemove)
             {
                 allQuests.Remove(q.Id);
                 if (config.Debug)
-                    _logger.Info($"[QuestFilterMod][REMOVE] Квест {q.Name} ({q.Id}) удалён");
+                    countRemoveQuest++;
             }
         }
+        _logger.Info($"[QuestFilterMod][REMOVE] Всего удалено: {countRemoveQuest}");
 
         // Логирование статистики
         if (config.Debug)
@@ -264,7 +292,7 @@ public class QuestFilterService
                 _logger.Info($"  • {kvp.Key}: {kvp.Value} шт.");
             }
 
-            _logger.Info($"[QuestFilterMod][DETAILS] Список выбранных квестов:");
+            //_logger.Info($"[QuestFilterMod][DETAILS] Список выбранных квестов:");
             foreach (var detail in locationDetails)
             {
                 _logger.Info($"  → {detail}");
@@ -326,26 +354,7 @@ public class QuestFilterService
                     q.Conditions.AvailableForFinish.Remove(cond);
                 }
             }
-
-            // Защита: добавляем CompleteQuest, если нет условий завершения
-            if (q.Conditions.AvailableForFinish == null || q.Conditions.AvailableForFinish.Count == 0)
-            {
-                q.Conditions.AvailableForFinish ??= new List<QuestCondition>();
-                q.Conditions.AvailableForFinish.Add(new QuestCondition
-                {
-                    Id = Guid.NewGuid().ToString("N")[..24],
-                    ConditionType = "CompleteQuest",
-                    DynamicLocale = false,
-                    Target = new ListOrT<string>(null, q.Id),
-                    Value = 1,
-                    Index = 0
-                });
-                _logger.Warning($"[QuestFilterService] ⚠️ Нет условий завершения для квеста '{q.Name}'. Добавлено условие CompleteQuest.");
-            }
         }
-
-        // ⚠️ Был объявлен invalidQuests, но нигде не использовался — удалил
-        // Это был потенциальный баг: раньше, возможно, проверяли условия, а теперь — нет.
 
         _logger.Info($"[QuestFilterMod] Готово: оставлено {selectedQuests.Count} квестов.");
     }

@@ -2,9 +2,11 @@
 using QuestFilterMod.RandomQuests;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
+using SPTarkov.Server.Core.Models.Eft.Profile;
 using SPTarkov.Server.Core.Models.Logging;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Services;
+using SPTarkov.Server.Core.Services.Mod;
 using System;
 using System.IO;
 using System.Reflection;
@@ -18,21 +20,24 @@ public class Plugin : IOnUpdate
 {
     private readonly ISptLogger<Plugin> _logger;
     private readonly DatabaseService _databaseService;
+    private readonly ServerLocalisationService _localisationService;
     private readonly string _configPath;
-
     private QuestFilterConfig _config = null!;
-    private RandomQuestGenerator _randomQuestGenerator = null!; // без readonly
-    private QuestFilterService _questFilterService = null!;     // без readonly
+    private RandomQuestGenerator _randomQuestGenerator = null!;  
+    private QuestFilterService _questFilterService = null!;   
     private bool _applied = false;
+    
 
     public Plugin(ISptLogger<Plugin> logger, DatabaseService databaseService)
     {
         _logger = logger;
         _databaseService = databaseService;
 
-        _configPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "config.json");
+        _configPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Config.json");
 
         _logger.Info("[QuestFilterMod] Plugin инициализирован.");
+
+
     }
 
     private bool _loggedWaitingTables = false;
@@ -81,17 +86,18 @@ public class Plugin : IOnUpdate
             // ✅ Создаём сервисы
             if (_randomQuestGenerator == null && _questFilterService == null)
             {
-                
                 _randomQuestGenerator = new RandomQuestGenerator(_logger, _databaseService);
                 _questFilterService = new QuestFilterService(_logger, _databaseService, _randomQuestGenerator);
             }
 
             LoadConfig();
 
-            // 🔥 ВАЖНО: делаем копию ВСЕХ квестов ДО фильтрации
+            // 🔁 УБРАЛ ПЕРВЫЙ ВЫЗОВ — он был лишним
+
+            // 🔥 Сохраняем снимок ДО применения фильтров (если нужен для бэкапа или сравнения)
             var allQuestsSnapshot = quests.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-            // ✅ Применяем фильтры (может удалить квесты)
+            // ✅ ОДИН РАЗ — применяем фильтры и генерируем квесты
             _questFilterService.ApplyFilters(_config);
 
             _applied = true;
@@ -105,6 +111,7 @@ public class Plugin : IOnUpdate
 
         return true;
     }
+
 
     private void LoadConfig()
     {
@@ -127,8 +134,7 @@ public class Plugin : IOnUpdate
                 GenerateRandomQuests = new()
                 {
                     Enable = true,
-                    Count = 3,
-                    OnlyRandom = true
+                    Count = 3
                 }
             };
 
@@ -137,7 +143,7 @@ public class Plugin : IOnUpdate
             File.WriteAllText(_configPath, json);
 
             _config = exampleConfig;
-            _logger.Info("[QuestFilterMod] Пример config.json создан.");
+            _logger.Info("[QuestFilterMod] Пример Config.json создан.");
             return;
         }
 

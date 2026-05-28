@@ -6,27 +6,97 @@
         public List<string> Targets { get; set; } = new();
     }
 
-    public class RewardItemConfig
+    public class DefaultQuestConfig
+    {
+        public string Image { get; set; } = "";
+        public ExperienceRange ExperienceRewardRange { get; set; } = new();
+    }
+
+    public class ExperienceRange
+    {
+        public int Min { get; set; } = 1000;
+        public int Max { get; set; } = 5000;
+        public int Step { get; set; } = 100;
+    }
+
+    public class MoneyRewardConfig
+    {
+        public bool Enabled { get; set; } = true;
+        public string Tpl { get; set; } = "5449016a4bdc2d6f028b456f";
+        public int Min { get; set; } = 50000;
+        public int Max { get; set; } = 100000;
+        public int Step { get; set; } = 10000;
+    }
+
+    public class ItemPoolConfig
     {
         public string Name { get; set; } = "";
         public string Tpl { get; set; } = "";
-        public int Count { get; set; }
+        public int Weight { get; set; } = 1;
     }
 
-    public class DefaultQuestConfig
+    public class RewardItemsConfig
     {
-        public string Name { get; set; } = "";
-        public string Description { get; set; } = "";
-        public string Image { get; set; } = "";
-        public int ExperienceReward { get; set; }
-        public int FailAfterDays { get; set; }
+        public bool Enabled { get; set; } = true;
+        public CountRange Count { get; set; } = new();
+        public List<ItemPoolConfig> Pool { get; set; } = new();
     }
 
+    public class TraderStandingRewardConfig
+    {
+        public bool Enabled { get; set; } = false;
+        public float Min { get; set; } = 0.01f;
+        public float Max { get; set; } = 0.03f;
+    }
+
+    public class CountRange
+    {
+        public int Min { get; set; } = 1;
+        public int Max { get; set; } = 3;
+    }
+
+    // 🔹 Новая: типы квестов для генерации
+    public class QuestGenerationConfig
+    {
+        public QuestTypeFlags Types { get; set; } = new();
+        public Dictionary<string, bool> AllowedLocations { get; set; } = new();
+    }
+
+    public class QuestTypeFlags
+    {
+        public bool Exploration { get; set; } = true;
+        public bool ItemCollection { get; set; } = true;
+        public bool Planting { get; set; } = true;
+    }
+
+    public class DeliveryQuestConfig
+    {
+        public bool Enabled { get; set; } = true;
+        public int PlantTime { get; set; } = 30;
+        public List<ItemPoolConfig> ItemPool { get; set; } = new();
+        public Dictionary<string, LocationConfig> Locations { get; set; } = new();
+    }
+
+    public class ZoneConfig
+    {
+        public string Location { get; set; } = "";
+        public string Target { get; set; } = "";
+        public int Weight { get; set; } = 1;
+    }
+
+    // ✅ Основной конфиг — обновлён
     public class QuestConfig
     {
-        public Dictionary<string, LocationConfig> Locations { get; set; } = new();
-        public List<RewardItemConfig> RewardItems { get; set; } = new();
-        public DefaultQuestConfig DefaultQuest { get; set; } = new();
+        public Dictionary<string, LocationConfig> ExplorationQuest { get; set; } = new();
+
         public List<string> TraderIds { get; set; } = new();
+        public DefaultQuestConfig DefaultQuest { get; set; } = new();
+        public MoneyRewardConfig RewardMoney { get; set; } = new();
+        public RewardItemsConfig RewardItems { get; set; } = new();
+
+        public DeliveryQuestConfig DeliveryQuest { get; set; } = new();
+        public QuestGenerationConfig QuestGeneration { get; set; } = new();
+
+        public TraderStandingRewardConfig RewardTraderStanding { get; set; } = new();
     }
 }

@@ -9,8 +9,7 @@
   "RemoveFinishConditionTypes": [ "Elimination" ],
   "GenerateRandomQuests": {
     "enable": true,
-    "count": 5,
-    "onlyRandom" : true
+    "count": 5
   },
   "RandomQuests": {
     "count": 5,
