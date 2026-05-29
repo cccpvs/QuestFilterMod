@@ -38,8 +38,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="SPTarkov.Common" Version="4.0.13" />
+    <PackageReference Include="SPTarkov.DI" Version="4.0.13" />
+    <PackageReference Include="SPTarkov.Reflection" Version="4.0.13" />
+    <PackageReference Include="SPTarkov.Server.Core" Version="4.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Assembly-CSharp">
       <HintPath>G:\Games\Escape from Tarkov\EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="FikaServer">
+      <HintPath>G:\Games\Escape from Tarkov\SPT\user\mods\fika-server\FikaServer.dll</HintPath>
+    </Reference>
+    <Reference Include="FikaShared">
+      <HintPath>G:\Games\Escape from Tarkov\SPT\user\mods\fika-server\FikaShared.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>G:\Games\Escape from Tarkov\EscapeFromTarkov_Data\Managed\Newtonsoft.Json.dll</HintPath>
@@ -49,15 +62,6 @@
     </Reference>
     <Reference Include="SemanticVersioning">
       <HintPath>G:\Games\Escape from Tarkov\SPT\SemanticVersioning.dll</HintPath>
-    </Reference>
-    <Reference Include="SPT.Server">
-      <HintPath>G:\Games\Escape from Tarkov\SPT\SPT.Server.dll</HintPath>
-    </Reference>
-    <Reference Include="SPTarkov.DI">
-      <HintPath>G:\Games\Escape from Tarkov\SPT\SPTarkov.DI.dll</HintPath>
-    </Reference>
-    <Reference Include="SPTarkov.Server.Core">
-      <HintPath>G:\Games\Escape from Tarkov\SPT\SPTarkov.Server.Core.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>G:\Games\Escape from Tarkov\EscapeFromTarkov_Data\Managed\UnityEngine.CoreModule.dll</HintPath>

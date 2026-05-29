@@ -8,9 +8,12 @@ using SPTarkov.Server.Core.Models.Eft.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 using SPTarkov.Server.Core.Models.Logging;
+using SPTarkov.Server.Core.Models.Spt.Mod;
 using SPTarkov.Server.Core.Models.Spt.Server;
+using SPTarkov.Server.Core.Models.Spt.Templates;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Services;
+using SPTarkov.Server.Core.Services.Mod;
 using SPTarkov.Server.Core.Utils.Json;
 using System;
 using System.Collections.Generic;
@@ -38,8 +41,7 @@ namespace QuestFilterMod.RandomQuests
         private readonly Random _random = new();
         private readonly QuestConfig _config;
         private readonly UniqueQuestTracker _tracker = new();
-        private ServerLocalisationService _cachedLocalisationService;
-
+        private readonly CustomQuestService _customQuestService;
 
         private void LogQuest(Quest quest)
         {
@@ -69,10 +71,14 @@ namespace QuestFilterMod.RandomQuests
             public void Clear() => _usedKeys.Clear();
         }
 
-        public RandomQuestGenerator(ISptLogger<Plugin> logger, DatabaseService databaseService)
+        public RandomQuestGenerator(
+                ISptLogger<Plugin> logger,
+                DatabaseService databaseService,
+                CustomQuestService customQuestService)
         {
             _logger = logger;
             _databaseService = databaseService;
+            _customQuestService = customQuestService;
 
 
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
@@ -160,28 +166,33 @@ namespace QuestFilterMod.RandomQuests
             string NewId() => Guid.NewGuid().ToString("N")[..24];
             int index = 0;
 
+            string questId = NewId();
+
             var quest = new Quest
             {
-                Id = new MongoId(NewId()),
-                Name = $"Visit a point on the location ({targetPoint})",
-                Description = $"Visit the location point ({targetPoint})",
+                Id = new MongoId(questId),
+                QuestName = $"{questId} questName",
+                Name = $"{questId} name",
+                Description = $"{questId} description",
+                Note = $"{questId} note",
                 TraderId = new MongoId(_config.TraderIds.RandomItem(_random)),
                 Side = "Pmc",
                 Location = location.Id,
                 Image = _config.DefaultQuest.Image,
+                InstantComplete = false,
+                IsKey = false,
                 Restartable = false,
                 CanShowNotificationsInGame = true,
                 SecretQuest = false,
-                Status = (int)QuestStatusEnum.Locked,
-                Type = QuestTypeEnum.Exploration,
+                Status = 0,
+                Type = QuestTypeEnum.PickUp,
                 ProgressSource = "eft",
                 AcceptanceAndFinishingSource = "eft",
                 GameModes = new List<string>(),
                 RankingModes = new List<string>(),
-                AcceptPlayerMessage = "Accept Player Message",
-                ChangeQuestMessageText = "Change Quest Message Text",
-                CompletePlayerMessage = "Complete PlayerMessage",
-                Note = "Note",
+                AcceptPlayerMessage = $"{questId} accept",
+                ChangeQuestMessageText = $"{questId} change",
+                CompletePlayerMessage = $"{questId} complete",
                 StartedMessageText = "quest_started_default",
                 SuccessMessageText = "quest_completed_default",
                 FailMessageText = "quest_failed_default",
@@ -204,16 +215,12 @@ namespace QuestFilterMod.RandomQuests
             {
                 Id = new MongoId(NewId()),
                 ConditionType = "VisitPlace",
-                DynamicLocale = true,
+                DynamicLocale = false,
                 Value = 1,
                 Index = index++,
                 ParentId = "",
                 VisibilityConditions = new()
             };
-
-
-            // 📌 Лог для проверки
-            _logger.Info($"[QuestGen] Added VisitPlace condition: ID={visitCondition.Id}, Target={targetPoint}");
 
 
             visitCondition.ExtensionData ??= new(StringComparer.Ordinal);
@@ -225,7 +232,7 @@ namespace QuestFilterMod.RandomQuests
             {
                 Id = new MongoId(NewId()),
                 ConditionType = "ExitStatus",
-                DynamicLocale = true,
+                DynamicLocale = false,
                 ExtensionData = new()
                 {
                     ["status"] = new[] { "Survived", "Runner", "Transit" }
@@ -236,18 +243,20 @@ namespace QuestFilterMod.RandomQuests
             {
                 Id = new MongoId(NewId()),
                 ConditionType = "CounterCreator",
-                DynamicLocale = true,
+                DynamicLocale = false,
                 Value = 1,
                 Index = index++,
                 OneSessionOnly = true,
                 CompleteInSeconds = 30,
+                Type = "Completion",
                 DoNotResetIfCounterCompleted = false,
                 ExtensionData = new()
                 {
                     ["counter"] = new
                     {
                         id = new MongoId(NewId()),
-                        conditions = new[] { exitStatus }
+                        conditions = new[] { exitStatus },
+                        DynamicLocale = false
                     }
                 }
             };
@@ -259,25 +268,8 @@ namespace QuestFilterMod.RandomQuests
             AddRandomItemRewards(quest);
             AddTraderStandingReward(quest);
 
-            _logger.Info($"[RandomQuestGenerator] ✅ Квест '{quest.Id}' (Exploration): {targetPoint} на {locationKey}");
-            // 🔥 Локализуем
-            var tables = _databaseService.GetTables();
-            var localisationService = FindLocalisationService();
-            if (localisationService == null)
-            {
-                _logger.Error("[Localization] ❌ Не удалось получить ServerLocalisationService");
-                return null;
-            }
-            AddFullQuestLocalization(tables, quest, localisationService);
-
-            var localeField = localisationService.GetType().GetField("_serverLocale", BindingFlags.NonPublic | BindingFlags.Instance);
-            var currentLocale = localeField?.GetValue(localisationService)?.ToString();
-            _logger.Info($"[Localization] _serverLocale = '{currentLocale}'");
-
-            var testId = quest.Conditions.AvailableForFinish.First(c => c.ConditionType == "LeaveItemAtLocation").Id.ToString();
-            _logger.Info($"[Localization] ✅ Кеш локалей обновлён для квеста '{quest.Id}'");
             // Сохраняем квест
-            AddQuestToServer(quest);
+            CreateAndRegisterQuest(quest);
 
             _logger.Info($"[GenerateDeliveryQuest] ✅ Квест '{quest.Id}' создан и локализован");
             _logger.Info($"[GenerateDeliveryQuest] ✅ Квест '{quest.Id}' создан");
@@ -370,16 +362,16 @@ namespace QuestFilterMod.RandomQuests
             {
                 string NewId() => Guid.NewGuid().ToString("N")[..24];
                 int index = 0;
-
+                string questId = NewId();
                 var quest = new Quest
                 {
-                    Id = new MongoId(NewId()),
-                    QuestName = $"Deliver: {item.Name}",
-                    Name = $"Deliver: {item.Name}",
-                    Description = $"Receive '{item.Name}', hide it at '{targetPoint}' and exit alive.",
+                    Id = new MongoId(questId),
+                    QuestName = $"{questId} questName",
+                    Name = $"{questId} name",
+                    Description = $"{questId} description",
+                    Note = $"{questId} note",
                     TraderId = new MongoId(_config.TraderIds.RandomItem(_random)),
                     Side = "Pmc",
-                    
                     Location = location.Id,
                     Image = _config.DefaultQuest.Image,
                     InstantComplete = false,
@@ -387,18 +379,15 @@ namespace QuestFilterMod.RandomQuests
                     Restartable = false,
                     CanShowNotificationsInGame = true,
                     SecretQuest = false,
-                    
-                    //Status = (int)QuestStatusEnum.Locked,
                     Status = 0,
                     Type = QuestTypeEnum.Discover,
                     ProgressSource = "eft",
                     AcceptanceAndFinishingSource = "eft",
                     GameModes = new List<string>(),
                     RankingModes = new List<string>(),
-                    AcceptPlayerMessage = "accept",
-                    ChangeQuestMessageText = "change",
-                    CompletePlayerMessage = "complete",
-                    Note = "note",
+                    AcceptPlayerMessage = $"{questId} accept",
+                    ChangeQuestMessageText = $"{questId} change",
+                    CompletePlayerMessage = $"{questId} complete",
                     StartedMessageText = "quest_started_default",
                     SuccessMessageText = "quest_completed_default",
                     FailMessageText = "quest_failed_default",
@@ -424,7 +413,7 @@ namespace QuestFilterMod.RandomQuests
                 {
                     Id = new MongoId(NewId()),
                     ConditionType = "LeaveItemAtLocation",
-                    DynamicLocale = true,
+                    DynamicLocale = false,
                     Value = 1,
                     Index = index++,
                     ParentId = "",
@@ -438,7 +427,6 @@ namespace QuestFilterMod.RandomQuests
                         ["plantTime"] = delivery.PlantTime
                     }
                 };
-                // 🔥 Добавляем локализацию
                 
                 quest.Conditions.AvailableForFinish.Add(plantCondition);
 
@@ -451,7 +439,7 @@ namespace QuestFilterMod.RandomQuests
                     ConditionType = "CounterCreator",
                     Value = 1,
                     Index = index++,
-                    DynamicLocale = true,
+                    DynamicLocale = false,
                     OneSessionOnly = false,
                     IsNecessary = false,
                     IsResetOnConditionFailed = false,
@@ -469,16 +457,12 @@ namespace QuestFilterMod.RandomQuests
                             {
                                 Id = new MongoId(NewId()),
                                 ConditionType = "ExitStatus",
-                                DynamicLocale = true,
+                                DynamicLocale = false,
                                 Status = ["Survived", "Transit"]
 
                             }
                         }
                     }
-                    /*VisibilityConditions = new List<VisibilityCondition>
-                    {
-                        new() { ConditionType = "CompleteCondition", Id = new MongoId(NewId()), Target = plantCondition.Id.ToString() }
-                    }*/
  
                 };
                     
@@ -503,24 +487,9 @@ namespace QuestFilterMod.RandomQuests
                     return null;
                 }
 
-                // 🔥 Локализуем
-                var tables = _databaseService.GetTables();
-                var localisationService = FindLocalisationService();
-                if (localisationService == null)
-                {
-                    _logger.Error("[Localization] ❌ Не удалось получить ServerLocalisationService");
-                    return null;
-                }
-                AddFullQuestLocalization(tables, quest, localisationService);
 
-                var localeField = localisationService.GetType().GetField("_serverLocale", BindingFlags.NonPublic | BindingFlags.Instance);
-                var currentLocale = localeField?.GetValue(localisationService)?.ToString();
-                _logger.Info($"[Localization] _serverLocale = '{currentLocale}'");
-
-                var testId = quest.Conditions.AvailableForFinish.First(c => c.ConditionType == "LeaveItemAtLocation").Id.ToString();
-                _logger.Info($"[Localization] ✅ Кеш локалей обновлён для квеста '{quest.Id}'");
                 // Сохраняем квест
-                AddQuestToServer(quest);
+                CreateAndRegisterQuest(quest);
 
                 _logger.Info($"[GenerateDeliveryQuest] ✅ Квест '{quest.Id}' создан и локализован");
                 _logger.Info($"[GenerateDeliveryQuest] ✅ Квест '{quest.Id}' создан");
@@ -529,50 +498,6 @@ namespace QuestFilterMod.RandomQuests
             catch (Exception ex)
             {
                 _logger.Error($"[GenerateDeliveryQuest] 🔥 Ошибка: {ex}");
-                return null;
-            }
-        }
-
-
-        private ServerLocalisationService FindLocalisationService()
-        {
-            if (_cachedLocalisationService != null)
-                return _cachedLocalisationService;
-
-            try
-            {
-                var type = _databaseService.GetType();
-                FieldInfo field = null;
-
-                foreach (var f in type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance))
-                {
-                    if (f.FieldType == typeof(ServerLocalisationService))
-                    {
-                        field = f;
-                        break;
-                    }
-                }
-
-                if (field == null)
-                {
-                    _logger.Error("[Localization] ❌ Не найдено поле типа ServerLocalisationService");
-                    return null;
-                }
-
-                var service = field.GetValue(_databaseService) as ServerLocalisationService;
-                if (service == null)
-                {
-                    _logger.Error("[Localization] ❌ Экземпляр ServerLocalisationService = NULL");
-                    return null;
-                }
-
-                _cachedLocalisationService = service; // 🔥 Кешируем
-                _logger.Info($"[Localization] ✅ Кеширован сервис: '{field.Name}'");
-                return service;
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"[Localization] 🔥 Ошибка при поиске сервиса: {ex.Message}");
                 return null;
             }
         }
@@ -689,7 +614,7 @@ namespace QuestFilterMod.RandomQuests
             });
         }
 
-        public void AddQuestToServer(Quest quest)
+        public void CreateAndRegisterQuest(Quest quest)
         {
             if (quest == null) return;
 
@@ -698,30 +623,226 @@ namespace QuestFilterMod.RandomQuests
 
             try
             {
-                var quests = _databaseService.GetQuests();
-                quests[quest.Id] = quest;
-                _logger.Info($"[RandomQuestGenerator] ✅ Квест '{quest.Id}' добавлен в базу.");
-
-                var localisationService = FindLocalisationService();
-                if (localisationService != null)
+                // === 🌐 Подготавливаем локали ===
+                var locales = new Dictionary<string, Dictionary<string, string>>
                 {
-                    // Вызываем Hydrate, чтобы обновить внутренние кеши
-                    var hydrateMethod = localisationService.GetType().GetMethod("HydrateServerLocales", BindingFlags.NonPublic | BindingFlags.Instance);
-                    hydrateMethod?.Invoke(localisationService, null);
-                    _logger.Info("[Localization] 🔁 HydrateServerLocales() вызван");
+                    ["en"] = new Dictionary<string, string>(),
+                    ["ru"] = new Dictionary<string, string>()
+                };
 
-                    // ⚠️ ВАЖНО: Разослать локали всем подключённым клиентам
-                    var sendMethod = localisationService.GetType().GetMethod("SendServerLocalesToClient", BindingFlags.NonPublic | BindingFlags.Instance);
-                    if (sendMethod != null)
+                // Заполняем локали
+                FillQuestLocales(quest, locales["en"], locales["ru"]);
+
+                // === 🛠 Создаём DTO для сервиса ===
+                var newQuestDetails = new NewQuestDetails
+                {
+                    NewQuest = quest,
+                    Locales = locales,
+                    LockedToSide = null // или PlayerSide.Usec / Bear, если нужно
+                };
+
+                // === ✅ Создаём квест через официальный сервис ===
+                CreateQuestResult result = _customQuestService.CreateQuest(newQuestDetails);
+
+                if (result.Success)
+                {
+                    _logger.Info($"[RandomQuestGenerator] ✅ Квест '{quest.Id}' успешно создан и локализован.");
+                }
+                else
+                {
+                    foreach (string error in result.Errors)
                     {
-                        sendMethod.Invoke(localisationService, new object[] { null }); // null = всем клиентам
-                        _logger.Info("[Localization] 📤 Локали отправлены всем клиентам");
+                        _logger.Error($"[RandomQuestGenerator] ❌ Ошибка создания квеста: {error}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.Error($"[RandomQuestGenerator] 🔥 Ошибка при сохранении: {ex}");
+                _logger.Error($"[RandomQuestGenerator] 🔥 Исключение при регистрации квеста: {ex}");
+            }
+        }
+
+        private string GetTargetPoint(Quest quest)
+        {
+            var cond = quest.Conditions?.AvailableForFinish
+                .FirstOrDefault(c => c.ConditionType == "VisitPlace" || c.ConditionType == "LeaveItemAtLocation");
+
+            if (cond?.ExtensionData == null)
+                return "unknown location";
+
+            // Сначала пробуем zoneId — это обычно строка
+            if (cond.ExtensionData.TryGetValue("zoneId", out var zoneObj))
+                return zoneObj?.ToString() ?? "unknown zone";
+
+            // Если нет zoneId — пробуем target
+            if (cond.ExtensionData.TryGetValue("target", out var targetObj))
+            {
+                // Обрабатываем случай string[] или string
+                return targetObj switch
+                {
+                    string[] arr when arr.Length > 0 => arr[0],  // Берём первый элемент
+                    string str => str,
+                    null => "unknown target",
+                    _ => targetObj.ToString() // fallback
+                };
+            }
+
+            return "unknown location";
+        }
+
+        private string GetItemName(Quest quest)
+        {
+            // 1. Находим условие "заложить предмет"
+            var plantCond = quest.Conditions?.AvailableForFinish
+                .FirstOrDefault(c => c.ConditionType == "LeaveItemAtLocation");
+
+            if (plantCond?.ExtensionData == null)
+                return "Unknown Item";
+
+            // 2. Получаем target (может быть строка или массив строк)
+            object? targetObj = plantCond.ExtensionData.GetValueOrDefault("target");
+            string? tpl = null;
+
+            if (targetObj is string[] arr && arr.Length > 0)
+            {
+                tpl = arr[0];
+            }
+            else if (targetObj is string str)
+            {
+                tpl = str;
+            }
+
+            if (string.IsNullOrEmpty(tpl))
+            {
+                _logger.Warning("[GetItemName] Не удалось извлечь TPL из условия LeaveItemAtLocation");
+                return "Unknown Item";
+            }
+
+            // ✅ Теперь создаём templateId
+            var templateId = new MongoId(tpl);
+
+            // 3. Получаем шаблон предмета
+            var templates = _databaseService.GetTemplates();
+
+            if (templates.Items.TryGetValue(templateId, out var templateItem))
+            {
+                return !string.IsNullOrEmpty(templateItem.Name)
+                    ? templateItem.Name
+                    : "Item";
+            }
+
+            _logger.Warning($"[GetItemName] Предмет с TPL {tpl} не найден в базе данных");
+            return "Item";
+        }
+
+        private void FillQuestLocales(Quest quest, Dictionary<string, string> enDict, Dictionary<string, string> ruDict)
+        {
+            if (quest == null) return;
+
+            string id = quest.Id.ToString();
+
+            string itemName = GetItemName(quest);
+            string targetPoint = GetTargetPoint(quest);
+
+            // Определяем тип квеста
+            bool isDelivery = quest.Type == QuestTypeEnum.Discover; // Discover — это Delivery (закладка)
+            bool isExploration = quest.Conditions?.AvailableForFinish.Any(c => c.ConditionType == "VisitPlace") == true;
+
+            // === Генерация текстов в зависимости от типа ===
+            string GenerateQuestName()
+            {
+                if (isDelivery)
+                    return $"Deliver: {itemName}";
+                else if (isExploration)
+                    return $"Explore: {targetPoint}";
+                return "Task";
+            }
+
+            string GenerateQuestNameRu()
+            {
+                if (isDelivery)
+                    return $"Доставка: {itemName}";
+                else if (isExploration)
+                    return $"Исследовать: {targetPoint}";
+                return "Задание";
+            }
+
+            string GenerateDescription()
+            {
+                if (isDelivery)
+                    return $"Receive '{itemName}', hide it at '{targetPoint}' and exit alive.";
+                else if (isExploration)
+                    return $"Visit the location point '{targetPoint}' and exit alive.";
+                return "Complete the task.";
+            }
+
+            string GenerateDescriptionRu()
+            {
+                if (isDelivery)
+                    return $"Получи '{itemName}', спрячь в точке '{targetPoint}' и выйди живым.";
+                else if (isExploration)
+                    return $"Посети точку '{targetPoint}' и выйди живым.";
+                return "Выполни задание.";
+            }
+
+            // === Добавляем локали ===
+            Add($"{id} questName", GenerateQuestName(), GenerateQuestNameRu());
+            Add($"{id} name", GenerateQuestName(), GenerateQuestNameRu());
+            Add($"{id} description", GenerateDescription(), GenerateDescriptionRu());
+            Add($"{id} note",
+                isDelivery ? "Delivery task" : "Exploration task",
+                isDelivery ? "Задание на доставку" : "Задание на исследование"
+            );
+
+            // Сообщения (универсальные)
+            Add($"{id} accept", "Quest accepted", "Квест принят");
+            Add($"{id} change", "Task updated", "Задание обновлено");
+            Add($"{id} complete", "Task completed", "Задание выполнено");
+
+            // === Условия (уже правильно — они считывают данные из ExtensionData) ===
+            foreach (var cond in GetConditions(quest))
+            {
+                string key = cond.Id.ToString();
+                string enText, ruText;
+
+                switch (cond.ConditionType)
+                {
+                    case "LeaveItemAtLocation":
+                        var zone = GetExtValue(cond, "zoneId") ?? "unknown";
+                        ruText = $"Спрячь предмет в зоне «{zone}»";
+                        enText = $"Hide item at «{zone}»";
+                        break;
+
+                    case "VisitPlace":
+                        var target = GetExtValue(cond, "target") ?? "unknown";
+                        ruText = $"Посети точку «{target}»";
+                        enText = $"Visit location point «{target}»";
+                        break;
+
+                    case "CounterCreator" when cond.Type == "Completion":
+                        ruText = "Выйди с локации со статусом «Выжил» или «Транзит»";
+                        enText = "Exit with status «Survived» or «Transit»";
+                        break;
+
+                    case "ExitStatus":
+                        ruText = "Выжить при выходе";
+                        enText = "Survive when exiting";
+                        break;
+
+                    default:
+                        ruText = $"Условие: {cond.ConditionType}";
+                        enText = $"Condition: {cond.ConditionType}";
+                        break;
+                }
+
+                Add(key, enText, ruText);
+            }
+
+            void Add(string locKey, string en, string ru)
+            {
+                enDict[locKey] = en;
+                ruDict[locKey] = ru;
+                _logger.Debug($"[Localization] Added: {locKey} | EN: '{en}' | RU: '{ru}'");
             }
         }
 
@@ -743,87 +864,7 @@ namespace QuestFilterMod.RandomQuests
                 quest.Conditions.Fail = new List<QuestCondition>();
         }
 
-        public void AddFullQuestLocalization(DatabaseTables tables, Quest quest, ServerLocalisationService localisationService)
-        {
-            if (quest == null || string.IsNullOrEmpty(quest.Id)) return;
-
-            var locId = quest.Id.ToString();
-
-            var globalLocales = tables.Locales.Global;
-            if (!globalLocales.TryGetValue("en", out var enDict) || !globalLocales.TryGetValue("ru", out var ruDict))
-            {
-                _logger.Error("[Localization] ❌ Не найдены глобальные локали 'ru' или 'en'");
-                return;
-            }
-
-            // Убедимся, что Value — это Dictionary<string, string>
-            var ruLocale = ruDict.Value;
-            var enLocale = enDict.Value;
-
-            void AddLoc(string key, string ru, string en)
-            {
-                ruLocale[key] = ru;
-                enLocale[key] = en;
-                _logger.Info($"[Localization] ✅ Добавлено: {key} | RU: '{ru}' | EN: '{en}'");
-            }
-
-            // === 1. Сам квест: Name, Description и т.д. ===
-            // Используем ID как префикс, но без дублирования полей
-            AddLoc($"{locId} Name", quest.Name, quest.Name);
-            AddLoc($"{locId} Description", quest.Description, quest.Description);
-            AddLoc($"{locId} Note", quest.Note ?? "", quest.Note ?? "");
-
-            // Эти поля должны быть ключами, а не текстом!
-            // Поэтому локализуем сами ключи, если они кастомные
-            if (quest.StartedMessageText.StartsWith("quest_started_"))
-            {
-                AddLoc(quest.StartedMessageText, "Квест начат", "Quest started");
-            }
-            if (quest.SuccessMessageText.StartsWith("quest_completed_"))
-            {
-                AddLoc(quest.SuccessMessageText, "Квест выполнен!", "Quest completed!");
-            }
-            if (quest.FailMessageText.StartsWith("quest_failed_"))
-            {
-                AddLoc(quest.FailMessageText, "Квест провален", "Quest failed");
-            }
-
-            // === 2. Условия ===
-            foreach (var cond in GetConditions(quest))
-            {
-                string condKey = cond.Id.ToString();
-                string ruText, enText;
-
-                switch (cond.ConditionType)
-                {
-                    case "LeaveItemAtLocation":
-                        var zone = GetExtValue(cond, "zoneId") ?? "unknown";
-                        ruText = $"Спрячь предмет в зоне «{zone}»";
-                        enText = $"Hide item at «{zone}»";
-                        break;
-                    case "VisitPlace":
-                        var target = GetExtValue(cond, "target") ?? "unknown";
-                        ruText = $"Посети точку «{target}»";
-                        enText = $"Visit location point «{target}»";
-                        break;
-                    case "CounterCreator" when cond.Type == "Completion":
-                        ruText = "Выйди с локации со статусом «Выжил» или «Транзит»";
-                        enText = "Exit with status «Survived» or «Transit»";
-                        break;
-                    case "ExitStatus":
-                        ruText = "Выжить при выходе";
-                        enText = "Survive when exiting";
-                        break;
-                    default:
-                        ruText = $"Условие: {cond.ConditionType}";
-                        enText = $"Condition: {cond.ConditionType}";
-                        break;
-                }
-
-                AddLoc(condKey, ruText, enText);
-            }
-        }
-
+ 
         // Вспомогательная функция для получения ExtensionData
         private static string GetExtValue(QuestCondition cond, string key)
         {

@@ -1,4 +1,5 @@
 ﻿using EFT;
+using QuestFilterMod.QuestFilter;
 using QuestFilterMod.RandomQuests;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
@@ -6,6 +7,7 @@ using SPTarkov.Server.Core.Models.Enums;
 using SPTarkov.Server.Core.Models.Logging;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Services;
+using SPTarkov.Server.Core.Services.Mod;
 using SPTarkov.Server.Core.Utils.Json;
 using System;
 using System.Collections.Generic;
@@ -14,7 +16,6 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using static RootMotion.FinalIK.RotationLimitPolygonal;
 using IOPath = System.IO.Path;
-using QuestFilterMod.QuestFilter;
 
 namespace QuestFilterMod.QuestFilter;
 
@@ -23,17 +24,20 @@ public class QuestFilterService
     private readonly ISptLogger<Plugin> _logger;
     private readonly DatabaseService _databaseService;
     private readonly RandomQuestGenerator _randomQuestGenerator;
+    private readonly CustomQuestService _customQuestService;
 
     private bool _hasAppliedFilters = false;
 
     public QuestFilterService(
         ISptLogger<Plugin> logger,
         DatabaseService databaseService,
-        RandomQuestGenerator randomQuestGenerator)
+        RandomQuestGenerator randomQuestGenerator,
+        CustomQuestService customQuestService)
     {
         _logger = logger;
         _databaseService = databaseService;
         _randomQuestGenerator = randomQuestGenerator;
+        _customQuestService = customQuestService;
     }
 
     private void LogAllAvailableFinishTypes(List<Quest> quests)
@@ -81,10 +85,6 @@ public class QuestFilterService
             return;
         }
 
-        if (config.Debug)
-        {
-            LogAllAvailableFinishTypes(quests.Values.ToList());
-        }
 
         var allowedTypes = GetAllowedTypes(config);
         var allQuestList = quests.Values
