@@ -31,13 +31,6 @@ namespace QuestFilterMod.RandomQuests.Models
         public int Step { get; set; } = 10000;
     }
 
-    public class ItemPoolConfig
-    {
-        public string Name { get; set; } = "";
-        public string Tpl { get; set; } = "";
-        public int Weight { get; set; } = 1;
-    }
-
     public class RewardItemsConfig
     {
         public bool Enabled { get; set; } = true;
@@ -75,7 +68,7 @@ namespace QuestFilterMod.RandomQuests.Models
         public int Max { get; set; } = 3;
     }
 
-    // 🔹 Новая: типы квестов для генерации
+ 
     public class QuestGenerationConfig
     {
         public QuestTypeFlags Types { get; set; } = new();
@@ -85,18 +78,23 @@ namespace QuestFilterMod.RandomQuests.Models
     public class QuestTypeFlags
     {
         public bool Exploration { get; set; } = true;
-        public bool ItemCollection { get; set; } = true;
-        public bool Planting { get; set; } = true;
+        public bool Delivery { get; set; } = true;
+        public bool Kills { get; set; } = true;
     }
 
     public class DeliveryQuestConfig
     {
         public bool Enabled { get; set; } = true;
         public int PlantTime { get; set; } = 30;
-        public List<ItemPoolConfig> ItemPool { get; set; } = new();
         public Dictionary<string, LocationConfig> Locations { get; set; } = new();
     }
-
+    public class KillQuestConfig
+    {
+        public bool Enabled { get; set; } = false;
+        public int MinKills { get; set; } = 5;
+        public int MaxKills { get; set; } = 15;
+        public string Target { get; set; } = "Any";
+    }
     public class ZoneConfig
     {
         public string Location { get; set; } = "";
@@ -116,7 +114,7 @@ namespace QuestFilterMod.RandomQuests.Models
 
         public DeliveryQuestConfig DeliveryQuest { get; set; } = new();
         public QuestGenerationConfig QuestGeneration { get; set; } = new();
-
+        public KillQuestConfig KillQuest { get; set; } = new();
         public TraderStandingRewardConfig RewardTraderStanding { get; set; } = new();
     }
 }
