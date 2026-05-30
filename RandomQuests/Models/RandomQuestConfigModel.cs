@@ -1,4 +1,7 @@
-﻿namespace QuestFilterMod.RandomQuests.Models
+﻿using SPTarkov.Server.Core.Models.Spt.Config;
+using System.Text.Json.Serialization;
+
+namespace QuestFilterMod.RandomQuests.Models
 {
     public class LocationConfig
     {
@@ -39,9 +42,26 @@
     {
         public bool Enabled { get; set; } = true;
         public CountRange Count { get; set; } = new();
-        public List<ItemPoolConfig> Pool { get; set; } = new();
+        public PriceRange PriceRange { get; set; } = new();
+        [JsonPropertyName("Parents")]
+        public ParentWeight[] Parents { get; set; } = Array.Empty<ParentWeight>();
     }
+    public class ParentWeight
+    {
+        [JsonPropertyName("Id")]
+        public string Id { get; set; } = "";
 
+        [JsonPropertyName("Weight")]
+        public int Weight { get; set; } = 1; 
+    }
+    public class PriceRange
+    {
+        [JsonPropertyName("Min")]
+        public int Min { get; set; } = 10000;
+
+        [JsonPropertyName("Max")]
+        public int Max { get; set; } = 100000;
+    }
     public class TraderStandingRewardConfig
     {
         public bool Enabled { get; set; } = false;

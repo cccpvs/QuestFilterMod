@@ -1,21 +1,12 @@
-﻿using EFT;
-using QuestFilterMod.QuestFilter;
-using QuestFilterMod.RandomQuests;
+﻿using QuestFilterMod.RandomQuests;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
-using SPTarkov.Server.Core.Models.Logging;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Services;
 using SPTarkov.Server.Core.Services.Mod;
-using SPTarkov.Server.Core.Utils.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
-using static RootMotion.FinalIK.RotationLimitPolygonal;
-using IOPath = System.IO.Path;
 
 namespace QuestFilterMod.QuestFilter;
 
@@ -38,31 +29,6 @@ public class QuestFilterService
         _databaseService = databaseService;
         _randomQuestGenerator = randomQuestGenerator;
         _customQuestService = customQuestService;
-    }
-
-    private void LogAllAvailableFinishTypes(List<Quest> quests)
-    {
-        var finishTypes = new HashSet<string>();
-
-        foreach (var q in quests)
-        {
-            if (q.Conditions?.AvailableForFinish == null) continue;
-
-            foreach (var cond in q.Conditions.AvailableForFinish)
-            {
-                string type = cond.ConditionType.ToString() == "CounterCreator"
-                    ? $"Counter:{cond.Type}"
-                    : $"Direct:{cond.ConditionType}";
-
-                finishTypes.Add(type);
-            }
-        }
-
-        _logger.Info($"[QuestFilterMod][DEBUG] Найдено уникальных типов AvailableForFinish: {finishTypes.Count}");
-        foreach (var t in finishTypes.OrderBy(x => x))
-        {
-            _logger.Info($"  → {t}");
-        }
     }
 
     public void ApplyFilters(QuestFilterConfig config)
@@ -103,6 +69,10 @@ public class QuestFilterService
         // Генерация случайных квестов
         if (config.GenerateRandomQuests.Enable && config.GenerateRandomQuests.Count > 0)
         {
+            // 🔁 Сбрасываем трекер перед серией генерации
+            // Это позволяет использовать ВСЕ точки и предметы снова
+            _randomQuestGenerator.ResetTracker();
+
             var generatedCount = 0;
             var generatedQuests = new List<Quest>();
 
@@ -114,7 +84,7 @@ public class QuestFilterService
                     generatedQuests.Add(randomQuest);
                     generatedCount++;
 
-                    // 🔥 Добавляем сразу в базу ДО ModifyQuests
+                    // Добавляем в базу данных квестов
                     if (!quests.ContainsKey(randomQuest.Id))
                     {
                         quests[randomQuest.Id] = randomQuest;
@@ -126,10 +96,10 @@ public class QuestFilterService
 
             _logger.Info($"[QuestFilterService] Готово: сгенерировано {generatedCount} случайных квестов.");
 
-            // Добавляем в selectedQuests, чтобы ModifyQuests знал, что их нужно оставить
+            // Добавляем в selectedQuests, чтобы они не были удалены
             selectedQuests.AddRange(generatedQuests);
         }
-        
+
 
         ModifyQuests(quests, selectedQuests, config);
 

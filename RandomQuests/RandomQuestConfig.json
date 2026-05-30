@@ -1119,25 +1119,50 @@
     "Enabled": true,
     "Count": {
       "Min": 1,
-      "Max": 3
+      "Max": 5
     },
-    "Pool": [
+    "PriceRange": {
+      "Min": 5000,
+      "Max": 150000
+    },
+    "Parents": [
       {
-        "Name": "Фигурка бойца BEAR",
-        "Tpl": "655c652d60d0ac437100fed7",
-        "Weight": 1
+        "Id": "5448f3ac4bdc2dce718b4569",
+        "Weight": 1,
+        "Comment": "Medical"
       },
       {
-        "Name": "Фигурка бойца USEC",
-        "Tpl": "655c663a6689c676ce57af85",
-        "Weight": 1
+        "Id": "5448f3a64bdc2d60728b456a",
+        "Weight": 1,
+        "Comment": "Stimulator"
       },
       {
-        "Name": "Фигурка Сектанта",
-        "Tpl": "655c669103999d3c810c025b",
-        "Weight": 1
+        "Id": "5448e8d64bdc2dce718b4568",
+        "Weight": 1,
+        "Comment": "Drink"
+      },
+      {
+        "Id": "5448e8d04bdc2ddf718b4569",
+        "Weight": 1,
+        "Comment": "food"
+      },
+      {
+        "Id": "5c99f98d86f7745c314214b3",
+        "Weight": 1,
+        "Comment": "KeyMechanical"
+      },
+      {
+        "Id": "5448e53e4bdc2d60728b4567",
+        "Weight": 1,
+        "Comment": "Backpack"
+      },
+      {
+        "Id": "5448e54d4bdc2dcc718b4568",
+        "Weight": 1,
+        "Comment": "Armor"
       }
     ]
+
   },
   "DefaultQuest": {
     "Image": "/files/quest/icon/default.jpg",

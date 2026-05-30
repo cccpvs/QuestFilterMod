@@ -1,21 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
-using QuestFilterMod.QuestFilter;
+﻿using QuestFilterMod.QuestFilter;
 using QuestFilterMod.RandomQuests;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
-using SPTarkov.Server.Core.Models.Eft.Profile;
-using SPTarkov.Server.Core.Models.Logging;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Services;
 using SPTarkov.Server.Core.Services.Mod;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.Design;
-using System.IO;
 using System.Reflection;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace QuestFilterMod;
 

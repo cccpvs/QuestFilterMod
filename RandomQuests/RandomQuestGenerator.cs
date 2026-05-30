@@ -1,34 +1,15 @@
-﻿using EFT;
-using EFT.Quests;
-using QuestFilterMod.RandomQuests.Models;
+﻿using QuestFilterMod.RandomQuests.Models;
 using QuestFilterMod.RandomQuests.Utils;
-using SPTarkov.Server.Core.Constants;
 using SPTarkov.Server.Core.Models.Common;
-using SPTarkov.Server.Core.Models.Eft.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
-using SPTarkov.Server.Core.Models.Logging;
 using SPTarkov.Server.Core.Models.Spt.Mod;
-using SPTarkov.Server.Core.Models.Spt.Server;
-using SPTarkov.Server.Core.Models.Spt.Templates;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Services;
 using SPTarkov.Server.Core.Services.Mod;
-using SPTarkov.Server.Core.Utils.Json;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.Design.Serialization;
 using System.Diagnostics.Metrics;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using static RawQuestClass;
-using ServerLocationConfig = SPTarkov.Server.Core.Models.Spt.Config.LocationConfig;
-using ServerQuestConfig = SPTarkov.Server.Core.Models.Spt.Config.QuestConfig;
-using SPTServerConfig = SPTarkov.Server.Core.Models.Spt.Config;
+
 
 namespace QuestFilterMod.RandomQuests
 {
@@ -41,19 +22,8 @@ namespace QuestFilterMod.RandomQuests
         private readonly Random _random = new();
         private readonly QuestConfig _config;
         private readonly UniqueQuestTracker _tracker = new();
+
         private readonly CustomQuestService _customQuestService;
-
-        private void LogQuest(Quest quest)
-        {
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
-
-            string json = JsonSerializer.Serialize(quest, options);
-            _logger.Info($"[DEBUG QUEST] Квест '{quest.Name}' (ID: {quest.Id}):\n{json}");
-        }
 
         public record QuestKey(string LocationId, string TargetPoint, string ItemTpl = "", string QuestType = "");
 
@@ -105,97 +75,68 @@ namespace QuestFilterMod.RandomQuests
 
         public Quest? GenerateSingleQuest()
         {
-
             try
             {
-                var types = new List<Func<Quest?>>();
+                var candidates = new List<(string Type, Func<Quest?> Generator)>();
 
                 if (_config.QuestGeneration.Types.Exploration)
-                    types.Add(GenerateExplorationQuest);
-
+                    candidates.Add(("Exploration", GenerateExplorationQuest));
 
                 if (_config.QuestGeneration.Types.Planting && _config.DeliveryQuest.Enabled)
-                    types.Add(GenerateDeliveryQuest);
+                    candidates.Add(("Delivery", GenerateDeliveryQuest));
 
-                if (!types.Any())
+                if (!candidates.Any())
                 {
                     _logger.Error("[RandomQuestGenerator] ❌ Нет доступных типов квестов для генерации.");
                     return null;
                 }
 
-                return types.RandomItem(_random)();
+                // 🔁 Перемешиваем случайно — чтобы не всегда сначала exploration
+                candidates = candidates.OrderBy(_ => _random.Next()).ToList();
+
+                // 🔄 Пробуем каждый тип по очереди
+                foreach (var (type, generator) in candidates)
+                {
+                    var quest = generator();
+                    if (quest != null)
+                    {
+                        _logger.Info($"[GenerateSingleQuest] ✅ Успешно сгенерирован квест: {type}");
+                        return quest;
+                    }
+                }
+
+                // ❌ Ни один генератор не смог создать квест
+                _logger.Warning("[GenerateSingleQuest] Все возможные комбинации уже использованы или недоступны.");
+                return null;
             }
             catch (Exception e)
             {
-                _logger.Error($"[RandomQuestGenerator] Ошибка при генерации: {e.Message}\n{e.StackTrace}");
+                _logger.Error($"[RandomQuestGenerator] Ошибка при генерации квеста: {e.Message}\n{e.StackTrace}");
                 return null;
             }
         }
 
-        //Квесты Exploration
-        private Quest? GenerateExplorationQuest()
+        //Общий генератор квестов
+        private Quest? GenerateBaseQuest(string type, Action<Quest, Func<MongoId>> build)
         {
-            var allowedLocations = _config.ExplorationQuest
-                .Where(x => _config.QuestGeneration.AllowedLocations.TryGetValue(x.Key, out var allowed) ? allowed : false)
-                .ToList();
+            var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
+            var questId = idFactory();
 
-            if (!allowedLocations.Any())
-            {
-                _logger.Warning("[RandomQuestGenerator] ❌ Нет разрешённых локаций для Exploration.");
-                return null;
-            }
-
-            // Собираем все возможные уникальные комбинации (локация + точка)
-            var candidates = new List<(string LocKey, LocationConfig Loc, string Target)>();
-            foreach (var kvp in allowedLocations)
-            {
-                foreach (var target in kvp.Value.Targets)
-                {
-                    var key = new QuestKey(kvp.Value.Id, target, "", "Exploration");
-                    if (!_tracker.IsUsed(key))
-                        candidates.Add((kvp.Key, kvp.Value, target));
-                }
-            }
-
-            if (!candidates.Any())
-                return null; // Все комбинации уже использованы
-
-            var (locationKey, location, targetPoint) = candidates.RandomItem(_random);
-            _tracker.TryUse(new QuestKey(location.Id, targetPoint, "", "Exploration"));
-
-            string NewId() => Guid.NewGuid().ToString("N")[..24];
-            int index = 0;
-
-            string questId = NewId();
-
+            // Создаём через пустой конструктор + инициализируем все required-поля
             var quest = new Quest
             {
-                Id = new MongoId(questId),
-                QuestName = $"{questId} questName",
+                Id = questId,
                 Name = $"{questId} name",
+                QuestName = $"{questId} questName",
                 Description = $"{questId} description",
                 Note = $"{questId} note",
                 TraderId = new MongoId(_config.TraderIds.RandomItem(_random)),
                 Side = "Pmc",
-                Location = location.Id,
-                Image = _config.DefaultQuest.Image,
-                InstantComplete = false,
-                IsKey = false,
-                Restartable = false,
-                CanShowNotificationsInGame = true,
-                SecretQuest = false,
-                Status = 0,
+                Location = "", // будет заполнено в build()
+                Image = _config.DefaultQuest.Image ?? "/files/quest/icon/default.jpg",
                 Type = QuestTypeEnum.PickUp,
-                ProgressSource = "eft",
-                AcceptanceAndFinishingSource = "eft",
-                GameModes = new List<string>(),
-                RankingModes = new List<string>(),
-                AcceptPlayerMessage = $"{questId} accept",
-                ChangeQuestMessageText = $"{questId} change",
-                CompletePlayerMessage = $"{questId} complete",
-                StartedMessageText = "quest_started_default",
-                SuccessMessageText = "quest_completed_default",
-                FailMessageText = "quest_failed_default",
+                CanShowNotificationsInGame = true,
+                Restartable = false,
                 Conditions = new QuestConditionTypes
                 {
                     AvailableForStart = new(),
@@ -210,304 +151,235 @@ namespace QuestFilterMod.RandomQuests
                 }
             };
 
-            // Посещение точки
-            var visitCondition = new QuestCondition
+            // Устанавливаем не-required поля
+            quest.InstantComplete = false;
+            quest.IsKey = false;
+            quest.SecretQuest = false;
+            quest.Status = 0;
+            quest.ProgressSource = "eft";
+            quest.AcceptanceAndFinishingSource = "eft";
+            quest.AcceptPlayerMessage = $"{questId}_accept";
+            quest.ChangeQuestMessageText = $"{questId}_change";
+            quest.CompletePlayerMessage = $"{questId}_complete";
+            quest.StartedMessageText = "quest_started_default";
+            quest.SuccessMessageText = "quest_completed_default";
+            quest.FailMessageText = "quest_failed_default";
+            quest.GameModes = new();
+            quest.RankingModes = new();
+
+            // Теперь build() может всё изменить
+            build(quest, idFactory);
+
+            // Валидация
+            if (string.IsNullOrEmpty(quest.Location))
             {
-                Id = new MongoId(NewId()),
-                ConditionType = "VisitPlace",
-                DynamicLocale = false,
-                Value = 1,
-                Index = index++,
-                ParentId = "",
-                VisibilityConditions = new()
-            };
+                _logger.Error($"[Base] ❌ Квест {quest.Id} не имеет Location");
+                return null;
+            }
 
 
-            visitCondition.ExtensionData ??= new(StringComparer.Ordinal);
-            visitCondition.ExtensionData["target"] = targetPoint;
-            quest.Conditions.AvailableForFinish.Add(visitCondition);
-
-            // Условие выхода
-            var exitStatus = new QuestCondition
-            {
-                Id = new MongoId(NewId()),
-                ConditionType = "ExitStatus",
-                DynamicLocale = false,
-                ExtensionData = new()
-                {
-                    ["status"] = new[] { "Survived", "Runner", "Transit" }
-                }
-            };
-
-            var counterCreator = new QuestCondition
-            {
-                Id = new MongoId(NewId()),
-                ConditionType = "CounterCreator",
-                DynamicLocale = false,
-                Value = 1,
-                Index = index++,
-                OneSessionOnly = true,
-                CompleteInSeconds = 30,
-                Type = "Completion",
-                DoNotResetIfCounterCompleted = false,
-                ExtensionData = new()
-                {
-                    ["counter"] = new
-                    {
-                        id = new MongoId(NewId()),
-                        conditions = new[] { exitStatus },
-                        DynamicLocale = false
-                    }
-                }
-            };
-
-            quest.Conditions.AvailableForFinish.Add(counterCreator);
-
+            AddRewards(quest);
+            CreateAndRegisterQuest(quest);
+            _logger.Info($"[Base] ✅ Квест '{quest.Id}' ({type}) создан");
+            return quest;
+        }
+        //Привязка квеста наград
+        private void AddRewards(Quest quest)
+        {
             AddExperienceReward(quest);
             AddMoneyReward(quest);
             AddRandomItemRewards(quest);
             AddTraderStandingReward(quest);
-
-            // Сохраняем квест
-            CreateAndRegisterQuest(quest);
-
-            _logger.Info($"[GenerateDeliveryQuest] ✅ Квест '{quest.Id}' создан и локализован");
-            _logger.Info($"[GenerateDeliveryQuest] ✅ Квест '{quest.Id}' создан");
-            return quest;
         }
 
+        private void AddExitCondition(Quest q, Func<MongoId> id, string[] statuses, int seconds)
+        {
+            var exitStatus = new QuestCondition
+            {
+                Id = id(),
+                ConditionType = "ExitStatus",
+                DynamicLocale = false,
+                ExtensionData = { ["status"] = statuses }
+            };
 
+            var counter = new QuestCondition
+            {
+                Id = id(),
+                ConditionType = "CounterCreator",
+                Value = 1,
+                CompleteInSeconds = seconds,
+                Type = "Completion",
+                DynamicLocale = false,
+                ExtensionData = { ["counter"] = new { id = id(), conditions = new object[] { exitStatus }, dynamicLocale = false } }
+            };
+
+            q.Conditions ??= new QuestConditionTypes();
+            q.Conditions.AvailableForFinish ??= new List<QuestCondition>();
+            q.Conditions.AvailableForFinish.Add(counter);
+        }
+        //Квесты Exploration
+        private Quest? GenerateExplorationQuest()
+        {
+            var allowedLocations = _config.ExplorationQuest
+                .Where(x => _config.QuestGeneration.AllowedLocations.GetValueOrDefault(x.Key))
+                .ToList();
+
+            if (!allowedLocations.Any()) return null;
+
+            // Собираем ВСЕ возможные точки
+            var allPoints = new List<(LocationConfig Loc, string Target)>();
+            foreach (var kvp in allowedLocations)
+                foreach (var target in kvp.Value.Targets)
+                    allPoints.Add((kvp.Value, target));
+
+            if (!allPoints.Any()) return null;
+
+            // Перемешиваем и пробуем по одной
+            var shuffled = allPoints.OrderBy(_ => _random.Next()).ToList();
+
+            foreach (var (loc, target) in shuffled)
+            {
+                var key = new QuestKey(loc.Id, target, "__EXPLORATION__", "Exploration");
+
+                // Только если ЕЩЁ не использовалась — пробуем
+                if (_tracker.TryUse(key))
+                {
+                    return GenerateBaseQuest("Exploration", (q, id) =>
+                    {
+                        q.Location = loc.Id;
+                        q.Type = QuestTypeEnum.PickUp;
+
+                        var visit = new QuestCondition
+                        {
+                            Id = id(),
+                            DynamicLocale = false,
+                            ConditionType = "VisitPlace",
+                            Value = 1,
+                            ExtensionData = { ["target"] = target }
+                        };
+
+                        q.Conditions ??= new QuestConditionTypes();
+                        q.Conditions.AvailableForFinish ??= new List<QuestCondition>();
+                        q.Conditions.AvailableForFinish.Add(visit);
+
+                        AddExitCondition(q, id, new[] { "Survived", "Runner", "Transit" }, 30);
+                    });
+                }
+            }
+
+            _logger.Debug("[GenerateExplorationQuest] Все точки уже использованы.");
+            return null;
+        }
         //Квесты Delivery
         private Quest? GenerateDeliveryQuest()
         {
-            _logger.Info("[GenerateDeliveryQuest] Начало генерации квеста на доставку предмета");
-
             var delivery = _config.DeliveryQuest;
-
-            if (!delivery.Enabled)
+            if (!delivery.Enabled || !delivery.ItemPool.Any() || !delivery.Locations.Any())
             {
-                _logger.Warning("[GenerateDeliveryQuest] ❌ DeliveryQuest отключён");
-                return null;
-            }
-
-            if (!delivery.ItemPool.Any())
-            {
-                _logger.Warning("[GenerateDeliveryQuest] ❌ Пул предметов пуст");
-                return null;
-            }
-
-            if (!delivery.Locations.Any())
-            {
-                _logger.Warning("[GenerateDeliveryQuest] ❌ Нет локаций для закладки");
+                _logger.Info("[GenerateDeliveryQuest] ❌ Доставка отключена или нет данных.");
                 return null;
             }
 
             var allowedLocations = delivery.Locations
-                .Where(x => _config.QuestGeneration.AllowedLocations.TryGetValue(x.Key, out var allowed) && allowed)
+                .Where(x => _config.QuestGeneration.AllowedLocations.GetValueOrDefault(x.Key))
                 .ToList();
 
             if (!allowedLocations.Any())
             {
-                _logger.Warning("[GenerateDeliveryQuest] ❌ Нет разрешённых локаций");
+                _logger.Warning("[GenerateDeliveryQuest] ❌ Нет разрешённых локаций.");
                 return null;
             }
 
-            _logger.Info($"[GenerateDeliveryQuest] Разрешено {allowedLocations.Count} локаций");
-
-            var candidates = new List<(string LocKey, LocationConfig Loc, string Target, ItemPoolConfig Item)>();
+            // Собираем ВСЕ возможные комбинации: (локация, точка, предмет)
+            var allCandidates = new List<(LocationConfig Loc, string Target, ItemPoolConfig Item)>();
 
             foreach (var locEntry in allowedLocations)
             {
-                if (locEntry.Value?.Targets == null) continue;
-
                 foreach (var target in locEntry.Value.Targets.Where(t => !string.IsNullOrEmpty(t)))
                 {
                     foreach (var poolItem in delivery.ItemPool.Where(i => !string.IsNullOrEmpty(i.Tpl)))
                     {
-                        var key = new QuestKey(locEntry.Value.Id, target, poolItem.Tpl, "Delivery");
-                        if (!_tracker.IsUsed(key))
-                        {
-                            candidates.Add((locEntry.Key, locEntry.Value, target, poolItem));
-                        }
+                        allCandidates.Add((locEntry.Value, target, poolItem));
                     }
                 }
             }
 
-            if (!candidates.Any())
+            if (!allCandidates.Any())
             {
-                _logger.Info("[GenerateDeliveryQuest] ⚠️ Нет доступных комбинаций");
+                _logger.Warning("[GenerateDeliveryQuest] ❌ Нет ни одной валидной комбинации.");
                 return null;
             }
 
-            var (locationKey, location, targetPoint, item) = candidates.RandomItem(_random);
-            var questKey = new QuestKey(location.Id, targetPoint, item.Tpl, "Delivery");
+            // Перемешиваем случайно
+            var shuffled = allCandidates.OrderBy(_ => _random.Next()).ToList();
 
-            if (!_tracker.TryUse(questKey))
+            // Пробуем каждую, пока не найдём свободную
+            foreach (var (loc, targetPoint, item) in shuffled)
             {
-                _logger.Warning("[GenerateDeliveryQuest] ⚠️ Ключ уже использован");
-                return null;
-            }
+                var questKey = new QuestKey(
+                    LocationId: loc.Id,
+                    TargetPoint: targetPoint,
+                    ItemTpl: item.Tpl,
+                    QuestType: "Delivery"
+                );
 
-            _logger.Info($"[GenerateDeliveryQuest] Генерация: доставить {item.Name} → {targetPoint} на {locationKey}");
-
-
-            var traderId = new MongoId(_config.TraderIds.RandomItem(_random));
-            if (!_databaseService.GetTraders().ContainsKey(traderId))
-            {
-                _logger.Error($"[GenerateDeliveryQuest] ❌ Трейдер {traderId} не найден в базе");
-                return null;
-            }
-
-            try
-            {
-                string NewId() => Guid.NewGuid().ToString("N")[..24];
-                int index = 0;
-                string questId = NewId();
-                var quest = new Quest
+                // Только если ЕЩЁ не использовалась — пробуем создать
+                if (_tracker.TryUse(questKey))
                 {
-                    Id = new MongoId(questId),
-                    QuestName = $"{questId} questName",
-                    Name = $"{questId} name",
-                    Description = $"{questId} description",
-                    Note = $"{questId} note",
-                    TraderId = new MongoId(_config.TraderIds.RandomItem(_random)),
-                    Side = "Pmc",
-                    Location = location.Id,
-                    Image = _config.DefaultQuest.Image,
-                    InstantComplete = false,
-                    IsKey = false,
-                    Restartable = false,
-                    CanShowNotificationsInGame = true,
-                    SecretQuest = false,
-                    Status = 0,
-                    Type = QuestTypeEnum.Discover,
-                    ProgressSource = "eft",
-                    AcceptanceAndFinishingSource = "eft",
-                    GameModes = new List<string>(),
-                    RankingModes = new List<string>(),
-                    AcceptPlayerMessage = $"{questId} accept",
-                    ChangeQuestMessageText = $"{questId} change",
-                    CompletePlayerMessage = $"{questId} complete",
-                    StartedMessageText = "quest_started_default",
-                    SuccessMessageText = "quest_completed_default",
-                    FailMessageText = "quest_failed_default",
-                    Conditions = new QuestConditionTypes
+                    return GenerateBaseQuest("Delivery", (q, idFactory) =>
                     {
-                        AvailableForStart = new(),
-                        AvailableForFinish = new(),
-                        Fail = new()
-                    },
-                    Rewards = new Dictionary<string, List<Reward>>
-                    {
-                        ["Started"] = new(),
-                        ["Success"] = new(),
-                        ["Fail"] = new()
-                    }
-                };
+                        q.Location = loc.Id;
+                        q.Type = QuestTypeEnum.Discover;
 
-                // 🎁 Выдаём предмет при старте
-                AddItemReward(quest, item.Tpl, 1, item.Name, rewardType: "Started");
+                        AddItemReward(q, item.Tpl, 1, item.Name, "Started");
 
-                // 📍 Условие: заложить
-                var plantCondition = new QuestCondition
-                {
-                    Id = new MongoId(NewId()),
-                    ConditionType = "LeaveItemAtLocation",
-                    DynamicLocale = false,
-                    Value = 1,
-                    Index = index++,
-                    ParentId = "",
-                    VisibilityConditions = new List<VisibilityCondition>(),
-                    PlantTime = delivery.PlantTime,
-                    ZoneId = targetPoint,
-                    ExtensionData = new Dictionary<string, object>(StringComparer.Ordinal)
-                    {
-                        ["target"] = new[] { item.Tpl },      // ← массив строк
-                        ["zoneId"] = targetPoint,
-                        ["plantTime"] = delivery.PlantTime
-                    }
-                };
-                
-                quest.Conditions.AvailableForFinish.Add(plantCondition);
-
-
-                // ✅ Выход
-
-                var counterCreator = new QuestCondition
-                {
-                    Id = new MongoId(NewId()),
-                    ConditionType = "CounterCreator",
-                    Value = 1,
-                    Index = index++,
-                    DynamicLocale = false,
-                    OneSessionOnly = false,
-                    IsNecessary = false,
-                    IsResetOnConditionFailed = false,
-                    ParentId = "",
-                    Type = "Completion",
-                    CompleteInSeconds = delivery.PlantTime,
-                    VisibilityConditions = new List<VisibilityCondition>(),
-                    GlobalQuestCounterId = "",
-                    DoNotResetIfCounterCompleted = false,
-                    Counter = new()
-                    {
-                        Conditions = new List<QuestConditionCounterCondition>
+                        var plantCond = new QuestCondition
                         {
-                            new()
+                            Id = idFactory(),
+                            ConditionType = "LeaveItemAtLocation",
+                            Value = 1,
+                            DynamicLocale = false,
+                            PlantTime = delivery.PlantTime,
+                            ZoneId = targetPoint,
+                            ExtensionData = new Dictionary<string, object>
                             {
-                                Id = new MongoId(NewId()),
-                                ConditionType = "ExitStatus",
-                                DynamicLocale = false,
-                                Status = ["Survived", "Transit"]
-
+                                ["target"] = new[] { item.Tpl },
+                                ["zoneId"] = targetPoint,
+                                ["plantTime"] = delivery.PlantTime
                             }
-                        }
-                    }
- 
-                };
-                    
+                        };
+                        q.Conditions ??= new QuestConditionTypes();
+                        q.Conditions.AvailableForFinish ??= new List<QuestCondition>();
+                        q.Conditions.AvailableForFinish.Add(plantCond);
 
-                quest.Conditions.AvailableForFinish.Add(counterCreator);
-
-                // 🏆 Награды за успех
-                AddExperienceReward(quest);
-                AddMoneyReward(quest);
-                AddRandomItemRewards(quest);
-                AddTraderStandingReward(quest);
-
-                if (string.IsNullOrEmpty(quest.Name))
-                {
-                    _logger.Error($"[RandomQuestGenerator] ❌ Квест {quest.Id} не имеет имени — пропуск");
-                    return null;
+                        AddExitCondition(q, idFactory, new[] { "Survived", "Transit" }, delivery.PlantTime);
+                    });
                 }
-
-                if (quest.Conditions?.AvailableForFinish?.Any() != true)
-                {
-                    _logger.Error($"[RandomQuestGenerator] ❌ Квест {quest.Id} не имеет условий завершения");
-                    return null;
-                }
-
-
-                // Сохраняем квест
-                CreateAndRegisterQuest(quest);
-
-                _logger.Info($"[GenerateDeliveryQuest] ✅ Квест '{quest.Id}' создан и локализован");
-                _logger.Info($"[GenerateDeliveryQuest] ✅ Квест '{quest.Id}' создан");
-                return quest;
             }
-            catch (Exception ex)
-            {
-                _logger.Error($"[GenerateDeliveryQuest] 🔥 Ошибка: {ex}");
-                return null;
-            }
+
+            _logger.Debug("[GenerateDeliveryQuest] Все возможные комбинации уже использованы.");
+            return null;
         }
 
+        public void ResetTracker()
+        {
+            _tracker.Clear();
+        }
+        private List<Reward> GetOrCreateRewardList(Quest quest, string status)
+        {
+            if (quest.Rewards == null)
+                quest.Rewards = new Dictionary<string, List<Reward>>();
+
+            return quest.Rewards.TryGetValue(status, out var list)
+                ? list
+                : (quest.Rewards[status] = new List<Reward>());
+        }
         private void AddExperienceReward(Quest quest)
         {
             var range = _config.DefaultQuest.ExperienceRewardRange;
             int exp = _random.Next(range.Min / range.Step, (range.Max / range.Step) + 1) * range.Step;
 
-            quest.Rewards["Success"].Add(new Reward
+            GetOrCreateRewardList(quest, "Success").Add(new Reward
             {
                 Id = new MongoId(Guid.NewGuid().ToString("N")[..24]),
                 Type = RewardType.Experience,
@@ -528,18 +400,102 @@ namespace QuestFilterMod.RandomQuests
 
         private void AddRandomItemRewards(Quest quest)
         {
-            if (!_config.RewardItems.Enabled || !_config.RewardItems.Pool.Any()) return;
+            if (!_config.RewardItems.Enabled || !_config.RewardItems.Parents.Any()) return;
 
+            var prices = _databaseService.GetPrices();
+            var itemsPool = _databaseService.GetTemplates().Items;
+
+            if (prices == null || !prices.Any() || !itemsPool.Any())
+            {
+                _logger.Warning("[AddRandomItemRewards] ❌ Не удалось загрузить данные из базы.");
+                return;
+            }
+
+            // === Используем диапазон из конфига ===
+            int minPrice = _config.RewardItems.PriceRange.Min;
+            int maxPrice = _config.RewardItems.PriceRange.Max;
+
+            if (minPrice < 0) minPrice = 0;
+            if (maxPrice < minPrice) maxPrice = minPrice;
+
+            // === Шаг 1: Выбираем родительские ID с учётом весов ===
+            var weightedParents = _config.RewardItems.Parents
+                .Where(p => p.Weight > 0 && !string.IsNullOrEmpty(p.Id))
+                .ToList();
+
+            if (!weightedParents.Any())
+            {
+                _logger.Warning("[AddRandomItemRewards] ❌ Нет активных родителей с весом > 0.");
+                return;
+            }
+
+            var parentIds = weightedParents.Select(p => new { Id = new MongoId(p.Id), p.Weight }).ToList();
+
+            // === Шаг 2: Фильтруем по цене и категории ===
+            var validItemsByParent = new Dictionary<MongoId, List<MongoId>>();
+
+            foreach (var kvp in prices)
+            {
+                var tplId = kvp.Key;
+                if (!itemsPool.TryGetValue(tplId, out var template)) continue;
+
+                double price = kvp.Value;
+                if (price < minPrice || price > maxPrice) continue; // ← Теперь из конфига
+
+                var parentId = template.Parent;
+                if (!parentIds.Any(p => p.Id == parentId)) continue;
+
+                if (!validItemsByParent.ContainsKey(parentId))
+                    validItemsByParent[parentId] = new List<MongoId>();
+
+                validItemsByParent[parentId].Add(tplId);
+            }
+
+            // Удаляем пустые категории
+            var nonEmptyParents = parentIds
+                .Where(p => validItemsByParent.ContainsKey(p.Id) && validItemsByParent[p.Id].Any())
+                .ToList();
+
+            if (!nonEmptyParents.Any())
+            {
+                _logger.Warning("[AddRandomItemRewards] ❌ Нет подходящих предметов по цене и категориям.");
+                return;
+            }
+
+            _logger.Info($"[AddRandomItemRewards] Найдено {nonEmptyParents.Count} категорий с подходящими предметами.");
+
+            // Сколько наград выдать
             int count = _random.Next(_config.RewardItems.Count.Min, _config.RewardItems.Count.Max + 1);
             var usedTpls = new HashSet<string>();
 
             for (int i = 0; i < count; i++)
             {
-                var rewardItem = _config.RewardItems.Pool.WeightedRandomItem(_random, x => x.Weight);
-                if (usedTpls.Contains(rewardItem.Tpl)) continue;
+                var selectedParent = nonEmptyParents.WeightedRandomItem(_random, p => p.Weight);
+                var itemsInCategory = validItemsByParent[selectedParent.Id];
 
-                AddItemReward(quest, rewardItem.Tpl, 1, rewardItem.Name);
-                usedTpls.Add(rewardItem.Tpl);
+                if (!itemsInCategory.Any()) continue;
+
+                MongoId selectedId;
+                string selectedTpl;
+                int attempts = 0;
+                do
+                {
+                    selectedId = itemsInCategory[_random.Next(itemsInCategory.Count)];
+                    selectedTpl = selectedId.ToString();
+                    attempts++;
+                    if (attempts > 100) break;
+                } while (usedTpls.Contains(selectedTpl));
+
+                if (attempts > 100) break;
+                usedTpls.Add(selectedTpl);
+
+                string name = "Unknown Item";
+                if (itemsPool.TryGetValue(selectedId, out var item) && !string.IsNullOrEmpty(item.Name))
+                {
+                    name = item.Name;
+                }
+
+                AddItemReward(quest, selectedTpl, 1, name);
             }
         }
 
@@ -553,7 +509,7 @@ namespace QuestFilterMod.RandomQuests
                           (_config.RewardTraderStanding.Max - _config.RewardTraderStanding.Min) +
                           _config.RewardTraderStanding.Min;
 
-            quest.Rewards["Success"].Add(new Reward
+            GetOrCreateRewardList(quest, "Success").Add(new Reward
             {
                 Id = new MongoId(Guid.NewGuid().ToString("N")[..24]),
                 Type = RewardType.TraderStanding,
@@ -598,7 +554,8 @@ namespace QuestFilterMod.RandomQuests
 
             gameItem.Upd = upd;
 
-            quest.Rewards[rewardType].Add(new Reward
+
+            GetOrCreateRewardList(quest, "Success").Add(new Reward
             {
                 Id = new MongoId(Guid.NewGuid().ToString("N")[..24]),
                 Type = RewardType.Item,
@@ -616,6 +573,7 @@ namespace QuestFilterMod.RandomQuests
 
         public void CreateAndRegisterQuest(Quest quest)
         {
+
             if (quest == null) return;
 
             EnsureRewards(quest);
@@ -623,15 +581,17 @@ namespace QuestFilterMod.RandomQuests
 
             try
             {
-                // === 🌐 Подготавливаем локали ===
+                // Явно назовём переменные — чтобы не перепутать
+                var englishLocales = new Dictionary<string, string>();
+                var russianLocales = new Dictionary<string, string>();
+
+                FillQuestLocales(quest, englishLocales, russianLocales);
+
                 var locales = new Dictionary<string, Dictionary<string, string>>
                 {
-                    ["en"] = new Dictionary<string, string>(),
-                    ["ru"] = new Dictionary<string, string>()
+                    ["en"] = englishLocales,
+                    ["ru"] = russianLocales
                 };
-
-                // Заполняем локали
-                FillQuestLocales(quest, locales["en"], locales["ru"]);
 
                 // === 🛠 Создаём DTO для сервиса ===
                 var newQuestDetails = new NewQuestDetails
@@ -734,6 +694,7 @@ namespace QuestFilterMod.RandomQuests
             _logger.Warning($"[GetItemName] Предмет с TPL {tpl} не найден в базе данных");
             return "Item";
         }
+
 
         private void FillQuestLocales(Quest quest, Dictionary<string, string> enDict, Dictionary<string, string> ruDict)
         {
@@ -842,7 +803,7 @@ namespace QuestFilterMod.RandomQuests
             {
                 enDict[locKey] = en;
                 ruDict[locKey] = ru;
-                _logger.Debug($"[Localization] Added: {locKey} | EN: '{en}' | RU: '{ru}'");
+                _logger.Info($"[Localization] Added: {locKey} | EN: '{en}' | RU: '{ru}'");
             }
         }
 
@@ -864,7 +825,7 @@ namespace QuestFilterMod.RandomQuests
                 quest.Conditions.Fail = new List<QuestCondition>();
         }
 
- 
+
         // Вспомогательная функция для получения ExtensionData
         private static string GetExtValue(QuestCondition cond, string key)
         {
@@ -881,14 +842,6 @@ namespace QuestFilterMod.RandomQuests
             return list;
         }
 
-    }
-    public static class StringExtensions
-    {
-        public static string ToUpperFirst(this string s)
-        {
-            if (string.IsNullOrEmpty(s)) return s;
-            return char.ToUpper(s[0]) + s.Substring(1).ToLower();
-        }
     }
 
     public static class ListExtensions

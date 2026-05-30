@@ -1,6 +1,4 @@
 ﻿using SPTarkov.Server.Core.Models.Spt.Mod;
-using SemanticVersioning;
-using System.Collections.Generic;
 
 // Чтобы избежать конфликта имён
 using Version = SemanticVersioning.Version;
