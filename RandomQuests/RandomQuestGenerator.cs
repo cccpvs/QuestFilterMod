@@ -1,5 +1,4 @@
-﻿using QuestFilterMod.QuestFilter;
-using QuestFilterMod.RandomQuests.Models;
+﻿using QuestFilterMod.RandomQuests.Models;
 using QuestFilterMod.RandomQuests.Utils;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
@@ -8,12 +7,7 @@ using SPTarkov.Server.Core.Models.Spt.Mod;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Services;
 using SPTarkov.Server.Core.Services.Mod;
-using SPTarkov.Server.Core.Utils.Json;
 using System.Reflection;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
-
 
 namespace QuestFilterMod.RandomQuests
 {
@@ -65,11 +59,13 @@ namespace QuestFilterMod.RandomQuests
                 "RandomQuestConfig.json"
             );
 
-            _logger.Info($"[RandomQuestGenerator] Ищу конфиг: {configPath}");
+            if (Plugin._config.Debug)
+                _logger.Info($"[QuestFilterMod][Random] Ищу конфиг: {configPath}");
 
             if (!File.Exists(configPath))
             {
-                _logger.Error($"[RandomQuestGenerator] ❌ Файл конфигурации не найден: {configPath}");
+                if (Plugin._config.Debug)
+                    _logger.Error($"[QuestFilterMod][Random]❌ Файл конфигурации не найден: {configPath}");
                 throw new FileNotFoundException("Конфигурация квестов не найдена", configPath);
             }
 
@@ -94,10 +90,15 @@ namespace QuestFilterMod.RandomQuests
 
                 if (!candidates.Any())
                 {
-                    _logger.Error("[RandomQuestGenerator] ❌ Нет доступных типов квестов для генерации.");
+                    if (Plugin._config.Debug)
+                        _logger.Error("[QuestFilterMod][Random] ❌ Нет доступных типов квестов для генерации.");
                     return null;
                 }
-
+                var locations = _databaseService.GetLocations()?.GetDictionary();
+                if (locations != null && !LocationHelper.IdToPascalName.Any())
+                {
+                    LocationHelper.Initialize(locations);
+                }
 
                 // 🔁 Перемешиваем случайно — чтобы не всегда сначала exploration
                 candidates = candidates.OrderBy(_ => _random.Next()).ToList();
@@ -108,18 +109,21 @@ namespace QuestFilterMod.RandomQuests
                     var quest = generator();
                     if (quest != null)
                     {
-                        _logger.Info($"[GenerateSingleQuest] ✅ Успешно сгенерирован квест: {type}");
+                        if (Plugin._config.Debug)
+                            _logger.Info($"[QuestFilterMod][Random] ✅ Успешно сгенерирован квест: {type}");
                         return quest;
                     }
                 }
 
                 // ❌ Ни один генератор не смог создать квест
-                //_logger.Warning("[GenerateSingleQuest] Все возможные комбинации уже использованы или недоступны.");
+                if (Plugin._config.Debug)
+                    _logger.Warning("[QuestFilterMod][Random] Все возможные комбинации уже использованы или недоступны.");
                 return null;
             }
             catch (Exception e)
             {
-                _logger.Error($"[RandomQuestGenerator] Ошибка при генерации квеста: {e.Message}\n{e.StackTrace}");
+                if (Plugin._config.Debug)
+                    _logger.Error($"[QuestFilterMod][Random] Ошибка при генерации квеста: {e.Message}\n{e.StackTrace}");
                 return null;
             }
         }
@@ -181,14 +185,16 @@ namespace QuestFilterMod.RandomQuests
             // Валидация
             if (string.IsNullOrEmpty(quest.Location))
             {
-                _logger.Error($"[Base] ❌ Квест {quest.Id} не имеет Location");
+                if (Plugin._config.Debug)
+                    _logger.Error($"[QuestFilterMod][Random] ❌ Квест {quest.Id} не имеет Location");
                 return null;
             }
 
 
             AddRewards(quest);
             CreateAndRegisterQuest(quest);
-            _logger.Info($"[Base] ✅ Квест '{quest.Id}' ({type}) создан");
+            if (Plugin._config.Debug)
+                _logger.Info($"[QuestFilterMod][Random] ✅ Квест '{quest.Id}' ({type}) создан");
             //_logger.Info(JsonSerializer.Serialize(quest, new JsonSerializerOptions { WriteIndented = true }));
             return quest;
         }
@@ -200,181 +206,209 @@ namespace QuestFilterMod.RandomQuests
             AddRandomItemRewards(quest);
             AddTraderStandingReward(quest);
         }
-
-        private void AddExitCondition(Quest q, Func<MongoId> id, string[] statuses, int seconds)
+        private Dictionary<string, object> CreateLocationCondition(Func<MongoId> idFactory, string locationPascalName)
         {
-            var exitStatus = new QuestCondition
+            return new Dictionary<string, object>
             {
-                Id = id(),
-                ConditionType = "ExitStatus",
-                DynamicLocale = false,
-                ExtensionData = { ["status"] = statuses }
+                ["id"] = idFactory().ToString(),
+                ["conditionType"] = "Location",
+                ["target"] = new[] { locationPascalName }
             };
-
-            var counter = new QuestCondition
-            {
-                Id = id(),
-                ConditionType = "CounterCreator",
-                Value = 1,
-                CompleteInSeconds = seconds,
-                Type = "Completion",
-                DynamicLocale = false,
-                ExtensionData = { ["counter"] = new { id = id(), conditions = new object[] { exitStatus }, dynamicLocale = false } }
-            };
-
-            q.Conditions ??= new QuestConditionTypes();
-            q.Conditions.AvailableForFinish ??= new List<QuestCondition>();
-            q.Conditions.AvailableForFinish.Add(counter);
         }
+        private Dictionary<string, object> CreateKillCondition(Func<MongoId> idFactory, string killTarget, int value = 0)
+        {
+            return new Dictionary<string, object>
+            {
+                ["id"] = idFactory().ToString(),
+                ["conditionType"] = "Kills",
+                ["value"] = value,
+                ["compareMethod"] = ">=",
+                ["target"] = killTarget
+            };
+        }
+        private QuestCondition CreateVisitPlaceCondition(Func<MongoId> idFactory, string target)
+        {
+            return new QuestCondition
+            {
+                Id = idFactory(),
+                ConditionType = "VisitPlace",
+                Value = 1,
+                DynamicLocale = false,
+                ExtensionData = new Dictionary<string, object?>
+                {
+                    ["target"] = target
+                }
+            };
+        }
+        private Dictionary<string, object> CreateExitStatusCondition(Func<MongoId> idFactory, string[] statuses)
+        {
+            return new Dictionary<string, object>
+            {
+                ["id"] = idFactory().ToString(),
+                ["conditionType"] = "ExitStatus",
+                ["dynamicLocale"] = false,
+                ["status"] = statuses
+            };
+        }
+        private QuestCondition CreateCounterCondition(
+            Func<MongoId> idFactory,
+            List<Dictionary<string, object>> innerConditions,
+            int requiredValue,
+            string counterType = "Elimination")
+        {
+            var counterId = idFactory();
+            var outerId = idFactory();
+
+            return new QuestCondition
+            {
+                Id = outerId,
+                ConditionType = "CounterCreator",
+                Type = counterType,
+                Value = requiredValue,
+                DynamicLocale = false,
+                ExtensionData = new Dictionary<string?, object?>
+                {
+                    ["counter"] = new Dictionary<string?, object?>
+                    {
+                        ["id"] = counterId.ToString(),
+                        ["conditions"] = innerConditions.ToArray()
+                    }
+                }
+            };
+        }
+
         //Квесты Exploration
         private Quest? GenerateExplorationQuest()
         {
-            var allowedLocations = _config.ExplorationQuest
-                .Where(x => _config.QuestGeneration.AllowedLocations.GetValueOrDefault(x.Key))
-                .ToList();
+            var allowed = LocationHelper.GetAllowedLocations(_config).ToList();
 
-            if (!allowedLocations.Any()) return null;
+            var allPoints = new List<(LocationConfig Config, string Target)>();
 
-            // Собираем ВСЕ возможные точки
-            var allPoints = new List<(LocationConfig Loc, string Target)>();
-            foreach (var kvp in allowedLocations)
-                foreach (var target in kvp.Value.Targets)
-                    allPoints.Add((kvp.Value, target));
+            
 
-            if (!allPoints.Any()) return null;
-
-            // Перемешиваем и пробуем по одной
-            var shuffled = allPoints.OrderBy(_ => _random.Next()).ToList();
-
-            foreach (var (loc, target) in shuffled)
+            foreach (var (pascalName, locationId) in allowed)
             {
-                var key = new QuestKey(loc.Id, target, "__EXPLORATION__", "Exploration");
-
-                // Только если ЕЩЁ не использовалась — пробуем
-                if (_tracker.TryUse(key))
+                if (_config.ExplorationQuest.TryGetValue(pascalName, out var config))
                 {
-                    return GenerateBaseQuest("Exploration", (q, id) =>
+                    foreach (var target in config.Targets)
                     {
-                        q.Location = loc.Id;
-                        q.Type = QuestTypeEnum.Discover;
-
-                        var visit = new QuestCondition
-                        {
-                            Id = id(),
-                            DynamicLocale = false,
-                            ConditionType = "VisitPlace",
-                            Value = 1,
-                            ExtensionData = { ["target"] = target }
-                        };
-
-                        q.Conditions ??= new QuestConditionTypes();
-                        q.Conditions.AvailableForFinish ??= new List<QuestCondition>();
-                        q.Conditions.AvailableForFinish.Add(visit);
-
-                        AddExitCondition(q, id, new[] { "Survived", "Runner", "Transit" }, 30);
-                    });
+                        allPoints.Add((config, target));
+                    }
                 }
             }
 
-            _logger.Debug("[GenerateExplorationQuest] Все точки уже использованы.");
+            if (!allPoints.Any()) return null;
+
+            foreach (var (loc, target) in allPoints.OrderBy(_ => _random.Next()))
+            {
+                var key = new QuestKey(loc.Id, target, "__EXPLORATION__", "Exploration");
+                if (!_tracker.TryUse(key)) continue;
+
+                return GenerateBaseQuest("Exploration", (q, id) =>
+                {
+                    q.Location = loc.Id;
+                    q.Type = QuestTypeEnum.Discover;
+
+                    if (!LocationHelper.TryGetPascalName(loc.Id, out var pascalName))
+                        return; // лог уже из LocationHelper не нужен
+
+                    q.Conditions ??= new QuestConditionTypes();
+                    q.Conditions.AvailableForFinish = new List<QuestCondition>
+            {
+                CreateVisitPlaceCondition(id, target)
+            };
+
+                    var locationCond = CreateLocationCondition(id, pascalName);
+                    var exitStatusCond = CreateExitStatusCondition(id, new[] { "Survived", "Runner", "Transit" });
+
+                    var exitCounter = CreateCounterCondition(
+                        id,
+                        new List<Dictionary<string, object>> { locationCond, exitStatusCond },
+                        1, "Completion"
+                    );
+
+                    exitCounter.CompleteInSeconds = 30;
+                    q.Conditions.AvailableForFinish.Add(exitCounter);
+                });
+            }
+
             return null;
         }
         //Квесты Delivery
         private Quest? GenerateDeliveryQuest()
         {
             var delivery = _config.DeliveryQuest;
-            if (!delivery.Enabled || !delivery.Locations.Any())
-            {
-                _logger.Info("[GenerateDeliveryQuest] ❌ Доставка отключена или нет данных.");
-                return null;
-            }
+            if (!delivery.Enabled || !delivery.Locations.Any()) return null;
 
-            var allowedLocations = delivery.Locations
-                .Where(x => _config.QuestGeneration.AllowedLocations.GetValueOrDefault(x.Key))
-                .ToList();
+            var allowed = LocationHelper.GetAllowedLocations(_config).ToList();
 
-            if (!allowedLocations.Any())
-            {
-                _logger.Warning("[GenerateDeliveryQuest] ❌ Нет разрешённых локаций.");
-                return null;
-            }
+            var allPoints = new List<(LocationConfig Config, string Target)>();
 
-            // Собираем все точки (локация + зона)
-            var allPoints = new List<(LocationConfig Loc, string Target)>();
-            foreach (var locEntry in allowedLocations)
+            foreach (var (pascalName, locationId) in allowed)
             {
-                foreach (var target in locEntry.Value.Targets.Where(t => !string.IsNullOrEmpty(t)))
+                if (delivery.Locations.TryGetValue(pascalName, out var config))
                 {
-                    allPoints.Add((locEntry.Value, target));
+                    foreach (var target in config.Targets.Where(t => !string.IsNullOrEmpty(t)))
+                    {
+                        allPoints.Add((config, target));
+                    }
                 }
             }
 
-            if (!allPoints.Any())
-            {
-                _logger.Warning("[GenerateDeliveryQuest] ❌ Нет ни одной валидной комбинации.");
-                return null;
-            }
+            if (!allPoints.Any()) return null;
 
-            // Перемешиваем
-            var shuffled = allPoints.OrderBy(_ => _random.Next()).ToList();
-
-            // Пробуем каждую точку
-            foreach (var (loc, targetPoint) in shuffled)
+            foreach (var (loc, targetPoint) in allPoints.OrderBy(_ => _random.Next()))
             {
                 var itemTpl = GetRandomSpecialItem();
                 if (itemTpl == null) continue;
 
-                var questKey = new QuestKey(loc.Id, targetPoint, itemTpl.ToString(), "Delivery");
-                if (!_tracker.TryUse(questKey)) continue;
+                var key = new QuestKey(loc.Id, targetPoint, itemTpl.ToString(), "Delivery");
+                if (!_tracker.TryUse(key)) continue;
 
-                return GenerateBaseQuest("Delivery", (q, idFactory) =>
+                return GenerateBaseQuest("Delivery", (q, id) =>
                 {
                     q.Location = loc.Id;
                     q.Type = QuestTypeEnum.PickUp;
 
-                    var itemId = idFactory(); // уникальный ID в инвентаре
-
+                    var itemId = id();
                     GetOrCreateRewardList(q, "Started").Add(new Reward
                     {
-                        Id = idFactory(),
+                        Id = id(),
                         Type = RewardType.Item,
-                        Target = itemId, // ✅ ID предмета
+                        Target = itemId,
                         Value = 1,
-                        FindInRaid = false, // ✅ Не FiR
+                        FindInRaid = false,
                         Items = new List<Item>
-                        {
-                            new Item
-                            {
-                                Id = itemId,
-                                Template = itemTpl.Value,
-                                Upd = new Upd { StackObjectsCount = 1 }
-                            }
-                        }
+                {
+                    new Item
+                    {
+                        Id = itemId,
+                        Template = itemTpl.Value,
+                        Upd = new Upd { StackObjectsCount = 1 }
+                    }
+                }
                     });
 
-                    // Условие: положить в зону
-                    var plantCond = new QuestCondition
+                    q.Conditions.AvailableForFinish = new List<QuestCondition>
+            {
+                new QuestCondition
+                {
+                    Id = id(),
+                    ConditionType = "LeaveItemAtLocation",
+                    Value = 1,
+                    ZoneId = targetPoint,
+                    DynamicLocale = false,
+                    ExtensionData = new Dictionary<string?, object?>
                     {
-                        Id = idFactory(),
-                        ConditionType = "LeaveItemAtLocation",
-                        Value = 1,
-                        DynamicLocale = false,
-                        ZoneId = targetPoint,
-                        ExtensionData = new Dictionary<string?, object?>
-                        {
-                            ["target"] = new[] { itemTpl.ToString() },
-                            ["zoneId"] = targetPoint,
-                            ["plantTime"] = delivery.PlantTime
-                        }
-                    };
-
-                    q.Conditions.AvailableForFinish = new() { plantCond };
-                    AddExitCondition(q, idFactory, new[] { "Survived", "Transit" }, delivery.PlantTime);
-
+                        ["target"] = new[] { itemTpl.ToString() },
+                        ["zoneId"] = targetPoint,
+                        ["plantTime"] = delivery.PlantTime
+                    }
+                }
+            };
                 });
-
             }
-            _logger.Debug("[GenerateDeliveryQuest] Все возможные комбинации уже использованы.");
+
             return null;
         }
         //Квесты на Убийства
@@ -383,149 +417,37 @@ namespace QuestFilterMod.RandomQuests
             var cfg = _config.KillQuest;
             if (!cfg.Enabled) return null;
 
-            var locs = _databaseService.GetLocations()?.GetDictionary();
-            if (locs == null || !locs.Any())
+            var allowed = LocationHelper.GetAllowedLocations(_config).ToList();
+
+            if (!allowed.Any()) return null;
+
+            foreach (var (pascalName, locationId) in allowed.OrderBy(_ => _random.Next()))
             {
-                _logger.Warning("[GenerateKillQuest] Список локаций пуст или не загружен");
-                return null;
-            }
+                var key = new QuestKey(locationId, "KILL", "", "Kill");
+                if (!_tracker.TryUse(key)) continue;
 
-            _logger.Info($"Всего локаций в базе: {locs.Count}");
-            _logger.Info("=== Генерация Kill-квеста: сопоставление через LocationMapper ===");
-
-            var allowed = new List<KeyValuePair<string, SPTarkov.Server.Core.Models.Eft.Common.Location>>();
-
-            foreach (var kvp in locs)
-            {
-                string pascalName = kvp.Key;
-                string snakeName = NormalizeLocationName(pascalName);
-
-                _logger.Info($"Обработка локации: {pascalName} → нормализовано: {snakeName}");
-
-                // Проверяем, есть ли такая локация в маппере
-                if (!LocationMapper.NameToId.ContainsKey(snakeName))
+                return GenerateBaseQuest("Kill", (q, id) =>
                 {
-                    _logger.Info($"❌ Локация '{pascalName}' не найдена в LocationMapper");
-                    continue;
-                }
-
-                // Проверяем, разрешена ли она в конфиге (по snake_name)
-                if (_config.QuestGeneration.AllowedLocations.GetValueOrDefault(snakeName, false))
-                {
-                    allowed.Add(kvp);
-                    _logger.Info($"✅ Локация '{pascalName}' ({snakeName}) разрешена для квестов");
-                }
-                else
-                {
-                    _logger.Info($"⚠️  Локация '{pascalName}' ({snakeName}) не разрешена в AllowedLocations");
-                }
-            }
-
-            _logger.Info($"Разрешённых локаций после фильтрации: {allowed.Count}");
-
-            if (!allowed.Any())
-            {
-                _logger.Warning("Нет подходящих локаций. Проверь AllowedLocations — должны быть в формате 'woods', 'interchange' и т.д.");
-                return null;
-            }
-
-            // Перемешиваем
-            allowed = allowed.OrderBy(_ => _random.Next()).ToList();
-
-            foreach (var kvp in allowed)
-            {
-                string pascalName = kvp.Key;
-                string snakeName = NormalizeLocationName(pascalName);
-
-                // Получаем настоящий ID (GUID) из маппера
-                if (!LocationMapper.NameToId.TryGetValue(snakeName, out string realLocationId))
-                {
-                    _logger.Warning($"[GenerateKillQuest] Не удалось получить ID для локации '{snakeName}'");
-                    continue;
-                }
-
-                var key = new QuestKey(realLocationId, "KILL", "", "Kill");
-                if (!_tracker.TryUse(key))
-                {
-                    _logger.Info($"Ключ квеста уже использован или заблокирован: {realLocationId}");
-                    continue;
-                }
-
-                _logger.Info($"✅ Сгенерирован квест убийства для локации: {pascalName} (ID: {realLocationId})");
-
-                return GenerateBaseQuest("Kill", (q, idFactory) =>
-                {
-                    q.Location = realLocationId; // ✅ Настоящий ID
+                    q.Location = locationId;
                     q.Type = QuestTypeEnum.Elimination;
 
-                    var killId = idFactory();
-                    var locId = idFactory();
-                    var counterId = idFactory();
-                    var outerId = idFactory();
+                    var killCond = CreateKillCondition(id, cfg.Target);
+                    var locCond = CreateLocationCondition(id, pascalName);
 
-                    var killCondition = new Dictionary<string, object>
-                    {
-                        ["id"] = killId.ToString(),
-                        ["conditionType"] = "Kills",
-                        ["value"] = 0,
-                        ["compareMethod"] = ">=",
-                        ["target"] = cfg.Target
-                    };
-
-                    var locationCondition = new Dictionary<string, object>
-                    {
-                        ["id"] = locId.ToString(),
-                        ["conditionType"] = "Location",
-                        ["target"] = new[] { pascalName }
-                    };
-
-                    var counter = new Dictionary<string, object>
-                    {
-                        ["id"] = counterId.ToString(),
-                        ["conditions"] = new object[] { killCondition, locationCondition }
-                    };
-
-                    var counterCond = new QuestCondition
-                    {
-                        Id = outerId,
-                        ConditionType = "CounterCreator",
-                        Type = "Elimination",
-                        Value = cfg.MinKills,
-                        DynamicLocale = false,
-                        ExtensionData = new() { ["counter"] = counter }
-                    };
+                    var counterCond = CreateCounterCondition(
+                        id,
+                        new List<Dictionary<string, object>> { killCond, locCond },
+                        _random.Next(cfg.MinKills, cfg.MaxKills + 1),
+                        "Elimination"
+                    );
 
                     q.Conditions.AvailableForFinish = new() { counterCond };
-                    //AddExitCondition(q, idFactory, new[] { "Survived", "Runner", "Transit" }, 30);
                 });
             }
 
             return null;
         }
-        private string NormalizeLocationName(string input)
-        {
-            if (string.IsNullOrEmpty(input)) return input;
-
-            var sb = new System.Text.StringBuilder();
-            for (int i = 0; i < input.Length; i++)
-            {
-                char c = input[i];
-                if (char.IsUpper(c) && i > 0 && !char.IsUpper(input[i - 1]))
-                {
-                    sb.Append('_');
-                }
-                else if (char.IsDigit(c) && i > 0 && !char.IsDigit(input[i - 1]) && !char.IsUpper(input[i - 1]))
-                {
-                    sb.Append('_');
-                }
-                sb.Append(char.ToLower(c));
-            }
-            return sb.ToString();
-        }
-        public void ResetTracker()
-        {
-            _tracker.Clear();
-        }
+       
         private List<Reward> GetOrCreateRewardList(Quest quest, string status)
         {
             if (quest.Rewards == null)
@@ -568,7 +490,8 @@ namespace QuestFilterMod.RandomQuests
 
             if (prices == null || !prices.Any() || !itemsPool.Any())
             {
-                _logger.Warning("[AddRandomItemRewards] ❌ Не удалось загрузить данные из базы.");
+                if (Plugin._config.Debug)
+                    _logger.Error("[QuestFilterMod][Random] ❌ Не удалось загрузить данные из базы.");
                 return;
             }
 
@@ -586,7 +509,8 @@ namespace QuestFilterMod.RandomQuests
 
             if (!weightedParents.Any())
             {
-                _logger.Warning("[AddRandomItemRewards] ❌ Нет активных родителей с весом > 0.");
+                if (Plugin._config.Debug)
+                    _logger.Error("[QuestFilterMod][Random] ❌ Нет активных родителей с весом > 0.");
                 return;
             }
 
@@ -617,13 +541,15 @@ namespace QuestFilterMod.RandomQuests
                 .Where(p => validItemsByParent.ContainsKey(p.Id) && validItemsByParent[p.Id].Any())
                 .ToList();
 
-            if (!nonEmptyParents.Any())
+            /*if (!nonEmptyParents.Any())
             {
-                _logger.Warning("[AddRandomItemRewards] ❌ Нет подходящих предметов по цене и категориям.");
+                if (Plugin._config.Debug)
+                    _logger.Error("[QuestFilterMod][Random] ❌ Нет подходящих предметов по цене и категориям.");
                 return;
-            }
+            }*/
 
-            _logger.Info($"[AddRandomItemRewards] Найдено {nonEmptyParents.Count} категорий с подходящими предметами.");
+            /*if (Plugin._config.Debug)
+                _logger.Info($"[QuestFilterMod][Random] Найдено {nonEmptyParents.Count} категорий с подходящими предметами.");*/
 
             // Сколько наград выдать
             int count = _random.Next(_config.RewardItems.Count.Min, _config.RewardItems.Count.Max + 1);
@@ -715,7 +641,8 @@ namespace QuestFilterMod.RandomQuests
             }
             else
             {
-                _logger.Error("[RandomQuestGenerator] ❌ Не удалось установить 'Template' у Item.");
+                if (Plugin._config.Debug)
+                    _logger.Error("[QuestFilterMod][Random] ❌ Не удалось установить 'Template' у Item.");
                 return;
             }
 
@@ -778,96 +705,24 @@ namespace QuestFilterMod.RandomQuests
 
                 if (result.Success)
                 {
-                    _logger.Info($"[RandomQuestGenerator] ✅ Квест '{quest.Id}' успешно создан и локализован.");
+                    /*if (Plugin._config.Debug)
+                        _logger.Info($"[QuestFilterMod][Random] ✅ Квест '{quest.Id}' успешно создан и локализован.");*/
                 }
                 else
                 {
                     foreach (string error in result.Errors)
                     {
-                        _logger.Error($"[RandomQuestGenerator] ❌ Ошибка создания квеста: {error}");
+                        if (Plugin._config.Debug)
+                            _logger.Error($"[QuestFilterMod][Random] ❌ Ошибка создания квеста: {error}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.Error($"[RandomQuestGenerator] 🔥 Исключение при регистрации квеста: {ex}");
+                if (Plugin._config.Debug)
+                    _logger.Error($"[QuestFilterMod][Random] 🔥 Исключение при регистрации квеста: {ex}");
             }
         }
-
-        private string GetTargetPoint(Quest quest)
-        {
-            var cond = quest.Conditions?.AvailableForFinish
-                .FirstOrDefault(c => c.ConditionType == "VisitPlace" || c.ConditionType == "LeaveItemAtLocation");
-
-            if (cond?.ExtensionData == null)
-                return "unknown location";
-
-            // Сначала пробуем zoneId — это обычно строка
-            if (cond.ExtensionData.TryGetValue("zoneId", out var zoneObj))
-                return zoneObj?.ToString() ?? "unknown zone";
-
-            // Если нет zoneId — пробуем target
-            if (cond.ExtensionData.TryGetValue("target", out var targetObj))
-            {
-                // Обрабатываем случай string[] или string
-                return targetObj switch
-                {
-                    string[] arr when arr.Length > 0 => arr[0],  // Берём первый элемент
-                    string str => str,
-                    null => "unknown target",
-                    _ => targetObj.ToString() // fallback
-                };
-            }
-
-            return "unknown location";
-        }
-
-        private string GetItemName(Quest quest)
-        {
-            // 1. Находим условие "заложить предмет"
-            var plantCond = quest.Conditions?.AvailableForFinish
-                .FirstOrDefault(c => c.ConditionType == "LeaveItemAtLocation");
-
-            if (plantCond?.ExtensionData == null)
-                return "Unknown Item";
-
-            // 2. Получаем target (может быть строка или массив строк)
-            object? targetObj = plantCond.ExtensionData.GetValueOrDefault("target");
-            string? tpl = null;
-
-            if (targetObj is string[] arr && arr.Length > 0)
-            {
-                tpl = arr[0];
-            }
-            else if (targetObj is string str)
-            {
-                tpl = str;
-            }
-
-            if (string.IsNullOrEmpty(tpl))
-            {
-                _logger.Warning("[GetItemName] Не удалось извлечь TPL из условия LeaveItemAtLocation");
-                return "Unknown Item";
-            }
-
-            // ✅ Теперь создаём templateId
-            var templateId = new MongoId(tpl);
-
-            // 3. Получаем шаблон предмета
-            var templates = _databaseService.GetTemplates();
-
-            if (templates.Items.TryGetValue(templateId, out var templateItem))
-            {
-                return !string.IsNullOrEmpty(templateItem.Name)
-                    ? templateItem.Name
-                    : "Item";
-            }
-
-            _logger.Warning($"[GetItemName] Предмет с TPL {tpl} не найден в базе данных");
-            return "Item";
-        }
-
-
         private void FillQuestLocales(Quest quest, Dictionary<string, string> enDict, Dictionary<string, string> ruDict)
         {
             if (quest == null) return;
@@ -964,7 +819,6 @@ namespace QuestFilterMod.RandomQuests
                 quest.Conditions.Fail = new List<QuestCondition>();
         }
 
-
         // Вспомогательная функция для получения ExtensionData
         private static string GetExtValue(QuestCondition cond, string key)
         {
@@ -980,8 +834,11 @@ namespace QuestFilterMod.RandomQuests
             if (quest.Conditions?.Fail != null) list.AddRange(quest.Conditions.Fail);
             return list;
         }
+        public void ResetTracker()
+        {
+            _tracker.Clear();
+        }
 
-      
     }
 
     public static class ListExtensions

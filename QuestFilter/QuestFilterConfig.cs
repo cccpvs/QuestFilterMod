@@ -41,33 +41,25 @@ public class GenerateRandomQuestsConfig
 
 public class QuestFilterConfig
 {
-    [JsonPropertyName("enabled")]
     public bool Enabled { get; set; } = true;
 
-    [JsonPropertyName("targetTraderId")]
     public string TargetTraderId { get; set; } = "";
 
-    [JsonPropertyName("debug")]
     public bool Debug { get; set; } = true;
 
-    [JsonPropertyName("questTypes")]
     public List<string> QuestTypes { get; set; } = new() { "PickUp" };
 
-    [JsonPropertyName("removeOtherQuests")]
-    public bool RemoveOtherQuests { get; set; } = false;
+    public bool RemoveQuests { get; set; } = false;
 
-    [JsonPropertyName("removeStartConditions")]
-    public bool RemoveStartConditions { get; set; } = false;
+    public bool RemoveRepeatableQuests { get; set; } = false;
 
-    [JsonPropertyName("excludeArenaQuests")]
+    public bool RemoveStartConditionsQuest { get; set; } = false;
+
     public bool ExcludeArenaQuests { get; set; } = true;
 
-    [JsonPropertyName("removeFinishConditionTypes")]
     public List<string> RemoveFinishConditionTypes { get; set; } = new();
 
-    [JsonPropertyName("randomQuests")]
     public RandomQuestsConfig RandomQuests { get; set; } = new();
 
-    [JsonPropertyName("generateRandomQuests")]
     public GenerateRandomQuestsConfig GenerateRandomQuests { get; set; } = new();
 }

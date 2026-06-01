@@ -6,22 +6,22 @@
       "Kills": true
     },
     "AllowedLocations": {
-      "customs": true,
-      "woods": true,
-      "factory": true,
-      "shoreline": true,
-      "reserve": true,
-      "lighthouse": true,
-      "interchange": true,
-      "tarkovstreets": true,
-      "sandbox": true,
-      "laboratory": true,
-      "factory4_night": true,
-      "labyrinth": true
+      "Bigmap": true,
+      "Woods": true,
+      "Factory4Day": true,
+      "Shoreline": true,
+      "RezervBase": true,
+      "Lighthouse": true,
+      "Interchange": true,
+      "TarkovStreets": true,
+      "Sandbox": true,
+      "Laboratory": true,
+      "Factory4Night": true,
+      "Labyrinth": true
     }
   },
   "ExplorationQuest": {
-    "customs": {
+    "Bigmap": {
       "Id": "56f40101d2720b2a4d8b45d6",
       "Targets": [
         "room214",
@@ -38,7 +38,7 @@
         "arena_champ_corpse"
       ]
     },
-    "woods": {
+    "Woods": {
       "Id": "5704e3c2d2720bac5b8b4567",
       "Targets": [
         "bunker2",
@@ -54,7 +54,7 @@
         "quest_ak-50_03_skier_place_01"
       ]
     },
-    "factory": {
+    "Factory4Day": {
       "Id": "55f2d3fd4bdc2d5f408b4567",
       "Targets": [
         "place_pacemaker_SCOUT_01",
@@ -75,7 +75,7 @@
         "nf2024_2_12"
       ]
     },
-    "shoreline": {
+    "Shoreline": {
       "Id": "5704e554d2720bac5b8b456e",
       "Targets": [
         "place_peacemaker_008_4_N1",
@@ -105,7 +105,7 @@
         "2A2_unlock_4_discover"
       ]
     },
-    "reserve": {
+    "RezervBase": {
       "Id": "5704e5fad2720bc05b8b4567",
       "Targets": [
         "huntsman_029",
@@ -134,7 +134,7 @@
         "tar_event_1_1_exp4"
       ]
     },
-    "lighthouse": {
+    "Lighthouse": {
       "Id": "5704e4dad2720bb55b8b4567",
       "Targets": [
         "qlight_pr1_heli1_find",
@@ -151,13 +151,13 @@
         "qlight_extension_mechanik1_exploration1"
       ]
     },
-    "factory4_night": {
+    "Factory4Night": {
       "Id": "59fc81d786f774390775787e",
       "Targets": [
         "ter_017_area_1"
       ]
     },
-    "interchange": {
+    "Interchange": {
       "Id": "5714dbc024597771384a510d",
       "Targets": [
         "place_SALE_03_AVOKADO",
@@ -167,7 +167,7 @@
         "place_SALE_03_TOPBRAND"
       ]
     },
-    "laboratory": {
+    "Laboratory": {
       "Id": "5b0fc42d86f7744a585f9105",
       "Targets": [
         "peace_027_area",
@@ -176,7 +176,7 @@
         "Halloween_closed_places"
       ]
     },
-    "tarkovstreets": {
+    "TarkovStreets": {
       "Id": "5714dc692459777137212e12",
       "Targets": [
         "quest_zone_c5_mar",
@@ -227,7 +227,7 @@
         "halloween_unlock_pc"
       ]
     },
-    "sandbox": {
+    "Sandbox": {
       "Id": "653e6760052c01c1c805532f",
       "Targets": [
         "Sandbox_1_MedicalArea_exploration",
@@ -239,7 +239,7 @@
         "Sandbox_5_Office_exploration"
       ]
     },
-    "labyrinth": {
+    "Labyrinth": {
       "Id": "6733700029c367a3d40b02af",
       "Targets": [
         "event_labyrinth_06_mech_place_01",
@@ -251,7 +251,7 @@
     "Enabled": true,
     "PlantTime": 30,
     "Locations": {
-      "customs": {
+      "Bigmap": {
         "Id": "56f40101d2720b2a4d8b45d6",
         "Targets": [
           "extraction_zone_zibbo",
@@ -269,7 +269,7 @@
           "place_flyers1"
         ]
       },
-      "woods": {
+      "Woods": {
         "Id": "5704e3c2d2720bac5b8b4567",
         "Targets": [
           "place_THX_15",
@@ -283,7 +283,7 @@
           "Pack_of_cartridges_3"
         ]
       },
-      "factory": {
+      "Factory4Day": {
         "Id": "55f2d3fd4bdc2d5f408b4567",
         "Targets": [
           "place_SADOVOD_01_1",
@@ -296,7 +296,7 @@
           "nf2024_10_3"
         ]
       },
-      "shoreline": {
+      "Shoreline": {
         "Id": "5704e554d2720bac5b8b456e",
         "Targets": [
           "place_peacemaker_001",
@@ -307,13 +307,13 @@
           "BTR_FUEL_2"
         ]
       },
-      "reserve": {
+      "RezervBase": {
         "Id": "5704e5fad2720bc05b8b4567",
         "Targets": [
           "Btr_wheels"
         ]
       },
-      "lighthouse": {
+      "Lighthouse": {
         "Id": "5704e4dad2720bb55b8b4567",
         "Targets": [
           "qlight_extension_medic1_hide1",
@@ -323,13 +323,13 @@
           "w_race_cam3"
         ]
       },
-      "factory4_night": {
+      "Factory4Night": {
         "Id": "59fc81d786f774390775787e",
         "Targets": [
           "ter_017_area_1"
         ]
       },
-      "interchange": {
+      "Interchange": {
         "Id": "5714dbc024597771384a510d",
         "Targets": [
           "place_merch_020_1",
@@ -339,7 +339,7 @@
           "quest_zone_keeper6_cont_hide"
         ]
       },
-      "tarkovstreets": {
+      "TarkovStreets": {
         "Id": "5714dc692459777137212e12",
         "Targets": [
           "quest_zone_hide_sillent",
@@ -349,13 +349,13 @@
           "halloween_unlock_pc"
         ]
       },
-      "sandbox": {
+      "Sandbox": {
         "Id": "653e6760052c01c1c805532f",
         "Targets": [
           "nt2024_5_throtil_epicentr"
         ]
       },
-      "labyrinth": {
+      "Labyrinth": {
         "Id": "6733700029c367a3d40b02af",
         "Targets": [
           "event_labyrinth_07_peacekeep_place_01",

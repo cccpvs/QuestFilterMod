@@ -1,5 +1,6 @@
 ﻿using QuestFilterMod.QuestFilter;
 using QuestFilterMod.RandomQuests;
+using QuestFilterMod.RepeatableQuest;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.Models.Utils;
@@ -10,6 +11,20 @@ using System.Text.Json;
 
 namespace QuestFilterMod;
 
+
+
+/*
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+
 [Injectable(TypePriority = OnLoadOrder.PreSptModLoader + 1)]
 public class Plugin : IOnUpdate
 {
@@ -17,13 +32,13 @@ public class Plugin : IOnUpdate
     private readonly DatabaseService _databaseService;
     private readonly ServerLocalisationService _localisationService;
     private readonly string _configPath;
-    private QuestFilterConfig _config = null!;
+    public static QuestFilterConfig _config { get; private set; } = null!;
     private RandomQuestGenerator _randomQuestGenerator = null!;  
     private QuestFilterService _questFilterService = null!;   
     private bool _applied = false;
     private bool _localeEndpointRegistered = false;
     private readonly CustomQuestService _customQuestService;
-
+    private ClearRepetableQuest _temporaryQuestCleaner = null!;
 
     public Plugin(
     ISptLogger<Plugin> logger,
@@ -36,8 +51,9 @@ public class Plugin : IOnUpdate
         _customQuestService = customQuestService;
         _localisationService = localisationService;
 
-        _configPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Config.json");
 
+
+        _configPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Config.json");
         _logger.Info("[QuestFilterMod] Plugin инициализирован.");
     }
 
@@ -51,12 +67,15 @@ public class Plugin : IOnUpdate
         {
             if (_applied) return true;
 
+            LoadConfig();
+
             var tables = _databaseService.GetTables();
             if (tables == null)
             {
                 if (!_loggedWaitingTables)
                 {
-                    _logger.Info("[QuestFilterMod] Ожидаю загрузки Tables...");
+                    if (_config.Debug)
+                        _logger.Info("[QuestFilterMod] Ожидаю загрузки Tables...");
                     _loggedWaitingTables = true;
                 }
                 return true;
@@ -67,7 +86,8 @@ public class Plugin : IOnUpdate
             {
                 if (!_loggedWaitingQuests)
                 {
-                    _logger.Info("[QuestFilterMod] Ожидаю загрузки квестов...");
+                    if (_config.Debug)
+                        _logger.Info("[QuestFilterMod] Ожидаю загрузки квестов...");
                     _loggedWaitingQuests = true;
                 }
                 return true;
@@ -78,11 +98,29 @@ public class Plugin : IOnUpdate
             {
                 if (!_loggedWaitingLocations)
                 {
-                    _logger.Info("[QuestFilterMod] Ожидаю загрузки локаций...");
+                    if (_config.Debug)
+                        _logger.Info("[QuestFilterMod] Ожидаю загрузки локаций...");
                     _loggedWaitingLocations = true;
                 }
                 return true;
             }
+
+            
+            //Локации для обзора
+            if (_config.Debug)
+            {
+                var locationDict = locations.GetDictionary(); // Получаем словарь: PascalName → Location
+                _logger.Info("[QuestFilterMod][DEBUG] 📋 Доступные локации (PascalName → ID):");
+                foreach (var kvp in locationDict)
+                {
+                    var pascalName = kvp.Key;
+                    var locationId = kvp.Value.Base.IdField;
+                    var locationName = kvp.Value.Base.Name;
+
+                    _logger.Info($"  [LOC] {pascalName} → {locationId}");
+                }
+            }
+
 
             // ✅ Создаём сервисы
             if (_randomQuestGenerator == null && _questFilterService == null)
@@ -93,10 +131,34 @@ public class Plugin : IOnUpdate
                     _databaseService,
                     _randomQuestGenerator,
                     _customQuestService);
+                _temporaryQuestCleaner = new ClearRepetableQuest(_logger, _databaseService);
+            }
+
+
+
+            // 🔧 Удаление временных квестов (включается через Config.json)
+            if (_config.RemoveRepeatableQuests)
+            {
+                var repeatableDb = tables?.Templates?.RepeatableQuests;
+                if (repeatableDb == null)
+                {
+                    if (_config.Debug)
+                        _logger.Info("[QuestFilterMod] ❌ Не удалось получить RepeatableQuests для очистки — пропускаем.");
+                    return true;
                 }
 
-            LoadConfig();
+                // Устанавливаем базу и чистим
+                _temporaryQuestCleaner.SetQuestDatabase(repeatableDb);
+                _temporaryQuestCleaner.ClearAllTemplates();
 
+                if (_config.Debug)
+                    _logger.Info("[QuestFilterMod] ✅ Временные квесты успешно очищены.");
+            }
+            else
+            {
+                if (_config.Debug)
+                    _logger.Info("[QuestFilterMod] ⚙️ Удаление временных квестов отключено (RemoveRepeatableQuests = false)");
+            }
 
             // 🔥 Сохраняем снимок ДО применения фильтров (если нужен для бэкапа или сравнения)
             var allQuestsSnapshot = quests.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
@@ -109,11 +171,13 @@ public class Plugin : IOnUpdate
             
             _logger.Info("[QuestFilterMod] ✅ Фильтрация квестов успешно применена.");
             _logger.Info("[QuestFilterMod] 🚀 Мод полностью инициализирован.");
+
             
         }
         catch (Exception ex)
         {
-            _logger.Error($"[QuestFilterMod] Ошибка в OnUpdate: {ex.Message}\n{ex.StackTrace}");
+            if (_config.Debug)
+                _logger.Info($"[QuestFilterMod] Ошибка в OnUpdate: {ex.Message}\n{ex.StackTrace}");
         }
 
 
@@ -125,33 +189,8 @@ public class Plugin : IOnUpdate
     {
         if (!File.Exists(_configPath))
         {
-            _logger.Error("[QuestFilterMod] ❌ Конфиг не найден! Создаю стандартный.");
-
-            _config = new QuestFilterConfig();
-
-            var exampleConfig = new QuestFilterConfig
-            {
-                Enabled = true,
-                Debug = true,
-                TargetTraderId = "",
-                QuestTypes = new() { "PickUp" },
-                RemoveOtherQuests = false,
-                RemoveStartConditions = false,
-                ExcludeArenaQuests = true,
-                RemoveFinishConditionTypes = new(),
-                GenerateRandomQuests = new()
-                {
-                    Enable = true,
-                    Count = 3
-                }
-            };
-
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            var json = JsonSerializer.Serialize(exampleConfig, options);
-            File.WriteAllText(_configPath, json);
-
-            _config = exampleConfig;
-            _logger.Info("[QuestFilterMod] Пример Config.json создан.");
+            _logger.Info("[QuestFilterMod] ❌ Конфиг не найден: " + _configPath);
+            _config = new QuestFilterConfig(); // минимальный конфиг по умолчанию
             return;
         }
 
@@ -163,13 +202,16 @@ public class Plugin : IOnUpdate
 
             if (_config.Debug)
             {
-                _logger.Info("[QuestFilterMod] ✅ Конфиг загружен.");
-                _logger.Info($"[QuestFilterMod][CONFIG] Enabled={_config.Enabled}, GenerateRandom={_config.GenerateRandomQuests.Enable}");
+                if (_config.Debug)
+                    _logger.Info("[QuestFilterMod] ✅ Конфиг загружен.");
+                    _logger.Info($"[QuestFilterMod][CONFIG] Enabled={_config.Enabled}, GenerateRandom={_config.GenerateRandomQuests?.Enable}");
             }
         }
         catch (Exception ex)
         {
-            _logger.Error($"[QuestFilterMod] Ошибка загрузки конфига: {ex.Message}");
+            if (_config.Debug)
+                _logger.Info($"[QuestFilterMod] Ошибка загрузки конфига: {ex.Message}");
+
             _config = new QuestFilterConfig();
         }
     }
