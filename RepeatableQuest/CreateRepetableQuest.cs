@@ -2,8 +2,11 @@
 
 namespace QuestFilterMod.RepeatableQuest
 {
+
+#if DEBUG
     public class SimpleRepeatableQuestGenerator
     {
+
         private readonly Random _random = new Random();
         private readonly Dictionary<string, SampleQuests> _templateMap;
 
@@ -38,24 +41,16 @@ namespace QuestFilterMod.RepeatableQuest
                 InstantComplete = false,
                 SecretQuest = template.SecretQuest ?? false,
                 CanShowNotificationsInGame = template.CanShowNotificationsInGame ?? true,
-
-                // Условия — копируем как есть
                 Conditions = DeepCopyConditions(template.Conditions),
-
-                // Награды: можно оставить пустыми или подставить дефолтные
                 Rewards = GetDefaultRewards() ?? new Dictionary<string, List<Reward>>(),
-
-                // Локализация (можно заменить плейсхолдеры, если нужно)
                 Name = ReplacePlaceholders(template.Name, template.Id, template.TraderId),
                 Note = ReplacePlaceholders(template.Note, template.Id, template.TraderId),
                 Description = ReplacePlaceholders(template.Description, template.Id, template.TraderId),
                 SuccessMessageText = ReplacePlaceholders(template.SuccessMessageText, template.Id, template.TraderId),
                 FailMessageText = ReplacePlaceholders(template.FailMessageText, template.Id, template.TraderId),
                 StartedMessageText = ReplacePlaceholders(template.StartedMessageText, template.Id, template.TraderId),
-                
 
-                // Технические поля
-                TemplateId = template.Id, // оригинал
+                TemplateId = template.Id,
                 
 
             };
@@ -94,8 +89,6 @@ namespace QuestFilterMod.RepeatableQuest
 
         private Dictionary<string, List<Reward>> GetDefaultRewards()
         {
-            // Здесь можно добавить логику подстановки наград
-            // Пока просто заглушка
             return new Dictionary<string, List<Reward>>
             {
                 ["Success"] = new List<Reward>
@@ -111,4 +104,5 @@ namespace QuestFilterMod.RepeatableQuest
             };
         }
     }
+#endif
 }

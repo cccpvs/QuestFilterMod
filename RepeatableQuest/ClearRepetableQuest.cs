@@ -1,13 +1,12 @@
 ﻿using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Services;
-using System.Text.Json;
 
 namespace QuestFilterMod.RepeatableQuest
 {
     public class ClearRepetableQuest
     {
-        private readonly ISptLogger<Plugin> _logger; // ← Изменили тип: теперь совпадает с Plugin
+        private readonly ISptLogger<Plugin> _logger; 
         private readonly DatabaseService _databaseService;
 
         private RepeatableQuestDatabase _questDatabase;
@@ -48,7 +47,7 @@ namespace QuestFilterMod.RepeatableQuest
 
             if (count > 0)
                 if (Plugin._config.Debug)
-                    _logger.Info($"[QuestFilterMod][TemporaryQuest] Удалено {count} временных квестов.");
+                    _logger.Info($"[QuestFilterMod][ClearRepetableQuest] Removed {count} temporary quests.");
         }
 
         /// <summary>
@@ -58,19 +57,19 @@ namespace QuestFilterMod.RepeatableQuest
         public void ClearAllTemplates()
         {
             if (Plugin._config.Debug)
-                _logger.Info("[QuestFilterMod][TemporaryQuest] ✅ Вход в ClearAllTemplates() — начало очистки.");
+                _logger.Info("[QuestFilterMod][ClearRepetableQuest] ✅ Enter ClearAllTemplates() -start clearing.");
 
             if (_questDatabase?.Templates == null)
             {
                 if (Plugin._config.Debug)
-                    _logger.Info("[QuestFilterMod][TemporaryQuest] ❌ Templates отсутствуют — пропускаем очистку.");
+                    _logger.Info("[QuestFilterMod][ClearRepetableQuest] ❌ Templates are missing -skip cleaning.");
                 return;
             }
 
             if (_questDatabase?.Templates == null)
             {
                 if (Plugin._config.Debug)
-                    _logger.Info("[QuestFilterMod][TemporaryQuest] Templates отсутствуют — пропускаем очистку.");
+                    _logger.Info("[QuestFilterMod][ClearRepetableQuest] Templates are missing -skip cleaning.");
                 return;
             }
 
@@ -85,7 +84,7 @@ namespace QuestFilterMod.RepeatableQuest
             if (templates.Pickup != null) initialCount++;
 
             if (Plugin._config.Debug)
-                _logger.Info($"[QuestFilterMod][TemporaryQuest] Найдено {initialCount} шаблонов квестов до очистки.");
+                _logger.Info($"[QuestFilterMod][ClearRepetableQuest] Found {initialCount} quest templates before clearing.");
 
             // Очищаем и считаем
             if (templates.Elimination != null) { templates.Elimination = null; clearedCount++; }
@@ -96,9 +95,9 @@ namespace QuestFilterMod.RepeatableQuest
             if (Plugin._config.Debug)
             {
                 if (clearedCount > 0)
-                    _logger.Info($"[QuestFilterMod][TemporaryQuest] Успешно очищено {clearedCount} шаблонов квестов.");
+                    _logger.Info($"[QuestFilterMod][ClearRepetableQuest] Successfully cleared {clearedCount} quest templates.");
                 else
-                    _logger.Info("[QuestFilterMod][TemporaryQuest] Нечего очищать — все шаблоны уже пусты.");
+                    _logger.Info("[QuestFilterMod][ClearRepetableQuest] No need to clean up -all templates are already empty.");
             }
         }
 
@@ -112,7 +111,7 @@ namespace QuestFilterMod.RepeatableQuest
             _questDatabase.Samples.RemoveAll(q => q != null && predicate(q));
 
             if (count > 0)
-                _logger.Info($"[QuestFilterMod][TemporaryQuest] Удалено {count} квестов по условию.");
+                _logger.Info($"[QuestFilterMod][ClearRepetableQuest] Removed {count} conditional quests.");
         }
     }
 }

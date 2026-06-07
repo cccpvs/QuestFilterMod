@@ -1,7 +1,5 @@
 ﻿using QuestFilterMod.RandomQuests.Models;
 using SPTarkov.Server.Core.Models.Eft.Common;
-using SPTarkov.Server.Core.Models.Utils;
-using System.Collections.Generic;
 
 namespace QuestFilterMod.RandomQuests
 {
@@ -68,7 +66,7 @@ namespace QuestFilterMod.RandomQuests
         {
             if (TryGetPascalName(locationId, out var name))
                 return name;
-            throw new KeyNotFoundException($"Локация с ID '{locationId}' не найдена.");
+            throw new KeyNotFoundException($"Location with ID '{locationId}' not found.");
         }
 
         /// <summary>

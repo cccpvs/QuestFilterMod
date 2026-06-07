@@ -1,4 +1,5 @@
-﻿using QuestFilterMod.RandomQuests;
+﻿using QuestFilterMod.QuestFilter.Models;
+using QuestFilterMod.RandomQuests;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
@@ -38,7 +39,7 @@ public class QuestFilterService
         if (_hasAppliedFilters)
         {
             if (Plugin._config.Debug)
-                _logger.Info("[QuestFilterMod][Service] Фильтры уже применены. Пропускаем повторную обработку.");
+                _logger.Info("[QuestFilterMod][QuestFilterService] Filters have already been applied. We skip reprocessing.");
             return;
         }
         _hasAppliedFilters = true;
@@ -49,7 +50,7 @@ public class QuestFilterService
         if (quests == null || quests.Count == 0)
         {
             if (Plugin._config.Debug)
-                _logger.Info("[QuestFilterMod][Service] Нет квестов в базе.");
+                _logger.Info("[QuestFilterMod][QuestFilterService] There are no quests in the database.");
             return;
         }
 
@@ -66,14 +67,14 @@ public class QuestFilterService
         if (allQuestList.Count == 0 && !shouldGenerate)
         {
             if (Plugin._config.Debug)
-                _logger.Info("[QuestFilterMod][Service] Нет подходящих квестов по типам и генерация отключена.");
+                _logger.Info("[QuestFilterMod][QuestFilterService] There are no suitable quests by type and generation is disabled.");
 
             // 🟢 Используем другое имя, чтобы не конфликтовать с будущей переменной
             var emptySelected = new List<Quest>();
             ModifyQuests(quests, emptySelected, config);
 
             if (Plugin._config.Debug)
-                _logger.Info($"[QuestFilterMod][Service] Готово: оставлено {emptySelected.Count} квестов.");
+                _logger.Info($"[QuestFilterMod][QuestFilterService] Done: {emptySelected.Count} quests left.");
 
             return;
         }
@@ -112,7 +113,7 @@ public class QuestFilterService
                         : "unknown";
 
 
-                        _logger.Info($"[QuestFilterMod][Service] Сгенерирован квест: '{randomQuest.Name}' (ID: {randomQuest.Id}, локация: {locationName})");
+                        _logger.Info($"[QuestFilterMod][QuestFilterService] Quest generated: '{randomQuest.Name}' (ID: {randomQuest.Id}, location: {locationName})");
 
                     }
                         
@@ -124,7 +125,7 @@ public class QuestFilterService
             selectedQuests.AddRange(generatedQuests);
 
             if (Plugin._config.Debug)
-                _logger.Info($"[QuestFilterMod][Service] Готово: сгенерировано {generatedCount} случайных квестов.");
+                _logger.Info($"[QuestFilterMod][QuestFilterService] Done: Generated {generatedCount} random quests.");
         }
 
 
@@ -192,14 +193,14 @@ public class QuestFilterService
             if (config.GenerateRandomQuests.Enable && config.GenerateRandomQuests.Count > 0)
             {
                 if (Plugin._config.Debug)
-                    _logger.Info("[QuestFilterMod][Service] Режим только случайных квестов: стандартные квесты НЕ добавляются");
+                    _logger.Info("[QuestFilterMod][QuestFilterService] Random quests only mode: standard quests are NOT added");
 
                 return new List<Quest>(); // Пусто — только сгенерированные будут добавлены позже
             }
 
             // Иначе — оставляем поведение по умолчанию (все квесты)
             if (Plugin._config.Debug)
-                _logger.Info($"[QuestFilterMod][Service] Режим 'все квесты': оставлено {allQuests.Count} квестов по типу");
+                _logger.Info($"[QuestFilterMod][QuestFilterService] 'All quests' mode: left {allQuests.Count} quests by type");
 
             return new List<Quest>(allQuests);
         }
@@ -228,7 +229,7 @@ public class QuestFilterService
             selected.AddRange(extra);
 
             if (config.Debug)
-                _logger.Info($"[QuestFilterMod][Service] Добавлено {extra.Count} квестов для достижения total={config.RandomQuests.Count}");
+                _logger.Info($"[QuestFilterMod][QuestFilterService] Added {extra.Count} quests to achieve total={config.RandomQuests.Count}");
         }
 
         return selected;
@@ -251,7 +252,7 @@ public class QuestFilterService
         selected.AddRange(picked);
 
         if (Plugin._config.Debug)
-            _logger.Info($"[QuestFilterMod][Service] {picked.Count} квестов для '{key}'");
+            _logger.Info($"[QuestFilterMod][QuestFilterService] {picked.Count} quests for '{key}'");
     }
 
     private void ModifyQuests(
@@ -275,7 +276,7 @@ public class QuestFilterService
             }
         }
         if (Plugin._config.Debug)
-            _logger.Info($"[QuestFilterMod][Service] Всего удалено: {countRemoveQuest}");
+            _logger.Info($"[QuestFilterMod][QuestFilterService] Total deleted: {countRemoveQuest}");
 
         var countTraiderTransfer = 0;
         // Обработка каждого выбранного квеста
@@ -290,7 +291,7 @@ public class QuestFilterService
                 {
                     q.Rewards[status] = new List<Reward>();
                     if (Plugin._config.Debug)
-                        _logger.Info($"[QuestFilterMod][Service] ⚠️ Восстановлен статус награды: '{status}' для квеста '{q.Id}'");
+                        _logger.Info($"[QuestFilterMod][QuestFilterService] ⚠️ Reward status restored: '{status}' for the quest '{q.Id}'");
                 }
             }
 
@@ -299,8 +300,11 @@ public class QuestFilterService
             {
                 q.TraderId = config.TargetTraderId;
                 countTraiderTransfer++;
-                /*if (Plugin._config.Debug)
-                    _logger.Info($"[QuestFilterMod][Service] Квест '{q.Name}' ({q.Id}) → трейдер {config.TargetTraderId}");*/
+#if DEBUG
+                if (Plugin._config.Debug)
+                    _logger.Info($"[QuestFilterMod][QuestFilterService] Quest '{q.Name}' ({q.Id}) → trader {config.TargetTraderId}");
+#endif
+
             }
 
             // Очистка условий старта
@@ -308,7 +312,7 @@ public class QuestFilterService
             {
                 q.Conditions.AvailableForStart.Clear();
                 if (Plugin._config.Debug)
-                    _logger.Info($"[QuestFilterMod][Service] Условия старта удалены для квеста '{q.Name}'");
+                    _logger.Info($"[QuestFilterMod][QuestFilterService] Start conditions have been removed for the quest '{q.Name}'");
             }
 
             // Удаление указанных типов условий завершения
@@ -325,8 +329,11 @@ public class QuestFilterService
                         config.RemoveFinishConditionTypes.Contains(checkType, StringComparer.OrdinalIgnoreCase))
                     {
                         toRemove.Add(condition);
-                        if (config.Debug)
-                            _logger.Info($"[QuestFilterMod][Service] Удалено условие '{checkType}' из квеста '{q.Name}'");
+#if DEBUG
+                        if (Plugin._config.Debug)
+                            _logger.Info($"[QuestFilterMod][QuestFilterService] Condition removed'{checkType}' from the quest '{q.Name}'");
+#endif
+
                     }
                 }
 
@@ -343,11 +350,11 @@ public class QuestFilterService
             var locationStats = new Dictionary<string, int>();
             var locationDetails = new List<string>();
 
-            _logger.Info($"[QuestFilterMod][Service] Перенесено квестов трейдеру: {countTraiderTransfer}"); 
+            _logger.Info($"[QuestFilterMod][QuestFilterService] Trader quests moved: {countTraiderTransfer}"); 
 
             foreach (var kvp in locationStats.OrderBy(x => x.Key))
             {
-                _logger.Info($"[QuestFilterMod][Service]  • {kvp.Key}: {kvp.Value} шт.");
+                _logger.Info($"[QuestFilterMod][QuestFilterService]  • {kvp.Key}: {kvp.Value} шт.");
             }
             foreach (var quest in selectedQuests)
             {
@@ -355,9 +362,9 @@ public class QuestFilterService
                     ? pascalName.ToLowerInvariant()
                     : "unknown";
                 locationStats[locKey] = locationStats.GetValueOrDefault(locKey, 0) + 1;
-                locationDetails.Add($"[QuestFilterMod][Service] Квест '{quest.Name}' ({quest.Id}) → локация '{locKey}'");
+                locationDetails.Add($"[QuestFilterMod][QuestFilterService] Quest '{quest.Name}' ({quest.Id}) → location '{locKey}'");
             }
-            _logger.Info($"[QuestFilterMod][Service] Всего оставлено квестов: {selectedQuests.Count}");
+            _logger.Info($"[QuestFilterMod][QuestFilterService] Total quests left: {selectedQuests.Count}");
 
         }
     }

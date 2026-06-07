@@ -25,7 +25,7 @@ namespace QuestFilterMod.RandomQuests.Utils
         {
             if (!File.Exists(filePath))
             {
-                throw new FileNotFoundException($"Конфиг не найден: {filePath}");
+                throw new FileNotFoundException($"Config not found: {filePath}");
             }
 
             var json = File.ReadAllText(filePath);
@@ -94,7 +94,6 @@ namespace QuestFilterMod.RandomQuests.Utils
                     break;
 
                 default:
-                    // Для всех остальных объектов — сериализуем по типу
                     JsonSerializer.Serialize(writer, value, value.GetType(), options);
                     break;
             }

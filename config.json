@@ -6,7 +6,7 @@
   "QuestTypes": [ "Completion", "Discover", "Elimination", "Experience", "Exploration", "Loyalty", "Merchant", "Multi", "PickUp", "Skill", "Standing", "WeaponAssembly" ],
   "RemoveQuests": true,
   "RemoveStartConditionsQuest": false,
-  "RemoveFinishConditionTypes": [ "Elimination" ],
+  "RemoveFinishConditionTypes": [],
   "RemoveRepeatableQuests": false,
   "GenerateRandomQuests": {
     "enable": false,

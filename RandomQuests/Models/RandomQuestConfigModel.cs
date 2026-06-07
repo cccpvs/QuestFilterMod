@@ -84,13 +84,12 @@ namespace QuestFilterMod.RandomQuests.Models
 
     public class DeliveryQuestConfig
     {
-        public bool Enabled { get; set; } = true;
         public int PlantTime { get; set; } = 30;
+        public List<string> ItemPlant { get; set; } = new();
         public Dictionary<string, LocationConfig> Locations { get; set; } = new();
     }
     public class KillQuestConfig
     {
-        public bool Enabled { get; set; } = false;
         public int MinKills { get; set; } = 5;
         public int MaxKills { get; set; } = 15;
         public string Target { get; set; } = "Any";

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace QuestFilterMod.QuestFilter;
+namespace QuestFilterMod.QuestFilter.Models;
 
 public class LocationQuestConfig
 {

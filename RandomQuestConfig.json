@@ -248,12 +248,27 @@
     }
   },
   "DeliveryQuest": {
-    "Enabled": true,
     "PlantTime": 30,
+    "ItemPlant": [ "5991b51486f77447b112d44f", "5ac78a9b86f7741cca0bbd8d", "63a0b2eabea67a6d93009e52" ],
     "Locations": {
       "Bigmap": {
         "Id": "56f40101d2720b2a4d8b45d6",
         "Targets": [
+          "TerragroupBOX_1",
+          "TerragroupBOX_2",
+          "TerragroupBOX_3",
+          "TerragroupBOX_4",
+          "TerragroupBOX_5",
+          "TerragroupBOX_6",
+          "TerragroupBOX_7",
+          "fuel1",
+          "fuel2",
+          "fuel3",
+          "fuel4",
+          "gazel",
+          "place_peacemaker_002_N1",
+          "place_peacemaker_002_N2",
+          "place_peacemaker_002_N3",
           "extraction_zone_zibbo",
           "Q019_3",
           "mech_41_1",
@@ -266,12 +281,35 @@
           "Camera_2",
           "Camera_3",
           "Camera_4",
-          "place_flyers1"
+          "place_flyers1",
+          "quest_city_trotil2",
+          "place_peacemaker_007_N1",
+          "place_skier_11_2",
+          "place_skier_12_2",
+          "zone_battlefield",
+          "quest_terminal_bitcoin",
+          "place_2A2_unlock_3_customs",
+          "zone_unity",
+          "zone_vedro",
+          "event_labyrinth_04_ragman_place_01",
+          "Halloween_zone_for_antivirus(bigmap)"
         ]
       },
       "Woods": {
         "Id": "5704e3c2d2720bac5b8b4567",
         "Targets": [
+          "bar_fuel3_1",
+          "bar_fuel3_2",
+          "bar_fuel3_3",
+          "meh_45_radio_area_mark_1",
+          "meh_45_radio_area_mark_2",
+          "meh_45_radio_area_mark_3",
+          "meh_45_radio_area_mark_4",
+          "q14_8_1",
+          "q14_8_2",
+          "q14_8_3",
+          "q14_8_4",
+          "q14_8_5",
           "place_THX_15",
           "huntsman_005_1",
           "huntsman_005_2",
@@ -280,12 +318,31 @@
           "Zone_for_RPG_3",
           "Pack_of_cartridges_1",
           "Pack_of_cartridges_2",
-          "Pack_of_cartridges_3"
+          "Pack_of_cartridges_3",
+          "Place_item_tools_woods",
+          "place_peacemaker_007_2_N2_1",
+          "place_keeper5_1",
+          "place_2A2_unlock_3_woods",
+          "em_quest4_1",
+          "Bear_in_car",
+          "place_peacemaker_007_2_N2",
+          "NosQuests_11_wood_place",
+          "place_skier_11_1",
+          "NosQuests_8_wood_place",
+          "Reb_keeper",
+          "place_keeper5_2",
+          "Case_rpg_keeper",
+          "Halloween_zone_for_antivirus(woods)",
+          "nf2024_1",
+          "place_skier_12_3"
         ]
       },
       "Factory4Day": {
         "Id": "55f2d3fd4bdc2d5f408b4567",
         "Targets": [
+          "nf2024_6_beacon_1",
+          "nf2024_6_beacon_2",
+          "nf2024_6_beacon_3",
           "place_SADOVOD_01_1",
           "place_SADOVOD_01_2",
           "nf2024_7_1",
@@ -293,7 +350,19 @@
           "nf2024_7_3",
           "nf2024_10_1",
           "nf2024_10_2",
-          "nf2024_10_3"
+          "nf2024_10_3",
+          "zone_451",
+          "zone_terminator",
+          "Halloween_zone_for_antivirus(factory)",
+          "zone_half-life",
+          "case_extraction",
+          "zone_stairway",
+          "zone_Always_sunny",
+          "NosQuests_11_factory_place",
+          "NosQuests_8_factory_place",
+          "zone_harry_potter",
+          "Place_accurate_tools",
+          "zone_sapper"
         ]
       },
       "Shoreline": {
@@ -304,23 +373,74 @@
           "skier_022_area_2",
           "skier_022_area_3",
           "BTR_FUEL_1",
-          "BTR_FUEL_2"
+          "BTR_FUEL_2",
+          "Halloween_zone_for_antivirus(shoreline)",
+          "NosQuests_11_shoreline_place",
+          "NosQuests_8_shoreline_place",
+          "event_labyrinth_04_therap_place_01",
+          "Zone_cursed",
+          "Zone_two_toilets",
+          "unkown_mark_2"
         ]
       },
       "RezervBase": {
         "Id": "5704e5fad2720bc05b8b4567",
         "Targets": [
-          "Btr_wheels"
+          "baraholshik_fuel_area_2",
+          "baraholshik_fuel_area_3",
+          "tadeush_bmp2_area_mark_11",
+          "tadeush_bmp2_area_mark_13",
+          "tadeush_bmp2_area_mark_2",
+          "tadeush_stryker_area_mark_3",
+          "Btr_wheels",
+          "zone_tanchiki",
+          "event_labyrinth_04_ragman_place_02",
+          "Zone_leeter_final",
+          "zone_grass_green",
+          "tadeush_bmp2_area_mark_12",
+          "Place_item_tools_rezerve"
         ]
       },
       "Lighthouse": {
         "Id": "5704e4dad2720bb55b8b4567",
         "Targets": [
+          "Path_mountains_1",
+          "Path_mountains_2",
+          "Path_mountains_3",
+          "Path_mountains_4",
+          "meh_42_radio_area_mark_1",
+          "meh_42_radio_area_mark_2",
+          "meh_42_radio_area_mark_3",
+          "meh_42_radio_area_mark_4",
+          "qlight16_peace_terra",
+          "qlight_fuel_blood",
+          "qlight_fuel_blood_bezovoz1",
+          "qlight_fuel_blood_bezovoz2",
+          "qlight_fuel_blood_bezovoz3",
+          "qlight_mark_vech1",
+          "qlight_mark_vech2",
+          "qlight_mark_vech3",
+          "qlight_mark_vech4",
+          "qlight_pr1_heli1_mark",
           "qlight_extension_medic1_hide1",
           "qlight_extension_mechanik1_hide1",
           "w_race_cam1",
           "w_race_cam2",
-          "w_race_cam3"
+          "w_race_cam3",
+          "Halloween_zone_for_antivirus(lighthouse)",
+          "zone_rick_and_morty",
+          "zone_welcome_silient_hill",
+          "zone_bonfire",
+          "em_quest5_1",
+          "zone_ball"
+
+
+
+
+
+
+
+
         ]
       },
       "Factory4Night": {
@@ -332,27 +452,57 @@
       "Interchange": {
         "Id": "5714dbc024597771384a510d",
         "Targets": [
+          "place_WARBLOOD_04_1",
+          "place_WARBLOOD_04_2",
+          "place_WARBLOOD_04_3",
+          "place_merch_21_1",
+          "place_merch_21_2",
+          "place_merch_21_3",
           "place_merch_020_1",
           "place_merch_020_2",
           "quest_zone_keeper6_kiba_hide",
           "quest_zone_keeper6_safe_hide",
-          "quest_zone_keeper6_cont_hide"
+          "quest_zone_keeper6_cont_hide",
+          "place_skier_12_1",
+          "place_skier_11_3"
         ]
       },
       "TarkovStreets": {
         "Id": "5714dc692459777137212e12",
         "Targets": [
+          "Mark_BTR_1",
+          "Mark_BTR_2",
+          "Mark_BTR_3",
+          "Mark_BTR_4",
+          "Mark_BTR_5",
+          "Mark_BTR_6",
+          "quest_zone_keeper10_place",
+          "quest_zone_place_c14_revx_1",
+          "quest_zone_place_c14_revx_2",
+          "quest_zone_place_c14_revx_3",
           "quest_zone_hide_sillent",
           "quest_zone_hide_sillent2",
           "quest_zone_hide_barber1",
           "quest_zone_hide_barber2",
-          "halloween_unlock_pc"
+          "halloween_unlock_pc",
+          "quest_zone_place_c24_tigr1",
+          "Zone_mutant",
+          "Zone_silient_hill_ward",
+          "Zone_death_strending",
+          "quest_zone_hide_2st_mech",
+          "quest_zone_place_c24_tigr2",
+          "Zone_silient_toilet",
+          "quest_zone_keeper8_1_hide1",
+          "quest_zone_keeper8_1_hide2"
         ]
       },
       "Sandbox": {
         "Id": "653e6760052c01c1c805532f",
         "Targets": [
-          "nt2024_5_throtil_epicentr"
+          "nt2024_5_throtil_epicentr",
+          "zone_computer",
+          "zone_nakatoimi",
+          "zone_six_chair"
         ]
       },
       "Labyrinth": {
@@ -367,7 +517,6 @@
     }
   },
   "KillQuest": {
-    "Enabled": true,
     "MinKills": 5,
     "MaxKills": 30,
     "Target": "Any"
