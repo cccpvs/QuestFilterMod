@@ -46,6 +46,7 @@ public class QuestFilterConfig
     public string TargetTraderId { get; set; } = "";
 
     public bool Debug { get; set; } = true;
+    public bool CleanDroppedItems { get; set; } = true;
 
     public List<string> QuestTypes { get; set; } = new() { "PickUp" };
 

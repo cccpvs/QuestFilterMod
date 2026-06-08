@@ -18,8 +18,9 @@ namespace QuestFilterMod.RepeatableQuest
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
 
-            //_questDatabase = new RepeatableQuestDatabase();
+            _questDatabase = new RepeatableQuestDatabase();
             //_questDatabase = null;
+            
         }
 
         /// <summary>
