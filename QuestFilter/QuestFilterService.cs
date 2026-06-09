@@ -264,7 +264,7 @@ public class QuestFilterService
 
         var countRemoveQuest = 0;
         // Удаление лишних квестов
-        if (config.RemoveQuests)
+        if (config.RemoveStandartQuests)
         {
             
             var toRemove = allQuests.Values.Where(q => !selectedIds.Contains(q.Id)).ToList();

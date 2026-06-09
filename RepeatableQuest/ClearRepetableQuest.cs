@@ -41,65 +41,22 @@ namespace QuestFilterMod.RepeatableQuest
         /// </summary>
         public void ClearTemporaryQuests()
         {
-            if (_questDatabase?.Samples == null) return;
-
-            var count = _questDatabase.Samples.Count(q => q?.Type == "Temporary");
-            _questDatabase.Samples.RemoveAll(q => q?.Type == "Temporary");
-
-            if (count > 0)
-                if (Plugin._config.Debug)
-                    _logger.Info($"[QuestFilterMod][ClearRepetableQuest] Removed {count} temporary quests.");
+            var count = _questDatabase.Samples.RemoveAll(q => q?.Type == "Temporary");
+            if (count > 0 && Plugin._config.Debug)
+                _logger.Info($"[QuestFilterMod][ClearRepetableQuest] Removed {count} temporary quests.");
         }
 
         /// <summary>
         /// Полностью очищает все шаблоны квестов в Templates (Elimination, Completion и др.)
         /// С отладочной информацией: сколько было, сколько очищено.
         /// </summary>
-        public void ClearAllTemplates()
+        public void ClearAllQuests()
         {
-            if (Plugin._config.Debug)
-                _logger.Info("[QuestFilterMod][ClearRepetableQuest] ✅ Enter ClearAllTemplates() -start clearing.");
+            var count = _questDatabase.Samples?.Count ?? 0;
+            _questDatabase.Samples?.Clear();
 
-            if (_questDatabase?.Templates == null)
-            {
-                if (Plugin._config.Debug)
-                    _logger.Info("[QuestFilterMod][ClearRepetableQuest] ❌ Templates are missing -skip cleaning.");
-                return;
-            }
-
-            if (_questDatabase?.Templates == null)
-            {
-                if (Plugin._config.Debug)
-                    _logger.Info("[QuestFilterMod][ClearRepetableQuest] Templates are missing -skip cleaning.");
-                return;
-            }
-
-            var templates = _questDatabase.Templates;
-            int initialCount = 0;
-            int clearedCount = 0;
-
-            // Подсчитываем, сколько шаблонов изначально было задано
-            if (templates.Elimination != null) initialCount++;
-            if (templates.Completion != null) initialCount++;
-            if (templates.Exploration != null) initialCount++;
-            if (templates.Pickup != null) initialCount++;
-
-            if (Plugin._config.Debug)
-                _logger.Info($"[QuestFilterMod][ClearRepetableQuest] Found {initialCount} quest templates before clearing.");
-
-            // Очищаем и считаем
-            if (templates.Elimination != null) { templates.Elimination = null; clearedCount++; }
-            if (templates.Completion != null) { templates.Completion = null; clearedCount++; }
-            if (templates.Exploration != null) { templates.Exploration = null; clearedCount++; }
-            if (templates.Pickup != null) { templates.Pickup = null; clearedCount++; }
-
-            if (Plugin._config.Debug)
-            {
-                if (clearedCount > 0)
-                    _logger.Info($"[QuestFilterMod][ClearRepetableQuest] Successfully cleared {clearedCount} quest templates.");
-                else
-                    _logger.Info("[QuestFilterMod][ClearRepetableQuest] No need to clean up -all templates are already empty.");
-            }
+            if (count > 0 && Plugin._config.Debug)
+                _logger.Info($"[QuestFilterMod][ClearRepetableQuest] Removed {count} total quests.");
         }
 
         /// <summary>
