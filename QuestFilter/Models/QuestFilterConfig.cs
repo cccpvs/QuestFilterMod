@@ -50,7 +50,7 @@ public class QuestFilterConfig
 
     public List<string> QuestTypes { get; set; } = new() { "PickUp" };
 
-    public bool RemoveQuests { get; set; } = false;
+    public bool RemoveStandartQuests { get; set; } = false;
 
     public bool RemoveRepeatableQuests { get; set; } = false;
 

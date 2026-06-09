@@ -81,7 +81,7 @@ namespace QuestFilterMod.RandomQuests
                 WriteIndented = true  // для читаемости
             });
 
-            _logger.Info($"[QuestFilterMod][QuestGenerationBase] 📜 Quest '{quest.Id}' ({type}) generated:\n{json}");
+            //_logger.Info($"[QuestFilterMod][QuestGenerationBase] 📜 Quest '{quest.Id}' ({type}) generated:\n{json}");
 #endif
 
             return quest;

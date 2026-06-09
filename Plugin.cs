@@ -5,8 +5,6 @@ using QuestFilterMod.RandomQuests;
 using QuestFilterMod.RepeatableQuest;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
-using SPTarkov.Server.Core.Models.Common;
-using SPTarkov.Server.Core.Models.Eft.Profile;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Servers;
 using SPTarkov.Server.Core.Services;
@@ -41,11 +39,12 @@ public class Plugin : IOnUpdate
 
     private readonly ISptLogger<Plugin> _logger;
     private readonly DatabaseService _databaseService;
+    private readonly DatabaseServer databaseServer; // ← добавлено
     private readonly ServerLocalisationService _localisationService;
     private readonly string _configPath;
     public static QuestFilterConfig _config { get; private set; } = null!;
-    private RandomQuestGenerator _randomQuestGenerator = null!;  
-    private QuestFilterService _questFilterService = null!;   
+    private RandomQuestGenerator _randomQuestGenerator = null!;
+    private QuestFilterService _questFilterService = null!;
     private bool _applied = false;
     private bool _localeEndpointRegistered = false;
     private readonly CustomQuestService _customQuestService;
@@ -58,13 +57,15 @@ public class Plugin : IOnUpdate
     DatabaseService databaseService,
     CustomQuestService customQuestService,
     ServerLocalisationService localisationService,
-    SaveServer saveServer)
+    SaveServer saveServer,
+    DatabaseServer databaseServer)
     {
         _logger = logger;
         _databaseService = databaseService;
         _customQuestService = customQuestService;
         _localisationService = localisationService;
         _saveServer = saveServer;
+        this.databaseServer = databaseServer;
 
 
         _configPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Config.json");
@@ -146,7 +147,12 @@ public class Plugin : IOnUpdate
 
             if (_randomQuestGenerator == null && _questFilterService == null)
             {
-                _randomQuestGenerator = new RandomQuestGenerator(_logger, _databaseService, _customQuestService);
+                _randomQuestGenerator = new RandomQuestGenerator(
+                   _logger,
+                   _databaseService,
+                   databaseServer,
+                   _customQuestService);
+
                 _questFilterService = new QuestFilterService(
                     _logger,
                     _databaseService,
@@ -167,7 +173,7 @@ public class Plugin : IOnUpdate
                 }
 
                 _temporaryQuestCleaner.SetQuestDatabase(repeatableDb);
-                _temporaryQuestCleaner.ClearAllTemplates();
+                _temporaryQuestCleaner.ClearAllQuests();
 
                 if (_config.Debug)
                     _logger.Info("[QuestFilterMod] ✅ Temporary quests successfully cleared.");

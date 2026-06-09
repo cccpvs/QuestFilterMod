@@ -93,23 +93,6 @@ namespace QuestFilterMod.RandomQuests
                         }
 
                     };
-
-
-                    /*
-                    var killCond = CreateKillCondition(id, cfg.Target);
-                    var locCond = CreateLocationCondition(id, pascalName);
-
-                    var counterCond = CreateCounterCondition(
-                        id,
-                        new List<Dictionary<string, object>> { killCond, locCond },
-                        _random.Next(cfg.MinKills, cfg.MaxKills + 1),
-                        "Elimination"
-                    );
-
-                    q.Conditions.AvailableForFinish = new() { counterCond };
-                    */
-
-
                 });
             }
 

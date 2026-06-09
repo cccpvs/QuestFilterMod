@@ -15,16 +15,10 @@ namespace QuestFilterMod.RandomQuests
 
             try
             {
-                var englishLocales = new Dictionary<string, string>();
-                var russianLocales = new Dictionary<string, string>();
 
-                FillQuestLocales(quest, englishLocales, russianLocales);
+                var locales = new Dictionary<string, Dictionary<string, string>>();
 
-                var locales = new Dictionary<string, Dictionary<string, string>>
-                {
-                    ["en"] = englishLocales,
-                    ["ru"] = russianLocales
-                };
+                FillQuestLocales(quest, locales);
 
                 var newQuestDetails = new NewQuestDetails
                 {
@@ -75,10 +69,7 @@ namespace QuestFilterMod.RandomQuests
             if (quest.Conditions?.Fail == null)
                 quest.Conditions.Fail = new List<QuestCondition>();
         }
-        private static string GetExtValue(QuestCondition cond, string key)
-        {
-            return cond.ExtensionData?.TryGetValue(key, out var v) == true ? v?.ToString() : null;
-        }
+        
         private List<QuestCondition> GetConditions(Quest quest)
         {
             var list = new List<QuestCondition>();

@@ -1,24 +1,24 @@
-﻿using EFT;
-using QuestFilterMod.RandomQuests.Models;
+﻿using QuestFilterMod.RandomQuests.Models;
 using QuestFilterMod.RandomQuests.Utils;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Utils;
+using SPTarkov.Server.Core.Servers;
 using SPTarkov.Server.Core.Services;
 using SPTarkov.Server.Core.Services.Mod;
 using System.Reflection;
 
+
 namespace QuestFilterMod.RandomQuests
 {
-
 
     public partial class RandomQuestGenerator
     {
         private readonly ISptLogger<Plugin> _logger;
         private readonly DatabaseService _databaseService;
+        private readonly DatabaseServer databaseServer;
         private readonly Random _random = new();
         private readonly QuestConfig _config;
         private readonly UniqueQuestTracker _tracker = new();
-
         private readonly CustomQuestService _customQuestService;
 
         public record QuestKey(string LocationId, string TargetPoint, string ItemTpl = "", string QuestType = "");
@@ -40,10 +40,12 @@ namespace QuestFilterMod.RandomQuests
         public RandomQuestGenerator(
                 ISptLogger<Plugin> logger,
                 DatabaseService databaseService,
+                 DatabaseServer databaseServer,
                 CustomQuestService customQuestService)
         {
             _logger = logger;
             _databaseService = databaseService;
+            this.databaseServer = databaseServer ?? throw new ArgumentNullException(nameof(databaseServer));
             _customQuestService = customQuestService;
 
 
