@@ -1,11 +1,6 @@
 ﻿using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace QuestFilterMod.RandomQuests
 {
@@ -89,7 +84,6 @@ namespace QuestFilterMod.RandomQuests
                                     },
                                     Id = idFactory()
                                 }
-
                         }
 
                     };

@@ -6,7 +6,7 @@ namespace QuestFilterMod;
 
 public record ModMetadata : AbstractModMetadata
 {
-    public override string ModGuid { get; init; } = "com.cccpvs.QuestFilterMod";
+    public override string ModGuid { get; init; } = "com.cccpvs.QuestFilterMod"; 
     public override string Name { get; init; } = "QuestFilterMod";
     public override string Author { get; init; } = "cccpvs";
     public override List<string>? Contributors { get; init; }

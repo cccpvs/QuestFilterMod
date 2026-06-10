@@ -165,7 +165,6 @@ namespace QuestFilterMod.RandomQuests
                     enText = $"Complete condition: {cond.ConditionType}";
                     ruText = $"Выполни условие: {cond.ConditionType}";
                 }
-
                 Add(key, enText, ruText);
             }
         }

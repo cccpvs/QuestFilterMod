@@ -1,8 +1,7 @@
-﻿using HarmonyLib;
-using QuestFilterMod.QuestFilter;
+﻿using QuestFilterMod.QuestFilter;
 using QuestFilterMod.QuestFilter.Models;
 using QuestFilterMod.RandomQuests;
-using QuestFilterMod.RepeatableQuest;
+using QuestFilterMod.RepeatableQuestCleaner;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.Models.Utils;
@@ -18,20 +17,7 @@ using System.Text.Json;
 [assembly: AssemblyFileVersion("1.0.0.0")]
 [assembly: AssemblyInformationalVersion("1.0.0")]
 
-
-
 namespace QuestFilterMod;
-
-
-#if DEBUG
-/*
- *      
- * 1. Замена локализации на других языках на основе EN
- * 2. Проверить еще моменты мода перед публикацией.
- * 3. Временные квесты при удалении дают ошибку.
- * 
- */
-#endif
 
 [Injectable(TypePriority = OnLoadOrder.PreSptModLoader + 1)]
 public class Plugin : IOnUpdate
@@ -161,30 +147,19 @@ public class Plugin : IOnUpdate
                 _temporaryQuestCleaner = new ClearRepetableQuest(_logger, _databaseService);
             }
 
-            
+
             if (_config.RemoveRepeatableQuests)
             {
-                var repeatableDb = tables?.Templates?.RepeatableQuests;
-                if (repeatableDb == null)
-                {
-                    if (_config.Debug)
-                        _logger.Info("[QuestFilterMod] ❌ Failed to get RepeatableQuests for cleaning -skip.");
-                    return true;
-                }
+                var repeatableDb = tables.Templates.RepeatableQuests;
 
                 _temporaryQuestCleaner.SetQuestDatabase(repeatableDb);
-                _temporaryQuestCleaner.ClearAllQuests();
+                _temporaryQuestCleaner.ClearAllTemplates();
 
-                if (_config.Debug)
-                    _logger.Info("[QuestFilterMod] ✅ Temporary quests successfully cleared.");
-            }
-            else
-            {
-                if (_config.Debug)
-                    _logger.Info("[QuestFilterMod] ⚙️ Removal of temporary quests is disabled (RemoveRepeatableQuests = false)");
+                if (Plugin._config.Debug)
+                    _logger.Info("[QuestFilterMod] ✅ All repeatable quest templates cleared.");
             }
 
-            
+
             var allQuestsSnapshot = quests.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
             
@@ -201,7 +176,7 @@ public class Plugin : IOnUpdate
         }
         catch (Exception ex)
         {
-            if (_config.Debug)
+            if (Plugin._config.Debug)
                 _logger.Info($"[QuestFilterMod] Error inOnUpdate: {ex.Message}\n{ex.StackTrace}");
         }
 
@@ -224,11 +199,12 @@ public class Plugin : IOnUpdate
             var profiles = _saveServer.GetProfiles();
             if (profiles == null || profiles.Count == 0)
             {
-                _logger.Warning("[QuestFilterMod] ⚠️ No profiles loaded yet — skipping DroppedItems cleanup.");
+                if (_config.Debug)
+                    _logger.Warning("[QuestFilterMod] ⚠️ No profiles loaded yet — skipping DroppedItems cleanup.");
                 return;
             }
-
-            _logger.Info($"[QuestFilterMod] 🔍 Cleaning DroppedItems from {profiles.Count} profiles...");
+            if (_config.Debug)
+                _logger.Info($"[QuestFilterMod][] 🔍 Cleaning DroppedItems from {profiles.Count} profiles...");
 
             int cleanedCount = 0;
             foreach (var kvp in profiles)
@@ -245,61 +221,17 @@ public class Plugin : IOnUpdate
                 cleanedCount++;
             }
 
-            _logger.Info($"[QuestFilterMod] ✅ Cleared DroppedItems from {cleanedCount} profiles (in-memory).");
-            _logger.Info("[QuestFilterMod] 📌 Changes will be saved on next profile save (exit or auto-save).");
+            if (_config.Debug)
+            {
+                _logger.Info($"[QuestFilterMod] ✅ Cleared DroppedItems from {cleanedCount} profiles (in-memory).");
+                _logger.Info("[QuestFilterMod] 📌 Changes will be saved on next profile save (exit or auto-save).");
+            }
+                
         }
         catch (Exception ex)
         {
-            _logger.Error($"[QuestFilterMod] ❌ Error in CleanDroppedItems(): {ex}");
-        }
-    }
-
-    private async Task CleanAllDroppedItemsAsync()
-    {
-        try
-        {
-            _logger.Info("[QuestFilterMod] 🔍 Starting CleanAllDroppedItemsAsync()...");
-
-            var profiles = _saveServer.GetProfiles();
-            _logger.Info($"[QuestFilterMod] 📊 Found {profiles.Count} profiles.");
-
-            int cleanedCount = 0;
-            foreach (var kvp in profiles)
-            {
-                var profile = kvp.Value;
-
-                // ✅ Очистка в памяти
-                if (profile.CharacterData?.PmcData?.Stats?.Eft?.DroppedItems != null)
-                    profile.CharacterData.PmcData.Stats.Eft.DroppedItems = null;
-
-                if (profile.CharacterData?.ScavData?.Stats?.Eft?.DroppedItems != null)
-                    profile.CharacterData.ScavData.Stats.Eft.DroppedItems = null;
-
-                cleanedCount++;
-            }
-
-            _logger.Info($"[QuestFilterMod] 🧹 Cleared DroppedItems in {cleanedCount} profiles — saving...");
-
-            // ✅ Сохраняем по одному с проверкой — без SaveAsync()
-            foreach (var kvp in profiles)
-            {
-                try
-                {
-                    // Сначала пробуем асинхронно
-                    await _saveServer.SaveProfileAsync(kvp.Key);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error($"[QuestFilterMod] ⚠️ Failed to save profile {kvp.Key}: {ex.Message}");
-                }
-            }
-
-            _logger.Info($"[QuestFilterMod] ✅ Cleaned DroppedItems from {cleanedCount} profiles and saved (async, per-profile).");
-        }
-        catch (Exception ex)
-        {
-            _logger.Error($"[QuestFilterMod] ❌ Error cleaning DroppedItems (async): {ex}");
-            _logger.Error(ex.StackTrace);
+            if (_config.Debug)
+                _logger.Error($"[QuestFilterMod] ❌ Error in CleanDroppedItems(): {ex}");
         }
     }
 

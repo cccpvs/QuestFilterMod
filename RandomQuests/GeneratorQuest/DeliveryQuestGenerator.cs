@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic;
-using QuestFilterMod.RandomQuests.Models;
+﻿using QuestFilterMod.RandomQuests.Models;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
@@ -90,9 +89,8 @@ namespace QuestFilterMod.RandomQuests
                         new QuestCondition
                         {
                             Id = idFactory(),
-                            //ConditionType = "LeaveItemAtLocation",
-                            ConditionType = "PlaceBeacon",
-
+                            ConditionType = "LeaveItemAtLocation",
+                            
                             DogtagLevel = 0,
                             GlobalQuestCounterId = "",
                             IsEncoded = false,
@@ -149,7 +147,12 @@ namespace QuestFilterMod.RandomQuests
  * 
  * Неизвестные точки.
  * "em_quest4_3","1","place_peacemaker_007_2_N3"
- * 
-
+ *
+ *
+ * Квесты на //ConditionType = "PlaceBeacon",
+ * в процессе работы.
+ *
+ *
+ *
  * */
 #endif

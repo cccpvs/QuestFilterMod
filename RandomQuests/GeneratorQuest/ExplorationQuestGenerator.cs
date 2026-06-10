@@ -1,9 +1,7 @@
-﻿using EFT.Quests;
-using QuestFilterMod.RandomQuests.Models;
+﻿using QuestFilterMod.RandomQuests.Models;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
-using SPTarkov.Server.Core.Utils.Json;
 
 namespace QuestFilterMod.RandomQuests
 {
@@ -14,8 +12,6 @@ namespace QuestFilterMod.RandomQuests
             var allowed = LocationHelper.GetAllowedLocations(_config).ToList();
 
             var allPoints = new List<(LocationConfig Config, string Target)>();
-
-
 
             foreach (var (pascalName, locationId) in allowed)
             {
@@ -127,25 +123,6 @@ namespace QuestFilterMod.RandomQuests
 
                     };
 
-
-
-                    /*q.Conditions.AvailableForFinish = new List<QuestCondition>
-                    {
-    
-                        CreateVisitPlaceCondition(id, target)
-                    };
-
-                    var locationCond = CreateLocationCondition(id, pascalName);
-                    var exitStatusCond = CreateExitStatusCondition(id, new[] { "Survived", "Transit" });
-
-                    var exitCounter = CreateCounterCondition(
-                        id,
-                        new List<Dictionary<string, object>> { locationCond, exitStatusCond },
-                        1, "Completion"
-                    );
-
-                    exitCounter.CompleteInSeconds = 30;
-                    q.Conditions.AvailableForFinish.Add(exitCounter);*/
                 });
             }
 

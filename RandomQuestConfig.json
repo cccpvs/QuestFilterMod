@@ -15,9 +15,9 @@
       "Interchange": true,
       "TarkovStreets": true,
       "Sandbox": true,
-      "Laboratory": true,
+      "Laboratory": false,
       "Factory4Night": true,
-      "Labyrinth": true
+      "Labyrinth": false
     }
   },
   "ExplorationQuest": {
@@ -524,8 +524,8 @@
   "RewardMoney": {
     "Enabled": true,
     "Tpl": "5449016a4bdc2d6f028b456f",
-    "Min": 30000,
-    "Max": 100000,
+    "Min": 10000,
+    "Max": 30000,
     "Step": 5000
   },
   "RewardItems": {

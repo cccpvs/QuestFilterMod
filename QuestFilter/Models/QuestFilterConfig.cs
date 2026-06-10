@@ -24,7 +24,6 @@ public class RandomQuestsConfig
 {
     [JsonPropertyName("count")]
     public int Count { get; set; } = 5;
-
     [JsonPropertyName("location")]
     public LocationQuestConfig Location { get; set; } = new();
 }
@@ -33,34 +32,22 @@ public class GenerateRandomQuestsConfig
 {
     [JsonPropertyName("enable")]
     public bool Enable { get; set; } = false;
-
     [JsonPropertyName("count")]
     public int Count { get; set; } = 3;
-
 }
 
 public class QuestFilterConfig
 {
     public bool Enabled { get; set; } = true;
-
     public string TargetTraderId { get; set; } = "";
-
     public bool Debug { get; set; } = true;
     public bool CleanDroppedItems { get; set; } = true;
-
     public List<string> QuestTypes { get; set; } = new() { "PickUp" };
-
     public bool RemoveStandartQuests { get; set; } = false;
-
     public bool RemoveRepeatableQuests { get; set; } = false;
-
     public bool RemoveStartConditionsQuest { get; set; } = false;
-
     public bool ExcludeArenaQuests { get; set; } = true;
-
     public List<string> RemoveFinishConditionTypes { get; set; } = new();
-
     public RandomQuestsConfig RandomQuests { get; set; } = new();
-
     public GenerateRandomQuestsConfig GenerateRandomQuests { get; set; } = new();
 }

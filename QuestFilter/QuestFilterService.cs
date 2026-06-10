@@ -1,7 +1,6 @@
 ﻿using QuestFilterMod.QuestFilter.Models;
 using QuestFilterMod.RandomQuests;
 using SPTarkov.Server.Core.Models.Common;
-using SPTarkov.Server.Core.Models.Eft.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 using SPTarkov.Server.Core.Models.Utils;
@@ -111,14 +110,9 @@ public class QuestFilterService
                         var locationName = LocationHelper.TryGetPascalName(randomQuest.Location, out var pascalName)
                         ? pascalName.ToLowerInvariant()
                         : "unknown";
-
-
                         _logger.Info($"[QuestFilterMod][QuestFilterService] Quest generated: '{randomQuest.Name}' (ID: {randomQuest.Id}, location: {locationName})");
 
                     }
-                        
-
-                    
                 }
             }
             // Добавляем в selectedQuests, чтобы они не были удалены
@@ -131,7 +125,6 @@ public class QuestFilterService
 
         ModifyQuests(quests, selectedQuests, config);
 
-        // Добавляем квесты в локали
         var tables = _databaseService.GetTables();
         foreach (var quest in selectedQuests)
         {
@@ -170,7 +163,6 @@ public class QuestFilterService
         var random = new Random();
         var selected = new List<Quest>();
 
-        // Группируем по локациям
         var grouped = allQuests
                 .GroupBy(q =>
                 {
@@ -186,26 +178,22 @@ public class QuestFilterService
             .Select(p => p.GetValue(config.RandomQuests.Location))
             .Any(v => v is int count && count > 0);
 
-        // 🔥 Ключевое изменение: если включена генерация случайных квестов и нет фильтров — НЕ возвращаем все квесты!
         if (!hasLocationFilters && config.RandomQuests.Count == 0)
         {
-            // Но если включена генерация случайных квестов — не возвращаем стандартные автоматически
             if (config.GenerateRandomQuests.Enable && config.GenerateRandomQuests.Count > 0)
             {
                 if (Plugin._config.Debug)
                     _logger.Info("[QuestFilterMod][QuestFilterService] Random quests only mode: standard quests are NOT added");
 
-                return new List<Quest>(); // Пусто — только сгенерированные будут добавлены позже
+                return new List<Quest>();
             }
 
-            // Иначе — оставляем поведение по умолчанию (все квесты)
             if (Plugin._config.Debug)
                 _logger.Info($"[QuestFilterMod][QuestFilterService] 'All quests' mode: left {allQuests.Count} quests by type");
 
             return new List<Quest>(allQuests);
         }
 
-        // Выбор по локациям из конфига
         foreach (var prop in locationProps)
         {
             var value = prop.GetValue(config.RandomQuests.Location);
@@ -218,7 +206,6 @@ public class QuestFilterService
             AddFromGroup(grouped, locationKey, count, selected, random, config.Debug);
         }
 
-        // Дозаполнение до нужного количества
         if (config.RandomQuests.Count > 0 && selected.Count < config.RandomQuests.Count)
         {
             var remaining = config.RandomQuests.Count - selected.Count;
@@ -263,7 +250,6 @@ public class QuestFilterService
         var selectedIds = selectedQuests.Select(q => q.Id).ToHashSet();
 
         var countRemoveQuest = 0;
-        // Удаление лишних квестов
         if (config.RemoveStandartQuests)
         {
             
@@ -295,7 +281,6 @@ public class QuestFilterService
                 }
             }
 
-            // Переназначение трейдера
             if (!string.IsNullOrEmpty(config.TargetTraderId))
             {
                 q.TraderId = config.TargetTraderId;
@@ -307,7 +292,6 @@ public class QuestFilterService
 
             }
 
-            // Очистка условий старта
             if (config.RemoveStartConditionsQuest && q.Conditions?.AvailableForStart != null)
             {
                 q.Conditions.AvailableForStart.Clear();
@@ -315,7 +299,6 @@ public class QuestFilterService
                     _logger.Info($"[QuestFilterMod][QuestFilterService] Start conditions have been removed for the quest '{q.Name}'");
             }
 
-            // Удаление указанных типов условий завершения
             if (config.RemoveFinishConditionTypes?.Count > 0 && q.Conditions?.AvailableForFinish != null)
             {
                 var toRemove = new List<QuestCondition>();
@@ -344,7 +327,6 @@ public class QuestFilterService
             }
         }
 
-        // Логирование статистики
         if (Plugin._config.Debug)
         {
             var locationStats = new Dictionary<string, int>();

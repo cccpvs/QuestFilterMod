@@ -17,7 +17,6 @@ namespace QuestFilterMod.RandomQuests
             {
 
                 var locales = new Dictionary<string, Dictionary<string, string>>();
-
                 FillQuestLocales(quest, locales);
 
                 var newQuestDetails = new NewQuestDetails

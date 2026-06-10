@@ -67,7 +67,6 @@ namespace QuestFilterMod.RandomQuests
                 return null;
             }
 
-
             AddRewards(quest);
             CreateAndRegisterQuest(quest);
             if (Plugin._config.Debug)

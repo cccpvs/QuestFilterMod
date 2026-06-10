@@ -134,7 +134,6 @@ namespace QuestFilterMod.RandomQuests
         public void ResetTracker()
         {
             _tracker.Clear();
-
         }
 
     }

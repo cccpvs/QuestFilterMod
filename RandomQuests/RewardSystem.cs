@@ -52,7 +52,6 @@ namespace QuestFilterMod.RandomQuests
                 return;
             }
 
-            // === Используем диапазон из конфига ===
             int minPrice = _config.RewardItems.PriceRange.Min;
             int maxPrice = _config.RewardItems.PriceRange.Max;
 
@@ -73,7 +72,6 @@ namespace QuestFilterMod.RandomQuests
 
             var parentIds = weightedParents.Select(p => new { Id = new MongoId(p.Id), p.Weight }).ToList();
 
-            // === Шаг 2: Фильтруем по цене и категории ===
             var validItemsByParent = new Dictionary<MongoId, List<MongoId>>();
 
             foreach (var kvp in prices)
@@ -82,7 +80,7 @@ namespace QuestFilterMod.RandomQuests
                 if (!itemsPool.TryGetValue(tplId, out var template)) continue;
 
                 double price = kvp.Value;
-                if (price < minPrice || price > maxPrice) continue; // ← Теперь из конфига
+                if (price < minPrice || price > maxPrice) continue;
 
                 var parentId = template.Parent;
                 if (!parentIds.Any(p => p.Id == parentId)) continue;
@@ -93,7 +91,6 @@ namespace QuestFilterMod.RandomQuests
                 validItemsByParent[parentId].Add(tplId);
             }
 
-            // Удаляем пустые категории
             var nonEmptyParents = parentIds
                 .Where(p => validItemsByParent.ContainsKey(p.Id) && validItemsByParent[p.Id].Any())
                 .ToList();
@@ -110,7 +107,7 @@ namespace QuestFilterMod.RandomQuests
             if (Plugin._config.Debug)
                 _logger.Info($"[QuestFilterMod][RewardSystem] Найдено {nonEmptyParents.Count} категорий с подходящими предметами.");
 #endif
-            // Сколько наград выдать
+            
             int count = _random.Next(_config.RewardItems.Count.Min, _config.RewardItems.Count.Max + 1);
             var usedTpls = new HashSet<string>();
 
@@ -146,7 +143,6 @@ namespace QuestFilterMod.RandomQuests
         }
         private MongoId? GetRandomSpecialItem()
         {
-            // ✅ Используем список из конфига
             var allowedTpls = _config.DeliveryQuest.ItemPlant;
             if (!allowedTpls.Any())
             {
@@ -156,7 +152,6 @@ namespace QuestFilterMod.RandomQuests
 
             var items = _databaseService.GetTemplates().Items;
 
-            // Фильтруем: только те TPL, которые есть в базе
             var candidates = items
                 .Where(kvp => allowedTpls.Contains(kvp.Key))
                 .Select(kvp => kvp.Key)
@@ -180,7 +175,6 @@ namespace QuestFilterMod.RandomQuests
             if (Plugin._config.Debug)
                 _logger?.Debug($"[QuestFilterMod][RewardSystem] ✔️ Found {candidates.Count} items from {allowedTpls.Count} TPL.");
 
-            // Выбираем случайный TPL
             return new MongoId(candidates[_random.Next(candidates.Count)]);
         }
         private void AddTraderStandingReward(Quest quest)
@@ -188,7 +182,6 @@ namespace QuestFilterMod.RandomQuests
             if (!_config.RewardTraderStanding.Enabled)
                 return;
 
-            // Генерируем случайное значение: от Min до Max
             float value = (float)_random.NextDouble() *
                           (_config.RewardTraderStanding.Max - _config.RewardTraderStanding.Min) +
                           _config.RewardTraderStanding.Min;
@@ -198,7 +191,7 @@ namespace QuestFilterMod.RandomQuests
                 Id = new MongoId(Guid.NewGuid().ToString("N")[..24]),
                 Type = RewardType.TraderStanding,
                 Target = quest.TraderId,
-                Value = (float)Math.Round(value, 3), // Округляем до 3 знаков (например: 0.017)
+                Value = (float)Math.Round(value, 3), 
                 FindInRaid = false,
                 IsEncoded = false,
                 IsHidden = false,
