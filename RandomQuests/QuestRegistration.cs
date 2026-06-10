@@ -15,9 +15,7 @@ namespace QuestFilterMod.RandomQuests
 
             try
             {
-
                 var locales = new Dictionary<string, Dictionary<string, string>>();
-
                 FillQuestLocales(quest, locales);
 
                 var newQuestDetails = new NewQuestDetails
@@ -27,13 +25,12 @@ namespace QuestFilterMod.RandomQuests
                     LockedToSide = null
                 };
 
-
                 CreateQuestResult result = _customQuestService.CreateQuest(newQuestDetails);
 
                 if (result.Success)
                 {
 #if DEBUG
-                    if (Plugin._config.Debug)
+                    if (Plugin.Config.Debug)
                         _logger.Info($"[QuestFilterMod][QuestRegistration] ✅ Quest '{quest.Id}' has been successfully created and localized.");
 #endif
 
@@ -42,14 +39,14 @@ namespace QuestFilterMod.RandomQuests
                 {
                     foreach (string error in result.Errors)
                     {
-                        if (Plugin._config.Debug)
+                        if (Plugin.Config.Debug)
                             _logger.Error($"[QuestFilterMod][QuestRegistration] ❌ Error creating quest: {error}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Error($"[QuestFilterMod][QuestRegistration] 🔥 Exception when registering a quest: {ex}");
             }
         }
@@ -68,15 +65,6 @@ namespace QuestFilterMod.RandomQuests
         {
             if (quest.Conditions?.Fail == null)
                 quest.Conditions.Fail = new List<QuestCondition>();
-        }
-        
-        private List<QuestCondition> GetConditions(Quest quest)
-        {
-            var list = new List<QuestCondition>();
-            if (quest.Conditions?.AvailableForStart != null) list.AddRange(quest.Conditions.AvailableForStart);
-            if (quest.Conditions?.AvailableForFinish != null) list.AddRange(quest.Conditions.AvailableForFinish);
-            if (quest.Conditions?.Fail != null) list.AddRange(quest.Conditions.Fail);
-            return list;
         }
     }
 }

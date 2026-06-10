@@ -1,17 +1,17 @@
 {
   "Enabled": true,
-  "TargetTraderId": "579dc571d53a0658a154fbec",
+  "TargetTraderIds": [ "579dc571d53a0658a154fbec", "54cb57776803fa99248b456e" ],
   "ExcludeArenaQuests": true,
   "Debug": false,
   "CleanDroppedItems": true,
   "QuestTypes": [ "Completion", "Discover", "Elimination", "Experience", "Exploration", "Loyalty", "Merchant", "Multi", "PickUp", "Skill", "Standing", "WeaponAssembly" ],
-  "RemoveStandartQuests": true,
+  "RemoveStandartQuests": false,
   "RemoveStartConditionsQuest": false,
   "RemoveFinishConditionTypes": [],
   "RemoveRepeatableQuests": false,
   "GenerateRandomQuests": {
     "enable": false,
-    "count": 5
+    "count": 10
   },
   "RandomQuests": {
     "count": 0,
@@ -25,7 +25,6 @@
       "Lighthouse": 0,
       "RezervBase": 0,
       "Sandbox": 0,
-      "SandboxHigh": 0,
       "Shoreline": 0,
       "TarkovStreets": 0,
       "Woods": 0,

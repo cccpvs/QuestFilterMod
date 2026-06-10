@@ -12,6 +12,14 @@ namespace QuestFilterMod.RandomQuests
             var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
             var questId = idFactory();
 
+#if debug
+
+            if (Plugin.Config.Debug)
+            {
+                _logger.Info($"[QuestFilterMod][GenerateBaseQuest] 🧪 _random test: {ConfigRandom.TraderIds?.RandomItem(_random) ?? "NULL"}");
+            }
+#endif
+
             var quest = new Quest
             {
                 Id = questId,
@@ -19,10 +27,10 @@ namespace QuestFilterMod.RandomQuests
                 QuestName = $"{questId} questName",
                 Description = $"{questId} description",
                 Note = $"{questId} note",
-                TraderId = new MongoId(_config.TraderIds.RandomItem(_random)),
+                TraderId = new MongoId(ConfigRandom.TraderIds.RandomItem(_random)),
                 Side = "Pmc",
                 Location = "any",
-                Image = _config.DefaultQuest.Image ?? "/files/quest/icon/default.jpg",
+                Image = ConfigRandom.DefaultQuest.Image ?? "/files/quest/icon/default.jpg",
                 Type = QuestTypeEnum.PickUp,
                 CanShowNotificationsInGame = true,
                 Restartable = false,
@@ -44,7 +52,6 @@ namespace QuestFilterMod.RandomQuests
                 }
             };
 
-            // Устанавливаем не-required поля
             quest.InstantComplete = false;
             quest.IsKey = false;
             quest.ProgressSource = "eft";
@@ -58,27 +65,33 @@ namespace QuestFilterMod.RandomQuests
             quest.GameModes = new();
             quest.RankingModes = new();
 
+
             build(quest, idFactory);
 
+
+#if DEBUG
+            if (Plugin.Config.Debug)
+            {
+                _logger.Info($"[QuestFilterMod][GenerateBaseQuest] 🧾 AFTER build(): TraderId = {quest.TraderId}");
+            }
+#endif
             if (string.IsNullOrEmpty(quest.Location))
             {
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Info($"[QuestFilterMod][QuestGenerationBase] ❌ Quest {quest.Id} doesn't have Location");
                 return null;
             }
 
-
             AddRewards(quest);
             CreateAndRegisterQuest(quest);
-            if (Plugin._config.Debug)
+            if (Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][QuestGenerationBase] ✅ Quest '{quest.Id}' ({type}) created");
 
 #if DEBUG
-            // 🔹 Логируем квест в консоль как JSON
             var json = System.Text.Json.JsonSerializer.Serialize(quest, new System.Text.Json.JsonSerializerOptions
             {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                WriteIndented = true  // для читаемости
+                WriteIndented = true
             });
 
             //_logger.Info($"[QuestFilterMod][QuestGenerationBase] 📜 Quest '{quest.Id}' ({type}) generated:\n{json}");

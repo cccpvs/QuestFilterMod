@@ -1,11 +1,6 @@
 ﻿using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace QuestFilterMod.RandomQuests
 {
@@ -13,27 +8,56 @@ namespace QuestFilterMod.RandomQuests
     {
         private Quest? GenerateKillQuest()
         {
-            var cfg = _config.KillQuest;
+            var cfg = ConfigRandom.KillQuest;
+            var allowed = LocationHelper.GetAllowedLocations(ConfigRandom).ToList();
+#if DEBUG
+            _logger.Warning($"[QuestFilterMod][KillQuest] Starting generation...");
+            _logger.Warning($"[QuestFilterMod][KillQuest] Allowed locations: {allowed.Count}, Targets: {string.Join(", ", cfg.Target)}");
+#endif
 
-            var allowed = LocationHelper.GetAllowedLocations(_config).ToList();
+            var allPoints = new List<(string PascalName, string LocationId, string Target)>();
 
-            if (!allowed.Any()) return null;
-
-            foreach (var (pascalName, locationId) in allowed.OrderBy(_ => _random.Next()))
+            foreach (var (pascalName, locationId) in allowed)
             {
-                var key = new QuestKey(locationId, "KILL", "", "Kill");
-                if (!_tracker.TryUse(key)) continue;
+                foreach (var target in cfg.Target)
+                {
+                    allPoints.Add((pascalName, locationId, target));
+                }
+            }
+#if DEBUG
+            _logger.Warning($"[QuestFilterMod][KillQuest] Total possible combinations: {allPoints.Count}");
+#endif
+            if (!allPoints.Any())
+                return null;
 
-                var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
+            foreach (var (pascalName, locationId, target) in allPoints.OrderBy(_ => _random.Next()))
+            {
+                var key = new QuestKey(locationId, target, "__KILL__", "Kill");
+                var keyStr = key.ToString();
+                var wasUsed = _tracker.IsUsed(key);
+#if DEBUG
+                _logger.Warning($"[QuestFilterMod][KillQuest] Trying key: {keyStr} (used: {wasUsed})");
+#endif
+                if (!_tracker.TryUse(key))
+                {
+#if DEBUG
+                    _logger.Info($"[QuestFilterMod][KillQuest] Key {keyStr} already used — skipping");
+#endif
+                    continue;
+                }
+#if DEBUG
+                _logger.Info($"[QuestFilterMod][KillQuest] ✅ Using key: {keyStr} (tracker count now: {_tracker})");
+#endif
                 var randomKill = _random.Next(cfg.MinKills, cfg.MaxKills + 1);
 
-                return GenerateBaseQuest("Kill", (q, id) =>
+                var quest = GenerateBaseQuest("Kill", (q, idFactory) =>
                 {
                     q.Location = locationId;
                     q.Type = QuestTypeEnum.Elimination;
 
-                    q.Conditions.AvailableForFinish = new List<QuestCondition> {
-                        new QuestCondition()
+                    q.Conditions.AvailableForFinish = new List<QuestCondition>
+                    {
+                        new()
                         {
                             Id = idFactory(),
                             ConditionType = "CounterCreator",
@@ -43,59 +67,27 @@ namespace QuestFilterMod.RandomQuests
                             Type = "Elimination",
                             VisibilityConditions = [],
                             Counter = new QuestConditionCounter()
+                            {
+                                Conditions = new List<QuestConditionCounterCondition>
                                 {
-                                    Conditions = new List<QuestConditionCounterCondition>
-                                    {
-                                        new QuestConditionCounterCondition
-                                        {
-                                            ConditionType = "Kills",
-                                            CompareMethod = ">=",
-                                            Daytime = new DaytimeCounter() {
-                                                From = 0,
-                                                To = 0
-                                            },
-                                            Distance = new CounterConditionDistance()
-                                            {
-                                                CompareMethod = ">=",
-                                                Value = 0
-                                            },
-                                            DynamicLocale = false,
-                                            EnemyEquipmentExclusive = [],
-                                            EnemyEquipmentInclusive = [],
-                                            EnemyHealthEffects = [],
-                                            Weapon = [],
-                                            WeaponCaliber = [],
-                                            WeaponModsExclusive = [],
-                                            WeaponModsInclusive = [],
-                                            Id = idFactory(),
-                                            ResetOnSessionEnd = false,
-                                            //SavageRole  = [],
-                                            ExtensionData = new Dictionary<string?, object?>
-                                            {
-                                                ["target"] = cfg.Target
-                                            },
-                                            Value = 1
-                                        },
-                                        new QuestConditionCounterCondition { 
-                                            ConditionType = "Location",
-                                            DynamicLocale = false,
-                                            Id = idFactory(),
-                                            ExtensionData = new Dictionary<string?, object?>
-                                            {
-                                                ["target"] = new[] { pascalName }
-                                            }
+                                    ConditionKillEnemy(target, idFactory),
+                                    ConditionLocation(pascalName, idFactory)
 
-                                        }
-                                    },
-                                    Id = idFactory()
-                                }
-
+                                },
+                                Id = idFactory()
+                            }
                         }
-
                     };
                 });
-            }
 
+                if(Plugin.Config.Debug)
+                    _logger.Info($"[QuestFilterMod][KillQuest] ✅ Generated: {locationId} → {target} ({randomKill} kills)");
+
+                return quest;
+            }
+#if DEBUG
+            _logger.Warning($"[QuestFilterMod][KillQuest] All {allPoints.Count} combinations are already used — returning null");
+#endif
             return null;
         }
     }

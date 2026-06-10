@@ -1,5 +1,4 @@
-﻿using SPTarkov.Server.Core.Models.Spt.Config;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace QuestFilterMod.RandomQuests.Models
 {
@@ -8,20 +7,17 @@ namespace QuestFilterMod.RandomQuests.Models
         public string Id { get; set; } = "";
         public List<string> Targets { get; set; } = new();
     }
-
     public class DefaultQuestConfig
     {
         public string Image { get; set; } = "";
         public ExperienceRange ExperienceRewardRange { get; set; } = new();
     }
-
     public class ExperienceRange
     {
         public int Min { get; set; } = 1000;
         public int Max { get; set; } = 5000;
         public int Step { get; set; } = 100;
     }
-
     public class MoneyRewardConfig
     {
         public bool Enabled { get; set; } = true;
@@ -30,7 +26,6 @@ namespace QuestFilterMod.RandomQuests.Models
         public int Max { get; set; } = 100000;
         public int Step { get; set; } = 10000;
     }
-
     public class RewardItemsConfig
     {
         public bool Enabled { get; set; } = true;
@@ -79,20 +74,31 @@ namespace QuestFilterMod.RandomQuests.Models
     {
         public bool Exploration { get; set; } = true;
         public bool Delivery { get; set; } = true;
+        public bool Beacon { get; set; } = true;
         public bool Kills { get; set; } = true;
-    }
+        public bool Transfer { get; set; } = true;
 
-    public class DeliveryQuestConfig
+    }
+    public class DeployQuestBaseConfig
     {
-        public int PlantTime { get; set; } = 30;
-        public List<string> ItemPlant { get; set; } = new();
+        public int PlantTime { get; set; } = 30000;
         public Dictionary<string, LocationConfig> Locations { get; set; } = new();
+    }
+    public class DeployQuestConfig : DeployQuestBaseConfig
+    {
+        public List<string> ItemPlant { get; set; } = new();
     }
     public class KillQuestConfig
     {
         public int MinKills { get; set; } = 5;
         public int MaxKills { get; set; } = 15;
-        public string Target { get; set; } = "Any";
+        public string[] Target { get; set; } = ["Any"];
+    }
+    public class TransferQuestConfig
+    {
+        public List<string> ItemIds { get; set; } = new();
+        public int[] ItemCount { get; set; } = [1, 5];
+        public int[] Condition { get; set; } = [1, 5];
     }
     public class ZoneConfig
     {
@@ -100,20 +106,18 @@ namespace QuestFilterMod.RandomQuests.Models
         public string Target { get; set; } = "";
         public int Weight { get; set; } = 1;
     }
-
-    // ✅ Основной конфиг — обновлён
     public class QuestConfig
     {
         public Dictionary<string, LocationConfig> ExplorationQuest { get; set; } = new();
-
         public List<string> TraderIds { get; set; } = new();
         public DefaultQuestConfig DefaultQuest { get; set; } = new();
         public MoneyRewardConfig RewardMoney { get; set; } = new();
         public RewardItemsConfig RewardItems { get; set; } = new();
-
-        public DeliveryQuestConfig DeliveryQuest { get; set; } = new();
+        public DeployQuestConfig DeliveryQuest { get; set; } = new();
+        public DeployQuestConfig BeaconQuest { get; set; } = new();
         public QuestGenerationConfig QuestGeneration { get; set; } = new();
         public KillQuestConfig KillQuest { get; set; } = new();
+        public TransferQuestConfig TransferQuest { get; set; } = new();
         public TraderStandingRewardConfig RewardTraderStanding { get; set; } = new();
     }
 }

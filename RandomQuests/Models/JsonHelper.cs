@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.Collections;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -15,12 +12,10 @@ namespace QuestFilterMod.RandomQuests.Utils
             PropertyNameCaseInsensitive = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
-
         static JsonHelper()
         {
             Options.Converters.Add(new ObjectConverter());
         }
-
         public static T? LoadFromJson<T>(string filePath)
         {
             if (!File.Exists(filePath))
@@ -45,7 +40,6 @@ namespace QuestFilterMod.RandomQuests.Utils
         }
     }
 
-    // Конвертер для object, Dictionary<string, object>, List<object> и т.д.
     public class ObjectConverter : JsonConverter<object>
     {
         public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

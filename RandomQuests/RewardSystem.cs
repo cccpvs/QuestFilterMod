@@ -17,7 +17,7 @@ namespace QuestFilterMod.RandomQuests
         }
         private void AddExperienceReward(Quest quest)
         {
-            var range = _config.DefaultQuest.ExperienceRewardRange;
+            var range = ConfigRandom.DefaultQuest.ExperienceRewardRange;
             int exp = _random.Next(range.Min / range.Step, (range.Max / range.Step) + 1) * range.Step;
 
             GetOrCreateRewardList(quest, "Success").Add(new Reward
@@ -30,50 +30,47 @@ namespace QuestFilterMod.RandomQuests
                 IsHidden = false
             });
         }
-
         private void AddMoneyReward(Quest quest)
         {
-            if (!_config.RewardMoney.Enabled || string.IsNullOrEmpty(_config.RewardMoney.Tpl)) return;
+            if (!ConfigRandom.RewardMoney.Enabled || string.IsNullOrEmpty(ConfigRandom.RewardMoney.Tpl)) return;
 
-            int amount = GenerateRandomAmount(_config.RewardMoney.Min, _config.RewardMoney.Max, _config.RewardMoney.Step);
-            AddItemReward(quest, _config.RewardMoney.Tpl, amount, "RUB");
+            int amount = GenerateRandomAmount(ConfigRandom.RewardMoney.Min, ConfigRandom.RewardMoney.Max, ConfigRandom.RewardMoney.Step);
+            AddItemReward(quest, ConfigRandom.RewardMoney.Tpl, amount, "RUB");
         }
         private void AddRandomItemRewards(Quest quest)
         {
-            if (!_config.RewardItems.Enabled || !_config.RewardItems.Parents.Any()) return;
+            if (!ConfigRandom.RewardItems.Enabled || !ConfigRandom.RewardItems.Parents.Any()) return;
 
             var prices = _databaseService.GetPrices();
             var itemsPool = _databaseService.GetTemplates().Items;
 
             if (prices == null || !prices.Any() || !itemsPool.Any())
             {
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Error("[QuestFilterMod][RewardSystem] ❌ Не удалось загрузить данные из базы.");
                 return;
             }
 
-            // === Используем диапазон из конфига ===
-            int minPrice = _config.RewardItems.PriceRange.Min;
-            int maxPrice = _config.RewardItems.PriceRange.Max;
+            int minPrice = ConfigRandom.RewardItems.PriceRange.Min;
+            int maxPrice = ConfigRandom.RewardItems.PriceRange.Max;
 
             if (minPrice < 0) minPrice = 0;
             if (maxPrice < minPrice) maxPrice = minPrice;
 
             // === Шаг 1: Выбираем родительские ID с учётом весов ===
-            var weightedParents = _config.RewardItems.Parents
+            var weightedParents = ConfigRandom.RewardItems.Parents
                 .Where(p => p.Weight > 0 && !string.IsNullOrEmpty(p.Id))
                 .ToList();
 
             if (!weightedParents.Any())
             {
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Error("[QuestFilterMod][RewardSystem] ❌ Нет активных родителей с весом > 0.");
                 return;
             }
 
             var parentIds = weightedParents.Select(p => new { Id = new MongoId(p.Id), p.Weight }).ToList();
 
-            // === Шаг 2: Фильтруем по цене и категории ===
             var validItemsByParent = new Dictionary<MongoId, List<MongoId>>();
 
             foreach (var kvp in prices)
@@ -82,7 +79,7 @@ namespace QuestFilterMod.RandomQuests
                 if (!itemsPool.TryGetValue(tplId, out var template)) continue;
 
                 double price = kvp.Value;
-                if (price < minPrice || price > maxPrice) continue; // ← Теперь из конфига
+                if (price < minPrice || price > maxPrice) continue;
 
                 var parentId = template.Parent;
                 if (!parentIds.Any(p => p.Id == parentId)) continue;
@@ -93,7 +90,6 @@ namespace QuestFilterMod.RandomQuests
                 validItemsByParent[parentId].Add(tplId);
             }
 
-            // Удаляем пустые категории
             var nonEmptyParents = parentIds
                 .Where(p => validItemsByParent.ContainsKey(p.Id) && validItemsByParent[p.Id].Any())
                 .ToList();
@@ -101,17 +97,17 @@ namespace QuestFilterMod.RandomQuests
             if (!nonEmptyParents.Any())
             {
 #if DEBUG
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Error("[QuestFilterMod][RewardSystem] ❌ Нет подходящих предметов по цене и категориям.");
 #endif
                 return;
             }
 #if DEBUG
-            if (Plugin._config.Debug)
+            if (Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][RewardSystem] Найдено {nonEmptyParents.Count} категорий с подходящими предметами.");
 #endif
-            // Сколько наград выдать
-            int count = _random.Next(_config.RewardItems.Count.Min, _config.RewardItems.Count.Max + 1);
+
+            int count = _random.Next(ConfigRandom.RewardItems.Count.Min, ConfigRandom.RewardItems.Count.Max + 1);
             var usedTpls = new HashSet<string>();
 
             for (int i = 0; i < count; i++)
@@ -146,8 +142,7 @@ namespace QuestFilterMod.RandomQuests
         }
         private MongoId? GetRandomSpecialItem()
         {
-            // ✅ Используем список из конфига
-            var allowedTpls = _config.DeliveryQuest.ItemPlant;
+            var allowedTpls = ConfigRandom.DeliveryQuest.ItemPlant;
             if (!allowedTpls.Any())
             {
                 _logger?.Info("[QuestFilterMod][RewardSystem] 📌 The ItemPlant list is empty!");
@@ -156,7 +151,6 @@ namespace QuestFilterMod.RandomQuests
 
             var items = _databaseService.GetTemplates().Items;
 
-            // Фильтруем: только те TPL, которые есть в базе
             var candidates = items
                 .Where(kvp => allowedTpls.Contains(kvp.Key))
                 .Select(kvp => kvp.Key)
@@ -177,28 +171,26 @@ namespace QuestFilterMod.RandomQuests
                 return null;
             }
 
-            if (Plugin._config.Debug)
+            if (Plugin.Config.Debug)
                 _logger?.Debug($"[QuestFilterMod][RewardSystem] ✔️ Found {candidates.Count} items from {allowedTpls.Count} TPL.");
 
-            // Выбираем случайный TPL
             return new MongoId(candidates[_random.Next(candidates.Count)]);
         }
         private void AddTraderStandingReward(Quest quest)
         {
-            if (!_config.RewardTraderStanding.Enabled)
+            if (!ConfigRandom.RewardTraderStanding.Enabled)
                 return;
 
-            // Генерируем случайное значение: от Min до Max
             float value = (float)_random.NextDouble() *
-                          (_config.RewardTraderStanding.Max - _config.RewardTraderStanding.Min) +
-                          _config.RewardTraderStanding.Min;
+                          (ConfigRandom.RewardTraderStanding.Max - ConfigRandom.RewardTraderStanding.Min) +
+                          ConfigRandom.RewardTraderStanding.Min;
 
             GetOrCreateRewardList(quest, "Success").Add(new Reward
             {
                 Id = new MongoId(Guid.NewGuid().ToString("N")[..24]),
                 Type = RewardType.TraderStanding,
                 Target = quest.TraderId,
-                Value = (float)Math.Round(value, 3), // Округляем до 3 знаков (например: 0.017)
+                Value = (float)Math.Round(value, 3),
                 FindInRaid = false,
                 IsEncoded = false,
                 IsHidden = false,
@@ -207,13 +199,11 @@ namespace QuestFilterMod.RandomQuests
                 AvailableInGameEditions = new HashSet<string>()
             });
         }
-
         private int GenerateRandomAmount(int min, int max, int step)
         {
             int range = (max - min) / step;
             return min + _random.Next(range + 1) * step;
         }
-
         private void AddItemReward(Quest quest, string tpl, int count, string name = "Item", string rewardType = "Success")
         {
             string itemId = Guid.NewGuid().ToString("N")[..24];
@@ -224,7 +214,7 @@ namespace QuestFilterMod.RandomQuests
             gameItem.Upd = new Upd()
             {
                 StackObjectsCount = count,
-                
+
             };
 
             var reward = new Reward
