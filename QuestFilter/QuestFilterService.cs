@@ -32,57 +32,53 @@ public class QuestFilterService
         _customQuestService = customQuestService;
     }
 
-    public void ApplyFilters(QuestFilterConfig config)
+    public void ApplyFilters(QuestFilterConfig Config)
     {
         // 🔒 Защита от повторного вызова
         if (_hasAppliedFilters)
         {
-            if (Plugin._config.Debug)
+            if (Plugin.Config.Debug)
                 _logger.Info("[QuestFilterMod][QuestFilterService] Filters have already been applied. We skip reprocessing.");
             return;
         }
         _hasAppliedFilters = true;
 
-        if (!config.Enabled) return;
+        if (!Config.Enabled) return;
 
         var quests = _databaseService.GetQuests();
         if (quests == null || quests.Count == 0)
         {
-            if (Plugin._config.Debug)
+            if (Plugin.Config.Debug)
                 _logger.Info("[QuestFilterMod][QuestFilterService] There are no quests in the database.");
             return;
         }
 
 
-        var allowedTypes = GetAllowedTypes(config);
+        var allowedTypes = GetAllowedTypes(Config);
         var allQuestList = quests.Values
             .Where(q => allowedTypes.Contains(q.Type))
-            .Where(q => !ShouldExcludeByProgressSource(q, config))
+            .Where(q => !ShouldExcludeByProgressSource(q, Config))
             .ToList();
 
-        bool shouldGenerate = config.GenerateRandomQuests.Enable && config.GenerateRandomQuests.Count > 0;
+        bool shouldGenerate = Config.GenerateRandomQuests.Enable && Config.GenerateRandomQuests.Count > 0;
 
-        // Если нет подходящих квестов и не будет генерации — удаляем ВСЕ квесты, если нужно
         if (allQuestList.Count == 0 && !shouldGenerate)
         {
-            if (Plugin._config.Debug)
+            if (Plugin.Config.Debug)
                 _logger.Info("[QuestFilterMod][QuestFilterService] There are no suitable quests by type and generation is disabled.");
 
-            // 🟢 Используем другое имя, чтобы не конфликтовать с будущей переменной
             var emptySelected = new List<Quest>();
-            ModifyQuests(quests, emptySelected, config);
+            ModifyQuests(quests, emptySelected, Config);
 
-            if (Plugin._config.Debug)
+            if (Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][QuestFilterService] Done: {emptySelected.Count} quests left.");
 
             return;
         }
-
-        // ✅ Теперь безопасно объявляем основную переменную
-        var selectedQuests = SelectQuests(allQuestList, config);
+        var selectedQuests = SelectQuests(allQuestList, Config);
 
         // Генерация случайных квестов
-        if (config.GenerateRandomQuests.Enable && config.GenerateRandomQuests.Count > 0)
+        if (Config.GenerateRandomQuests.Enable && Config.GenerateRandomQuests.Count > 0)
         {
             // 🔁 Сбрасываем трекер перед серией генерации
             // Это позволяет использовать ВСЕ точки и предметы снова
@@ -91,9 +87,17 @@ public class QuestFilterService
             var generatedCount = 0;
             var generatedQuests = new List<Quest>();
 
-            for (int i = 0; i < config.GenerateRandomQuests.Count; i++)
+            for (int i = 0; i < Config.GenerateRandomQuests.Count; i++)
             {
                 var randomQuest = _randomQuestGenerator.GenerateSingleQuest();
+
+                if (_randomQuestGenerator.HasExhaustedAllOptions)
+                {
+                    if (Plugin.Config.Debug)
+                        _logger.Info("[QuestFilterMod][QuestFilterService] 🛑 Quest generator exhausted all options — stopping further attempts.");
+                    break;
+                }
+
                 if (randomQuest != null)
                 {
                     generatedQuests.Add(randomQuest);
@@ -105,7 +109,7 @@ public class QuestFilterService
                         quests[randomQuest.Id] = randomQuest;
                     }
 
-                    if (Plugin._config.Debug)
+                    if (Plugin.Config.Debug)
                     {
                         var locationName = LocationHelper.TryGetPascalName(randomQuest.Location, out var pascalName)
                         ? pascalName.ToLowerInvariant()
@@ -118,12 +122,12 @@ public class QuestFilterService
             // Добавляем в selectedQuests, чтобы они не были удалены
             selectedQuests.AddRange(generatedQuests);
 
-            if (Plugin._config.Debug)
-                _logger.Info($"[QuestFilterMod][QuestFilterService] Done: Generated {generatedCount} random quests.");
+            if (Plugin.Config.Debug)
+                _logger.Success($"[QuestFilterMod][QuestFilterService] Done: Generated {generatedCount} random quests.");
         }
 
 
-        ModifyQuests(quests, selectedQuests, config);
+        ModifyQuests(quests, selectedQuests, Config);
 
         var tables = _databaseService.GetTables();
         foreach (var quest in selectedQuests)
@@ -158,7 +162,7 @@ public class QuestFilterService
             .ToHashSet();
     }
 
-    private List<Quest> SelectQuests(List<Quest> allQuests, QuestFilterConfig config)
+    private List<Quest> SelectQuests(List<Quest> allQuests, QuestFilterConfig Config)
     {
         var random = new Random();
         var selected = new List<Quest>();
@@ -175,20 +179,20 @@ public class QuestFilterService
         var locationProps = typeof(LocationQuestConfig).GetProperties();
 
         bool hasLocationFilters = locationProps
-            .Select(p => p.GetValue(config.RandomQuests.Location))
+            .Select(p => p.GetValue(Config.RandomQuests.Location))
             .Any(v => v is int count && count > 0);
 
-        if (!hasLocationFilters && config.RandomQuests.Count == 0)
+        if (!hasLocationFilters && Config.RandomQuests.Count == 0)
         {
-            if (config.GenerateRandomQuests.Enable && config.GenerateRandomQuests.Count > 0)
+            if (Config.GenerateRandomQuests.Enable && Config.GenerateRandomQuests.Count > 0)
             {
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Info("[QuestFilterMod][QuestFilterService] Random quests only mode: standard quests are NOT added");
 
                 return new List<Quest>();
             }
 
-            if (Plugin._config.Debug)
+            if (Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][QuestFilterService] 'All quests' mode: left {allQuests.Count} quests by type");
 
             return new List<Quest>(allQuests);
@@ -196,27 +200,27 @@ public class QuestFilterService
 
         foreach (var prop in locationProps)
         {
-            var value = prop.GetValue(config.RandomQuests.Location);
+            var value = prop.GetValue(Config.RandomQuests.Location);
             if (value is not int count || count <= 0) continue;
 
             var jsonAttr = prop.GetCustomAttribute<JsonPropertyNameAttribute>();
             if (jsonAttr == null) continue;
 
             string locationKey = jsonAttr.Name;
-            AddFromGroup(grouped, locationKey, count, selected, random, config.Debug);
+            AddFromGroup(grouped, locationKey, count, selected, random, Config.Debug);
         }
 
-        if (config.RandomQuests.Count > 0 && selected.Count < config.RandomQuests.Count)
+        if (Config.RandomQuests.Count > 0 && selected.Count < Config.RandomQuests.Count)
         {
-            var remaining = config.RandomQuests.Count - selected.Count;
+            var remaining = Config.RandomQuests.Count - selected.Count;
             var alreadySelectedIds = selected.Select(q => q.Id).ToHashSet();
             var available = allQuests.Where(q => !alreadySelectedIds.Contains(q.Id)).ToList();
 
             var extra = available.OrderBy(_ => random.Next()).Take(remaining).ToList();
             selected.AddRange(extra);
 
-            if (config.Debug)
-                _logger.Info($"[QuestFilterMod][QuestFilterService] Added {extra.Count} quests to achieve total={config.RandomQuests.Count}");
+            if (Config.Debug)
+                _logger.Info($"[QuestFilterMod][QuestFilterService] Added {extra.Count} quests to achieve total={Config.RandomQuests.Count}");
         }
 
         return selected;
@@ -238,7 +242,7 @@ public class QuestFilterService
         var picked = available.OrderBy(_ => random.Next()).Take(count).ToList();
         selected.AddRange(picked);
 
-        if (Plugin._config.Debug)
+        if (Plugin.Config.Debug)
             _logger.Info($"[QuestFilterMod][QuestFilterService] {picked.Count} quests for '{key}'");
     }
 
@@ -261,7 +265,7 @@ public class QuestFilterService
                     countRemoveQuest++;
             }
         }
-        if (Plugin._config.Debug)
+        if (Plugin.Config.Debug)
             _logger.Info($"[QuestFilterMod][QuestFilterService] Total deleted: {countRemoveQuest}");
 
         var countTraiderTransfer = 0;
@@ -276,7 +280,7 @@ public class QuestFilterService
                 if (!q.Rewards.ContainsKey(status))
                 {
                     q.Rewards[status] = new List<Reward>();
-                    if (Plugin._config.Debug)
+                    if (Plugin.Config.Debug)
                         _logger.Info($"[QuestFilterMod][QuestFilterService] ⚠️ Reward status restored: '{status}' for the quest '{q.Id}'");
                 }
             }
@@ -286,7 +290,7 @@ public class QuestFilterService
                 q.TraderId = config.TargetTraderId;
                 countTraiderTransfer++;
 #if DEBUG
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Info($"[QuestFilterMod][QuestFilterService] Quest '{q.Name}' ({q.Id}) → trader {config.TargetTraderId}");
 #endif
 
@@ -295,7 +299,7 @@ public class QuestFilterService
             if (config.RemoveStartConditionsQuest && q.Conditions?.AvailableForStart != null)
             {
                 q.Conditions.AvailableForStart.Clear();
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Info($"[QuestFilterMod][QuestFilterService] Start conditions have been removed for the quest '{q.Name}'");
             }
 
@@ -313,7 +317,7 @@ public class QuestFilterService
                     {
                         toRemove.Add(condition);
 #if DEBUG
-                        if (Plugin._config.Debug)
+                        if (Plugin.Config.Debug)
                             _logger.Info($"[QuestFilterMod][QuestFilterService] Condition removed'{checkType}' from the quest '{q.Name}'");
 #endif
 
@@ -327,7 +331,7 @@ public class QuestFilterService
             }
         }
 
-        if (Plugin._config.Debug)
+        if (Plugin.Config.Debug)
         {
             var locationStats = new Dictionary<string, int>();
             var locationDetails = new List<string>();

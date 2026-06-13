@@ -18,6 +18,8 @@ namespace QuestFilterMod.RandomQuests
 
                 var locales = new Dictionary<string, Dictionary<string, string>>();
                 FillQuestLocales(quest, locales);
+                
+
 
                 var newQuestDetails = new NewQuestDetails
                 {
@@ -32,7 +34,7 @@ namespace QuestFilterMod.RandomQuests
                 if (result.Success)
                 {
 #if DEBUG
-                    if (Plugin._config.Debug)
+                    if (Plugin.Config.Debug)
                         _logger.Info($"[QuestFilterMod][QuestRegistration] ✅ Quest '{quest.Id}' has been successfully created and localized.");
 #endif
 
@@ -41,14 +43,14 @@ namespace QuestFilterMod.RandomQuests
                 {
                     foreach (string error in result.Errors)
                     {
-                        if (Plugin._config.Debug)
+                        if (Plugin.Config.Debug)
                             _logger.Error($"[QuestFilterMod][QuestRegistration] ❌ Error creating quest: {error}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Error($"[QuestFilterMod][QuestRegistration] 🔥 Exception when registering a quest: {ex}");
             }
         }

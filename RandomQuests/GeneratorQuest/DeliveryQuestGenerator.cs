@@ -9,61 +9,96 @@ namespace QuestFilterMod.RandomQuests
     {
         private Quest? GenerateDeliveryQuest()
         {
-            var delivery = _config.DeliveryQuest;
-            if (!delivery.Locations.Any()) return null;
+            return GenerateDeployQuest(
+                questType: "Delivery",
+                config: СonfigRandom.DeliveryQuest,
+                conditionType: "LeaveItemAtLocation"
+            );
+        }
 
-            var allowed = LocationHelper.GetAllowedLocations(_config).ToList();
+        private Quest? GenerateBeaconQuest()
+        {
+            return GenerateDeployQuest(
+                questType: "Delivery",
+                config: СonfigRandom.BeaconQuest,
+                conditionType: "PlaceBeacon"
+            );
+        }
+
+        private Quest? GenerateDeployQuest(
+    string questType,
+    DeployQuestConfig config,
+    string conditionType)
+        {
+            if (!config.Locations.Any()) return null;
+
+            var allowed = LocationHelper.GetAllowedLocations(СonfigRandom).ToList();
 
             var allPoints = new List<(LocationConfig Config, string Target)>();
 
             foreach (var (pascalName, locationId) in allowed)
             {
-                if (delivery.Locations.TryGetValue(pascalName, out var config))
+                if (config.Locations.TryGetValue(pascalName, out var locConfig))
                 {
-                    foreach (var target in config.Targets.Where(t => !string.IsNullOrEmpty(t)))
+                    foreach (var target in locConfig.Targets.Where(t => !string.IsNullOrEmpty(t)))
                     {
-                        allPoints.Add((config, target));
+                        allPoints.Add((locConfig, target));
                     }
                 }
             }
 
             if (!allPoints.Any()) return null;
 
+            var itemTplList = config.ItemPlant.Any()
+                ? config.ItemPlant  
+                : new List<string> { GetRandomSpecialItem()?.ToString() ?? "" };
+
+            var validItems = itemTplList.Where(t => !string.IsNullOrEmpty(t)).ToList();
+            if (!validItems.Any())
+            {
+#if DEBUG
+                _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] No valid items in ItemPlant or special items — skipping.");
+#endif
+                return null;
+            }
+            var randomItemTpl = validItems.OrderBy(_ => _random.Next()).First();
+
+#if DEBUG
+            if (string.IsNullOrEmpty(randomItemTpl))
+            {
+                _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] No valid items to deploy — skipping.");
+                return null;
+            }
+#endif
+
             foreach (var (loc, targetPoint) in allPoints.OrderBy(_ => _random.Next()))
             {
-                var itemTpl = GetRandomSpecialItem();
+                var itemTpl = randomItemTpl;
+
+                var key = new QuestKey(loc.Id, targetPoint, itemTpl, questType);
+
 #if DEBUG
-                if (itemTpl == null)
-                {
-                    _logger?.Info($"[QuestFilterMod][DeliveryQuestGenerator] GetRandomSpecialItem() returned null — skipping delivery quest generation.");
-                    continue;
-                }
+                _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] Attempting to use QuestKey: {key}");
 #endif
-                
-                if (itemTpl == null) continue;
-
-                var key = new QuestKey(loc.Id, targetPoint, itemTpl.ToString(), "Delivery");
-#if DEBUG
-                _logger?.Info($"[QuestFilterMod][DeliveryQuestGenerator] Attempting to use QuestKey: {key}");
-
-#endif
-
 
                 if (!_tracker.TryUse(key)) continue;
+
 #if DEBUG
-                _logger?.Info($"[QuestFilterMod][DeliveryQuestGenerator] QuestKey: {loc.Id}, {targetPoint}, {itemTpl}, \"Delivery\"");
+                _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] QuestKey: {loc.Id}, {targetPoint}, {itemTpl}, \"{questType}\"");
 #endif
 
-
-                return GenerateBaseQuest("Delivery", (q, id) =>
+                return GenerateBaseQuest(questType, (q, id) =>
                 {
                     q.Location = loc.Id;
                     q.Type = QuestTypeEnum.Discover;
+
                     if (!LocationHelper.TryGetPascalName(loc.Id, out var pascalName))
                         return;
+
                     var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
                     var itemId = id();
                     var idItems = itemId;
+
                     GetOrCreateRewardList(q, "Started").Add(new Reward
                     {
                         Id = id(),
@@ -74,47 +109,47 @@ namespace QuestFilterMod.RandomQuests
                         IsEncoded = false,
                         Unknown = false,
                         Items = new List<Item>
-                        {
-                            new Item
-                            {
-                                Id = idItems,
-                                Template = itemTpl.Value,
-                                Upd = new Upd { StackObjectsCount = 1 }
-                            }
-                        }
+                {
+                    new()
+                    {
+                        Id = idItems,
+                        Template = itemTpl,
+                        Upd = new Upd { StackObjectsCount = 1 }
+                    }
+                }
                     });
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
+            {
+                new()
+                {
+                    Id = idFactory(),
+                    ConditionType = conditionType,
+                    DogtagLevel = 0,
+                    GlobalQuestCounterId = "",
+                    IsEncoded = false,
+                    OnlyFoundInRaid = false,
+                    OneSessionOnly = false,
+                    Value = 1,
+                    Index = 1,
+                    ZoneId = targetPoint,
+                    DynamicLocale = false,
+                    MaxDurability = 100,
+                    MinDurability = 0,
+                    ParentId = "",
+                    PlantTime = config.PlantTime,
+                    VisibilityConditions = [],
+                    ExtensionData = new Dictionary<string?, object?>
                     {
-                        new QuestCondition
-                        {
-                            Id = idFactory(),
-                            ConditionType = "LeaveItemAtLocation",
-                            
-                            DogtagLevel = 0,
-                            GlobalQuestCounterId = "",
-                            IsEncoded = false,
-                            OnlyFoundInRaid = false,
-                            OneSessionOnly = false,
-                            Value = 1,
-                            Index = 1,
-                            ZoneId = targetPoint,
-                            DynamicLocale = false,
-                            MaxDurability = 100,
-                            MinDurability = 0,
-                            ParentId = "",
-                            PlantTime = delivery.PlantTime,
-                            VisibilityConditions = [],
-                            ExtensionData = new Dictionary<string?, object?>
-                            {
-                                ["target"] = new[] { itemTpl },
-                            }
-                        }
-                    };
+                        ["target"] = new[] { itemTpl }
+                    }
+                }
+            };
+
 #if DEBUG
                     q.Conditions.AvailableForStart = new List<QuestCondition>
                     {
-                        new QuestCondition 
+                        new()
                         {
                             Id = idFactory(),
                             CompareMethod = ">=",
@@ -129,7 +164,6 @@ namespace QuestFilterMod.RandomQuests
                     };
 #endif
                 });
-
             }
 
             return null;

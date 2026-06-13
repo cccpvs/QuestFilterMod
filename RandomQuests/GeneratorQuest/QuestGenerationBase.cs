@@ -19,10 +19,10 @@ namespace QuestFilterMod.RandomQuests
                 QuestName = $"{questId} questName",
                 Description = $"{questId} description",
                 Note = $"{questId} note",
-                TraderId = new MongoId(_config.TraderIds.RandomItem(_random)),
+                TraderId = new MongoId(СonfigRandom.TraderIds.RandomItem(_random)),
                 Side = "Pmc",
                 Location = "any",
-                Image = _config.DefaultQuest.Image ?? "/files/quest/icon/default.jpg",
+                Image = СonfigRandom.DefaultQuest.Image ?? "/files/quest/icon/default.jpg",
                 Type = QuestTypeEnum.PickUp,
                 CanShowNotificationsInGame = true,
                 Restartable = false,
@@ -62,14 +62,14 @@ namespace QuestFilterMod.RandomQuests
 
             if (string.IsNullOrEmpty(quest.Location))
             {
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Info($"[QuestFilterMod][QuestGenerationBase] ❌ Quest {quest.Id} doesn't have Location");
                 return null;
             }
 
             AddRewards(quest);
             CreateAndRegisterQuest(quest);
-            if (Plugin._config.Debug)
+            if (Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][QuestGenerationBase] ✅ Quest '{quest.Id}' ({type}) created");
 
 #if DEBUG

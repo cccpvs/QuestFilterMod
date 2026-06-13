@@ -17,10 +17,12 @@ namespace QuestFilterMod.RandomQuests
         private readonly DatabaseService _databaseService;
         private readonly DatabaseServer databaseServer;
         private readonly Random _random = new();
-        private readonly QuestConfig _config;
+        private readonly QuestConfig СonfigRandom;
         private readonly UniqueQuestTracker _tracker = new();
         private readonly CustomQuestService _customQuestService;
+        private bool _hasExhaustedAllOptions = false;
 
+        public bool HasExhaustedAllOptions => _hasExhaustedAllOptions;
         public record QuestKey(string LocationId, string TargetPoint, string ItemTpl = "", string QuestType = "");
 
         public class UniqueQuestTracker
@@ -59,73 +61,84 @@ namespace QuestFilterMod.RandomQuests
                 "RandomQuestConfig.json"
             );
 
-            if (Plugin._config.Debug)
+            if (Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][RandomQuestGenerator] I'm looking for a config: {configPath}");
 
             if (!File.Exists(configPath))
             {
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Error($"[QuestFilterMod][RandomQuestGenerator]❌ Config file not found: {configPath}");
                 throw new FileNotFoundException("[QuestFilterMod][RandomQuestGenerator] Quest configuration not found", configPath);
             }
 
-            _config = JsonHelper.LoadFromJson<QuestConfig>(configPath)
+            СonfigRandom = JsonHelper.LoadFromJson<QuestConfig>(configPath)
                 ?? throw new InvalidOperationException("[QuestFilterMod][RandomQuestGenerator] Failed to load quest configuration.");
         }
 
-        public Quest? GenerateSingleQuest()
+        public Quest? GenerateSingleQuest(int maxAttempts = 10)
         {
             try
             {
-                var candidates = new List<(string Type, Func<Quest?> Generator)>();
-
-                if (_config.QuestGeneration.Types.Exploration)
-                    candidates.Add(("Exploration", GenerateExplorationQuest));
-
-                if (_config.QuestGeneration.Types.Delivery)
-                    candidates.Add(("Delivery", GenerateDeliveryQuest));
-
-                if (_config.QuestGeneration.Types.Kills)
-                    candidates.Add(("Kill", GenerateKillQuest));
-
-                if (!candidates.Any())
-                {
-                    if (Plugin._config.Debug)
-                        _logger.Error("[QuestFilterMod][RandomQuestGenerator] ❌ There are no available quest types to generate.");
-                    return null;
-                }
                 var locations = _databaseService.GetLocations()?.GetDictionary();
                 if (locations != null && !LocationHelper.IdToPascalName.Any())
                 {
                     LocationHelper.Initialize(locations);
                 }
 
-                // 🔁 Перемешиваем случайно — чтобы не всегда сначала exploration
-                candidates = candidates.OrderBy(_ => _random.Next()).ToList();
+                // 🔁 Подготовка типов квестов (один раз)
+                var candidates = new List<(string Type, Func<Quest?> Generator)>();
 
-                // 🔄 Пробуем каждый тип по очереди
-                foreach (var (type, generator) in candidates)
+                if (СonfigRandom.QuestGeneration.Types.Exploration)
+                    candidates.Add(("Exploration", GenerateExplorationQuest));
+
+                if (СonfigRandom.QuestGeneration.Types.Delivery)
+                    candidates.Add(("Delivery", GenerateDeliveryQuest));
+
+                if (СonfigRandom.QuestGeneration.Types.Beacon)
+                    candidates.Add(("Beacon", GenerateBeaconQuest));
+
+                if (СonfigRandom.QuestGeneration.Types.Kills)
+                    candidates.Add(("Kill", GenerateKillQuest));
+
+                if (!candidates.Any())
                 {
-                    var quest = generator();
-                    if (quest != null)
-                    {
-                        if (Plugin._config.Debug)
-                            _logger.Info($"[QuestFilterMod][RandomQuestGenerator] ✅ Quest generated successfully: {type}");
-                        return quest;
-                    }
+                    if (Plugin.Config.Debug)
+                        _logger.Error("[QuestFilterMod][RandomQuestGenerator] ❌ There are no available quest types to generate.");
+                    return null;
                 }
 
-#if DEBUG
-                if (Plugin._config.Debug)
-                    _logger.Warning("[QuestFilterMod][RandomQuestGenerator] All possible combinations have already been used or are not available.");
-#endif
+                // 🔁 Перемешиваем типы ОДИН РАЗ
+                candidates = candidates.OrderBy(_ => _random.Next()).ToList();
+
+                // 🔄 Пытаемся до maxAttempts раз (с учетом дубликатов)
+                for (int attempt = 0; attempt < maxAttempts; attempt++)
+                {
+                    foreach (var (type, generator) in candidates)
+                    {
+                        var quest = generator();
+                        if (quest != null)
+                        {
+                            if (Plugin.Config.Debug)
+                                _logger.Info($"[QuestFilterMod][RandomQuestGenerator] ✅ Quest generated successfully on attempt #{attempt + 1}: {type}");
+                            _hasExhaustedAllOptions = false;
+                            return quest;
+                        }
+                    }
+
+                    // После каждой итерации по всем типам — сбрасываем трекер, если хочешь разрешить повторы
+                    // _tracker.Clear(); // ← раскомментируй, если ты хочешь разрешить повторные квесты
+                }
 
 
+                if (Plugin.Config.Debug)
+                    _logger.Warning($"[QuestFilterMod][RandomQuestGenerator] Could not generate a quest in {maxAttempts} attempts.");
+
+                _hasExhaustedAllOptions = true;
                 return null;
             }
             catch (Exception e)
             {
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Error($"[QuestFilterMod][RandomQuestGenerator] Error when generating quest: {e.Message}\n{e.StackTrace}");
                 return null;
             }

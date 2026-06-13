@@ -1,0 +1,24 @@
+{
+  "base_type_pickup": "Pick Up",
+  "base_type_elimination": "Elimination",
+  "base_type_discover": "Discover point",
+  "base_type_completion": "Completion",
+  "base_type_general": "General Quest",
+
+  "condition_Elimination": "Kill {0} {1}",
+  "condition_VisitPlace": "Visit «{0}» ({1})",
+  "condition_LeaveItemAtLocation": "Hide item «{1}» at «{0}» ({2})",
+  "condition_PlaceBeacon": "Point marker «{0}» zone {1} ({2})",
+  "condition_ExitStatus": "Survive or Transit",
+  "condition_Location": "Exit location: {0}",
+  "condition_Exploration": "Visit point",
+  "condition_Completion": "Survive or Transit",
+  "condition_default": "Complete condition: {0}",
+
+  "quest_accept": "Quest accepted: {0}",
+  "quest_change": "Task updated: {0}",
+  "quest_complete": "Task completed: {0}",
+  "quest_started": "Quest started: {0}",
+  "quest_completed": "Quest completed: {0}",
+  "quest_failed": "Quest failed: {0}"
+}

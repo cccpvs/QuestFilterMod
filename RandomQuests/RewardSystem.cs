@@ -17,7 +17,7 @@ namespace QuestFilterMod.RandomQuests
         }
         private void AddExperienceReward(Quest quest)
         {
-            var range = _config.DefaultQuest.ExperienceRewardRange;
+            var range = СonfigRandom.DefaultQuest.ExperienceRewardRange;
             int exp = _random.Next(range.Min / range.Step, (range.Max / range.Step) + 1) * range.Step;
 
             GetOrCreateRewardList(quest, "Success").Add(new Reward
@@ -33,39 +33,39 @@ namespace QuestFilterMod.RandomQuests
 
         private void AddMoneyReward(Quest quest)
         {
-            if (!_config.RewardMoney.Enabled || string.IsNullOrEmpty(_config.RewardMoney.Tpl)) return;
+            if (!СonfigRandom.RewardMoney.Enabled || string.IsNullOrEmpty(СonfigRandom.RewardMoney.Tpl)) return;
 
-            int amount = GenerateRandomAmount(_config.RewardMoney.Min, _config.RewardMoney.Max, _config.RewardMoney.Step);
-            AddItemReward(quest, _config.RewardMoney.Tpl, amount, "RUB");
+            int amount = GenerateRandomAmount(СonfigRandom.RewardMoney.Min, СonfigRandom.RewardMoney.Max, СonfigRandom.RewardMoney.Step);
+            AddItemReward(quest, СonfigRandom.RewardMoney.Tpl, amount, "RUB");
         }
         private void AddRandomItemRewards(Quest quest)
         {
-            if (!_config.RewardItems.Enabled || !_config.RewardItems.Parents.Any()) return;
+            if (!СonfigRandom.RewardItems.Enabled || !СonfigRandom.RewardItems.Parents.Any()) return;
 
             var prices = _databaseService.GetPrices();
             var itemsPool = _databaseService.GetTemplates().Items;
 
             if (prices == null || !prices.Any() || !itemsPool.Any())
             {
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Error("[QuestFilterMod][RewardSystem] ❌ Не удалось загрузить данные из базы.");
                 return;
             }
 
-            int minPrice = _config.RewardItems.PriceRange.Min;
-            int maxPrice = _config.RewardItems.PriceRange.Max;
+            int minPrice = СonfigRandom.RewardItems.PriceRange.Min;
+            int maxPrice = СonfigRandom.RewardItems.PriceRange.Max;
 
             if (minPrice < 0) minPrice = 0;
             if (maxPrice < minPrice) maxPrice = minPrice;
 
             // === Шаг 1: Выбираем родительские ID с учётом весов ===
-            var weightedParents = _config.RewardItems.Parents
+            var weightedParents = СonfigRandom.RewardItems.Parents
                 .Where(p => p.Weight > 0 && !string.IsNullOrEmpty(p.Id))
                 .ToList();
 
             if (!weightedParents.Any())
             {
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Error("[QuestFilterMod][RewardSystem] ❌ Нет активных родителей с весом > 0.");
                 return;
             }
@@ -98,17 +98,17 @@ namespace QuestFilterMod.RandomQuests
             if (!nonEmptyParents.Any())
             {
 #if DEBUG
-                if (Plugin._config.Debug)
+                if (Plugin.Config.Debug)
                     _logger.Error("[QuestFilterMod][RewardSystem] ❌ Нет подходящих предметов по цене и категориям.");
 #endif
                 return;
             }
 #if DEBUG
-            if (Plugin._config.Debug)
+            if (Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][RewardSystem] Найдено {nonEmptyParents.Count} категорий с подходящими предметами.");
 #endif
             
-            int count = _random.Next(_config.RewardItems.Count.Min, _config.RewardItems.Count.Max + 1);
+            int count = _random.Next(СonfigRandom.RewardItems.Count.Min, СonfigRandom.RewardItems.Count.Max + 1);
             var usedTpls = new HashSet<string>();
 
             for (int i = 0; i < count; i++)
@@ -143,7 +143,7 @@ namespace QuestFilterMod.RandomQuests
         }
         private MongoId? GetRandomSpecialItem()
         {
-            var allowedTpls = _config.DeliveryQuest.ItemPlant;
+            var allowedTpls = СonfigRandom.DeliveryQuest.ItemPlant;
             if (!allowedTpls.Any())
             {
                 _logger?.Info("[QuestFilterMod][RewardSystem] 📌 The ItemPlant list is empty!");
@@ -172,19 +172,19 @@ namespace QuestFilterMod.RandomQuests
                 return null;
             }
 
-            if (Plugin._config.Debug)
+            if (Plugin.Config.Debug)
                 _logger?.Debug($"[QuestFilterMod][RewardSystem] ✔️ Found {candidates.Count} items from {allowedTpls.Count} TPL.");
 
             return new MongoId(candidates[_random.Next(candidates.Count)]);
         }
         private void AddTraderStandingReward(Quest quest)
         {
-            if (!_config.RewardTraderStanding.Enabled)
+            if (!СonfigRandom.RewardTraderStanding.Enabled)
                 return;
 
             float value = (float)_random.NextDouble() *
-                          (_config.RewardTraderStanding.Max - _config.RewardTraderStanding.Min) +
-                          _config.RewardTraderStanding.Min;
+                          (СonfigRandom.RewardTraderStanding.Max - СonfigRandom.RewardTraderStanding.Min) +
+                          СonfigRandom.RewardTraderStanding.Min;
 
             GetOrCreateRewardList(quest, "Success").Add(new Reward
             {

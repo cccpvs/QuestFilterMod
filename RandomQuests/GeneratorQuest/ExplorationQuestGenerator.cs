@@ -9,13 +9,13 @@ namespace QuestFilterMod.RandomQuests
     {
         private Quest? GenerateExplorationQuest()
         {
-            var allowed = LocationHelper.GetAllowedLocations(_config).ToList();
+            var allowed = LocationHelper.GetAllowedLocations(СonfigRandom).ToList();
 
             var allPoints = new List<(LocationConfig Config, string Target)>();
 
             foreach (var (pascalName, locationId) in allowed)
             {
-                if (_config.ExplorationQuest.TryGetValue(pascalName, out var config))
+                if (СonfigRandom.ExplorationQuest.TryGetValue(pascalName, out var config))
                 {
                     foreach (var target in config.Targets)
                     {
@@ -46,7 +46,7 @@ namespace QuestFilterMod.RandomQuests
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
                     {
-                        new QuestCondition() 
+                        new()
                         {
                             Id = idFactory(),
                             DynamicLocale = false,
@@ -64,7 +64,7 @@ namespace QuestFilterMod.RandomQuests
                                 {
                                     Conditions = new List<QuestConditionCounterCondition>
                                     {
-                                        new QuestConditionCounterCondition
+                                        new()
                                         {
                                             ConditionType = "VisitPlace",
                                             DynamicLocale = false,
@@ -80,7 +80,7 @@ namespace QuestFilterMod.RandomQuests
                                     Id = idFactory(),
                                 }
                         },
-                        new QuestCondition() {
+                        new() {
                             Id = idFactory(),
                             DynamicLocale = false,
                             ConditionType = "CounterCreator",
@@ -95,7 +95,7 @@ namespace QuestFilterMod.RandomQuests
                             Value = 1,
                             Counter = new QuestConditionCounter() {
                                 Conditions = new List<QuestConditionCounterCondition> {
-                                    new QuestConditionCounterCondition
+                                        new()
                                         {
                                             ConditionType = "ExitStatus",
                                             DynamicLocale = false,
@@ -105,7 +105,7 @@ namespace QuestFilterMod.RandomQuests
                                             }
 
                                         },
-                                        new QuestConditionCounterCondition
+                                        new()
                                         {
                                             ConditionType = "Location",
                                             DynamicLocale = false,

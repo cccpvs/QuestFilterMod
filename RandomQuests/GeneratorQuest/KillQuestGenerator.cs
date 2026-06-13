@@ -8,9 +8,9 @@ namespace QuestFilterMod.RandomQuests
     {
         private Quest? GenerateKillQuest()
         {
-            var cfg = _config.KillQuest;
+            var cfg = СonfigRandom.KillQuest;
 
-            var allowed = LocationHelper.GetAllowedLocations(_config).ToList();
+            var allowed = LocationHelper.GetAllowedLocations(СonfigRandom).ToList();
 
             if (!allowed.Any()) return null;
 
@@ -28,7 +28,7 @@ namespace QuestFilterMod.RandomQuests
                     q.Type = QuestTypeEnum.Elimination;
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition> {
-                        new QuestCondition()
+                        new()
                         {
                             Id = idFactory(),
                             ConditionType = "CounterCreator",
@@ -41,15 +41,15 @@ namespace QuestFilterMod.RandomQuests
                                 {
                                     Conditions = new List<QuestConditionCounterCondition>
                                     {
-                                        new QuestConditionCounterCondition
+                                        new()
                                         {
                                             ConditionType = "Kills",
                                             CompareMethod = ">=",
-                                            Daytime = new DaytimeCounter() {
+                                            Daytime = new() {
                                                 From = 0,
                                                 To = 0
                                             },
-                                            Distance = new CounterConditionDistance()
+                                            Distance = new()
                                             {
                                                 CompareMethod = ">=",
                                                 Value = 0
@@ -64,14 +64,14 @@ namespace QuestFilterMod.RandomQuests
                                             WeaponModsInclusive = [],
                                             Id = idFactory(),
                                             ResetOnSessionEnd = false,
-                                            //SavageRole  = [],
                                             ExtensionData = new Dictionary<string?, object?>
                                             {
                                                 ["target"] = cfg.Target
                                             },
                                             Value = 1
                                         },
-                                        new QuestConditionCounterCondition { 
+                                        new() 
+                                        { 
                                             ConditionType = "Location",
                                             DynamicLocale = false,
                                             Id = idFactory(),

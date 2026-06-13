@@ -78,15 +78,21 @@ namespace QuestFilterMod.RandomQuests.Models
     {
         public bool Exploration { get; set; } = true;
         public bool Delivery { get; set; } = true;
+        public bool Beacon { get; set; } = true;
         public bool Kills { get; set; } = true;
     }
 
-    public class DeliveryQuestConfig
+    public class DeployQuestBaseConfig
     {
-        public int PlantTime { get; set; } = 30;
-        public List<string> ItemPlant { get; set; } = new();
+        public int PlantTime { get; set; } = 30000;
         public Dictionary<string, LocationConfig> Locations { get; set; } = new();
     }
+
+    public class DeployQuestConfig : DeployQuestBaseConfig
+    {
+        public List<string> ItemPlant { get; set; } = new();
+    }
+
     public class KillQuestConfig
     {
         public int MinKills { get; set; } = 5;
@@ -100,7 +106,6 @@ namespace QuestFilterMod.RandomQuests.Models
         public int Weight { get; set; } = 1;
     }
 
-    // ✅ Основной конфиг — обновлён
     public class QuestConfig
     {
         public Dictionary<string, LocationConfig> ExplorationQuest { get; set; } = new();
@@ -109,8 +114,8 @@ namespace QuestFilterMod.RandomQuests.Models
         public DefaultQuestConfig DefaultQuest { get; set; } = new();
         public MoneyRewardConfig RewardMoney { get; set; } = new();
         public RewardItemsConfig RewardItems { get; set; } = new();
-
-        public DeliveryQuestConfig DeliveryQuest { get; set; } = new();
+        public DeployQuestConfig DeliveryQuest { get; set; } = new();
+        public DeployQuestConfig BeaconQuest { get; set; } = new();
         public QuestGenerationConfig QuestGeneration { get; set; } = new();
         public KillQuestConfig KillQuest { get; set; } = new();
         public TraderStandingRewardConfig RewardTraderStanding { get; set; } = new();

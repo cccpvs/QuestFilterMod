@@ -13,9 +13,9 @@ using System.Text.Json;
 
 
 
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: AssemblyInformationalVersion("1.0.0")]
+[assembly: AssemblyVersion("1.0.1.0")]
+[assembly: AssemblyFileVersion("1.0.1.0")]
+[assembly: AssemblyInformationalVersion("1.0.1")]
 
 namespace QuestFilterMod;
 
@@ -25,14 +25,13 @@ public class Plugin : IOnUpdate
 
     private readonly ISptLogger<Plugin> _logger;
     private readonly DatabaseService _databaseService;
-    private readonly DatabaseServer databaseServer; // ← добавлено
+    private readonly DatabaseServer databaseServer;
     private readonly ServerLocalisationService _localisationService;
-    private readonly string _configPath;
-    public static QuestFilterConfig _config { get; private set; } = null!;
+    private readonly string ConfigPath;
+    public static QuestFilterConfig Config { get; private set; } = null!;
     private RandomQuestGenerator _randomQuestGenerator = null!;
     private QuestFilterService _questFilterService = null!;
     private bool _applied = false;
-    private bool _localeEndpointRegistered = false;
     private readonly CustomQuestService _customQuestService;
     private ClearRepetableQuest _temporaryQuestCleaner = null!;
     private readonly SaveServer _saveServer;
@@ -54,7 +53,7 @@ public class Plugin : IOnUpdate
         this.databaseServer = databaseServer;
 
 
-        _configPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Config.json");
+        ConfigPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Config.json");
         _logger.Info("[QuestFilterMod] QuestFilterMod Loaded...");
     }
 
@@ -77,7 +76,7 @@ public class Plugin : IOnUpdate
             {
                 if (!_loggedWaitingTables)
                 {
-                    if (_config.Debug)
+                    if (Config.Debug)
                         _logger.Info("[QuestFilterMod] Wait load Tables...");
                     _loggedWaitingTables = true;
                 }
@@ -89,7 +88,7 @@ public class Plugin : IOnUpdate
             {
                 if (!_loggedWaitingQuests)
                 {
-                    if (_config.Debug)
+                    if (Config.Debug)
                         _logger.Info("[QuestFilterMod] Wait load Quests...");
                     _loggedWaitingQuests = true;
                 }
@@ -101,7 +100,7 @@ public class Plugin : IOnUpdate
             {
                 if (!_loggedWaitingLocations)
                 {
-                    if (_config.Debug)
+                    if (Config.Debug)
                         _logger.Info("[QuestFilterMod] Wait load Locations...");
                     _loggedWaitingLocations = true;
                 }
@@ -109,8 +108,7 @@ public class Plugin : IOnUpdate
             }
 
 #if DEBUG
-            //Локации для обзора
-            if (_config.Debug)
+            if (Config.Debug)
             {
                 var locationDict = locations.GetDictionary(); 
                 _logger.Info("[QuestFilterMod][DEBUG] 📋 Location Open - (PascalName → ID):");
@@ -126,7 +124,7 @@ public class Plugin : IOnUpdate
 #endif
 
 
-            if (_config.CleanDroppedItems)
+            if (Config.CleanDroppedItems)
             {
                 CleanDroppedItems();
             }
@@ -148,27 +146,27 @@ public class Plugin : IOnUpdate
             }
 
 
-            if (_config.RemoveRepeatableQuests)
+            if (Config.RemoveRepeatableQuests)
             {
                 var repeatableDb = tables.Templates.RepeatableQuests;
 
                 _temporaryQuestCleaner.SetQuestDatabase(repeatableDb);
                 _temporaryQuestCleaner.ClearAllTemplates();
 
-                if (Plugin._config.Debug)
-                    _logger.Info("[QuestFilterMod] ✅ All repeatable quest templates cleared.");
+                if (Config.Debug)
+                    _logger.Success("[QuestFilterMod] ✅ All repeatable quest templates cleared.");
             }
 
 
             var allQuestsSnapshot = quests.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
             
-            _questFilterService.ApplyFilters(_config);
+            _questFilterService.ApplyFilters(Config);
 
             _applied = true;
 
-            _logger.Info("[QuestFilterMod] ✅ Quest filtering successfully applied.");
-            _logger.Info("[QuestFilterMod] 🚀 The mod is fully initialized.");
+            _logger.Success("[QuestFilterMod] ✅ Quest filtering successfully applied.");
+            _logger.Success("[QuestFilterMod] 🚀 The mod is fully initialized.");
 
 
 
@@ -176,8 +174,8 @@ public class Plugin : IOnUpdate
         }
         catch (Exception ex)
         {
-            if (Plugin._config.Debug)
-                _logger.Info($"[QuestFilterMod] Error inOnUpdate: {ex.Message}\n{ex.StackTrace}");
+            if (Config.Debug)
+                _logger.Error($"[QuestFilterMod] Error inOnUpdate: {ex.Message}\n{ex.StackTrace}");
         }
 
 
@@ -189,7 +187,6 @@ public class Plugin : IOnUpdate
     {
         try
         {
-            // ✅ Получаем SaveServer через DI — добавь его в конструктор Plugin
             if (_saveServer == null)
             {
                 _logger.Error("[QuestFilterMod] ❌ _saveServer is null — cannot clean DroppedItems.");
@@ -199,11 +196,11 @@ public class Plugin : IOnUpdate
             var profiles = _saveServer.GetProfiles();
             if (profiles == null || profiles.Count == 0)
             {
-                if (_config.Debug)
+                if (Config.Debug)
                     _logger.Warning("[QuestFilterMod] ⚠️ No profiles loaded yet — skipping DroppedItems cleanup.");
                 return;
             }
-            if (_config.Debug)
+            if (Config.Debug)
                 _logger.Info($"[QuestFilterMod][] 🔍 Cleaning DroppedItems from {profiles.Count} profiles...");
 
             int cleanedCount = 0;
@@ -211,7 +208,6 @@ public class Plugin : IOnUpdate
             {
                 var profile = kvp.Value;
 
-                // ✅ Очищаем DroppedItems у Pmc и Scav
                 if (profile.CharacterData?.PmcData?.Stats?.Eft?.DroppedItems != null)
                     profile.CharacterData.PmcData.Stats.Eft.DroppedItems = null;
 
@@ -221,7 +217,7 @@ public class Plugin : IOnUpdate
                 cleanedCount++;
             }
 
-            if (_config.Debug)
+            if (Config.Debug)
             {
                 _logger.Info($"[QuestFilterMod] ✅ Cleared DroppedItems from {cleanedCount} profiles (in-memory).");
                 _logger.Info("[QuestFilterMod] 📌 Changes will be saved on next profile save (exit or auto-save).");
@@ -230,39 +226,38 @@ public class Plugin : IOnUpdate
         }
         catch (Exception ex)
         {
-            if (_config.Debug)
+            if (Config.Debug)
                 _logger.Error($"[QuestFilterMod] ❌ Error in CleanDroppedItems(): {ex}");
         }
     }
 
     private void LoadConfig()
     {
-        if (!File.Exists(_configPath))
+        if (!File.Exists(ConfigPath))
         {
-            _logger.Info("[QuestFilterMod] ❌ Config not found:" + _configPath);
-            _config = new QuestFilterConfig();
+            _logger.Info("[QuestFilterMod] ❌ Config not found:" + ConfigPath);
+            Config = new QuestFilterConfig();
             return;
         }
 
         try
         {
-            var json = File.ReadAllText(_configPath);
+            var json = File.ReadAllText(ConfigPath);
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            _config = JsonSerializer.Deserialize<QuestFilterConfig>(json, options) ?? new QuestFilterConfig();
+            Config = JsonSerializer.Deserialize<QuestFilterConfig>(json, options) ?? new QuestFilterConfig();
 
-            if (_config.Debug)
+            if (Config.Debug)
             {
-                if (_config.Debug)
-                    _logger.Info("[QuestFilterMod] ✅ The config is loaded.");
-                    _logger.Info($"[QuestFilterMod][CONFIG] Enabled={_config.Enabled}, GenerateRandom={_config.GenerateRandomQuests?.Enable}");
+                _logger.Info("[QuestFilterMod] ✅ The Config is loaded.");
+                _logger.Info($"[QuestFilterMod][Config] Enabled={Config.Enabled}, GenerateRandom={Config.GenerateRandomQuests?.Enable}");
             }
         }
         catch (Exception ex)
         {
-            if (_config.Debug)
-                _logger.Info($"[QuestFilterMod] Error loading config: {ex.Message}");
+            if (Config.Debug)
+                _logger.Info($"[QuestFilterMod] Error loading Config: {ex.Message}");
 
-            _config = new QuestFilterConfig();
+            Config = new QuestFilterConfig();
         }
     }
 
