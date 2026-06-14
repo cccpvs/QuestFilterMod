@@ -84,7 +84,6 @@ namespace QuestFilterMod.RandomQuests
                             Id = idFactory(),
                             DynamicLocale = false,
                             ConditionType = "CounterCreator",
-                            CompleteInSeconds = 0,
                             GlobalQuestCounterId = "",
                             IsNecessary = false,
                             IsResetOnConditionFailed = false,

@@ -6,6 +6,11 @@ using SPTarkov.Server.Core.Services;
 
 namespace QuestFilterMod.RepeatableQuestCleaner
 {
+#if DEBUG
+    /*
+     * 1. Полноценно не понятно как сработает удаление временных квестов. Нужна проверка.
+    */
+#endif
     public class ClearRepetableQuest
     {
         private readonly ISptLogger<Plugin> _logger;
@@ -39,43 +44,42 @@ namespace QuestFilterMod.RepeatableQuestCleaner
 
         public void ClearAllTemplates()
         {
+            // ✅ Инициализируем Templates, если он null (вдруг отсутствует)
             if (_questDatabase.Templates == null)
             {
-                if (Plugin.Config.Debug)
-                    _logger.Info("[QuestFilterMod][ClearRepetableQuest] No Templates found — nothing to clear.");
-                return;
+                _questDatabase.Templates = new RepeatableTemplates();
             }
 
-            int totalRemoved = 0;
-
-            totalRemoved += RemoveAndCount(_questDatabase.Templates.Elimination, "Elimination");
+            // ✅ Удаляем старые шаблоны — создаём новые с корректным QuestStatus
             _questDatabase.Templates.Elimination = CreateQuestTemplate(QuestTypeEnum.Elimination);
-
-            totalRemoved += RemoveAndCount(_questDatabase.Templates.Completion, "Completion");
             _questDatabase.Templates.Completion = CreateQuestTemplate(QuestTypeEnum.Completion);
-
-            totalRemoved += RemoveAndCount(_questDatabase.Templates.Exploration, "Exploration");
             _questDatabase.Templates.Exploration = CreateQuestTemplate(QuestTypeEnum.Exploration);
-
-            totalRemoved += RemoveAndCount(_questDatabase.Templates.Pickup, "Pickup");
             _questDatabase.Templates.Pickup = CreateQuestTemplate(QuestTypeEnum.PickUp);
 
-            if (_questDatabase.Templates.ExtensionData != null)
-            {
-                totalRemoved += _questDatabase.Templates.ExtensionData.Count;
-                _questDatabase.Templates.ExtensionData.Clear();
-            }
+            // Очищаем ExtensionData, если есть
+            _questDatabase.Templates.ExtensionData?.Clear();
 
-            if (totalRemoved > 0 && Plugin.Config.Debug)
-                _logger.Info($"[QuestFilterMod][ClearRepetableQuest] Removed {totalRemoved} quest templates from Templates.");
+            if (Plugin.Config.Debug)
+                _logger.Info("[QuestFilterMod][ClearRepetableQuest] Replaced all repeatable quest templates.");
         }
+
         private static RepeatableQuest CreateQuestTemplate(QuestTypeEnum type)
         {
-            var questId = new MongoId();
+            // ❗ Обязательно: QuestStatus должен быть валиден — иначе SPT ругается
+            // В SPT есть фиксированный набор статусов — посмотрим, где он лежит
+            // Допустим: "Available", "Active", "Completed", "Failed"
+            // Но лучше — использовать реальные ID из базы, если есть.
+
+            // Для запуска — можно использовать placeholder ID, но лучше — из базы
+            // Пример: "62e6d7f4416420249f34f238" — это ID статуса "Available" из TarkovData, но не факт, что в твоей базе такой есть.
+
+            // ✅ Используем ID, совпадающий с SPT internal:
+            // В SPT шаблоны квестов используют "Available", "Active", "Completed", "Failed" — но это строка, а не enum
+            // Поэтому:QuestStatus = "Available"
 
             return new RepeatableQuest
             {
-                Id = new MongoId(), 
+                Id = new MongoId(),
                 Type = type,
                 Name = $"Placeholder {type}",
                 Description = "Placeholder",
@@ -95,14 +99,9 @@ namespace QuestFilterMod.RepeatableQuestCleaner
                 CanShowNotificationsInGame = false,
                 Restartable = false,
                 ChangeStandingCost = 0,
-                SptRepatableGroupName = null,
-                QuestStatus = null,
+                SptRepatableGroupName = null
+                
             };
-        }
-
-        private static int RemoveAndCount(RepeatableQuest? rq, string typeName)
-        {
-            return rq is not null ? 1 : 0;
         }
     }
 }

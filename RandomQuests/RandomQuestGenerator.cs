@@ -50,7 +50,6 @@ namespace QuestFilterMod.RandomQuests
             this.databaseServer = databaseServer ?? throw new ArgumentNullException(nameof(databaseServer));
             _customQuestService = customQuestService;
 
-
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
 
             var configPath = System.IO.Path.Combine(

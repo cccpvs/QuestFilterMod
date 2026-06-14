@@ -12,6 +12,13 @@ namespace QuestFilterMod.RandomQuests
             var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
             var questId = idFactory();
 
+
+            if (Plugin.Config.Debug)
+            {
+                _logger.Info($"[QuestFilterMod][GenerateBaseQuest] 🧪 _random test: {СonfigRandom.TraderIds?.RandomItem(_random) ?? "NULL"}");
+            }
+
+
             var quest = new Quest
             {
                 Id = questId,
@@ -59,7 +66,12 @@ namespace QuestFilterMod.RandomQuests
             quest.RankingModes = new();
 
             build(quest, idFactory);
-
+#if DEBUG
+            if (Plugin.Config.Debug)
+            {
+                _logger.Info($"[QuestFilterMod][GenerateBaseQuest] 🧾 AFTER build(): TraderId = {quest.TraderId}");
+            }
+#endif
             if (string.IsNullOrEmpty(quest.Location))
             {
                 if (Plugin.Config.Debug)

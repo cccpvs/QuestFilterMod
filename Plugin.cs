@@ -262,3 +262,47 @@ public class Plugin : IOnUpdate
     }
 
 }
+
+
+#if DEBUG
+/* 
+ * 
+ * Вызов через консоль игры получение точек квестов на каждой локации.
+ * sinai-dev-UnityExplorer
+ * 
+ * 
+System.Console.Clear();
+
+var triggers = UnityEngine.Object.FindObjectsOfType<EFT.Interactive.ExperienceTrigger>();
+var uniqueIds1 = new HashSet<string>();
+
+for (int i = 0; i < triggers.Length; i++)
+{
+    uniqueIds1.Add(triggers[i].Id);
+}
+
+System.Console.WriteLine($"----------ExperienceTrigger----------");
+foreach (var id in uniqueIds1)
+{
+    System.Console.WriteLine($"\"{id}\",");
+}
+
+var triggers2 = UnityEngine.Object.FindObjectsOfType<EFT.Interactive.PlaceItemTrigger>();
+var uniqueIds2 = new HashSet<string>();
+
+for (int i = 0; i < triggers2.Length; i++)
+{
+    uniqueIds2.Add(triggers2[i].Id);
+}
+
+System.Console.WriteLine($"----------PlaceItemTrigger----------");
+foreach (var id in uniqueIds2)
+{
+    System.Console.WriteLine($"\"{id}\",");
+}
+
+ * 
+ * 
+ * 
+ */
+#endif

@@ -5,29 +5,30 @@ namespace QuestFilterMod.RandomQuests
 {
     public static class LocationHelper
     {
-     /*
-          [LOC] Bigmap → 56f40101d2720b2a4d8b45d6
-          [LOC] Develop → 56db0b3bd2720bb0678b4567
-          [LOC] Factory4Day → 55f2d3fd4bdc2d5f408b4567
-          [LOC] Factory4Night → 59fc81d786f774390775787e
-          [LOC] Hideout → 599319c986f7740dca3070a6
-          [LOC] Interchange → 5714dbc024597771384a510d
-          [LOC] Laboratory → 5b0fc42d86f7744a585f9105
-          [LOC] Lighthouse → 5704e4dad2720bb55b8b4567
-          [LOC] PrivateArea → 5704e64ad2720bb55b8b456e
-          [LOC] RezervBase → 5704e5fad2720bc05b8b4567
-          [LOC] Shoreline → 5704e554d2720bac5b8b456e
-          [LOC] Suburbs → 5714dc342459777137212e0b
-          [LOC] TarkovStreets → 5714dc692459777137212e12
-          [LOC] Labyrinth → 6733700029c367a3d40b02af
-          [LOC] Terminal → 5704e5a4d2720bb45b8b4567
-          [LOC] Town → 5704e47ed2720bb35b8b4568
-          [LOC] Woods → 5704e3c2d2720bac5b8b4567
-          [LOC] Sandbox → 653e6760052c01c1c805532f
-          [LOC] SandboxHigh → 65b8d6f5cdde2479cb2a3125
-     */
+#if DEBUG
+        /*
+             [LOC] Bigmap → 56f40101d2720b2a4d8b45d6
+             [LOC] Develop → 56db0b3bd2720bb0678b4567
+             [LOC] Factory4Day → 55f2d3fd4bdc2d5f408b4567
+             [LOC] Factory4Night → 59fc81d786f774390775787e
+             [LOC] Hideout → 599319c986f7740dca3070a6
+             [LOC] Interchange → 5714dbc024597771384a510d
+             [LOC] Laboratory → 5b0fc42d86f7744a585f9105
+             [LOC] Lighthouse → 5704e4dad2720bb55b8b4567
+             [LOC] PrivateArea → 5704e64ad2720bb55b8b456e
+             [LOC] RezervBase → 5704e5fad2720bc05b8b4567
+             [LOC] Shoreline → 5704e554d2720bac5b8b456e
+             [LOC] Suburbs → 5714dc342459777137212e0b
+             [LOC] TarkovStreets → 5714dc692459777137212e12
+             [LOC] Labyrinth → 6733700029c367a3d40b02af
+             [LOC] Terminal → 5704e5a4d2720bb45b8b4567
+             [LOC] Town → 5704e47ed2720bb35b8b4568
+             [LOC] Woods → 5704e3c2d2720bac5b8b4567
+             [LOC] Sandbox → 653e6760052c01c1c805532f
+             [LOC] SandboxHigh → 65b8d6f5cdde2479cb2a3125
+        */
+#endif
 
-        // Кэш: locationId (MongoDB ID) → PascalName (например: "Woods", "Interchange")
         public static readonly Dictionary<string, string> IdToPascalName = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>

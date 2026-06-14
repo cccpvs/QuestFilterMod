@@ -1,7 +1,15 @@
 ﻿using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
-using SPTarkov.Server.Core.Utils.Json;
 using System.Text.Json;
+
+
+
+
+#if DEBUG
+/*
+ * Смотри на локализацию ищем косяки
+*/
+#endif
 
 
 namespace QuestFilterMod.RandomQuests
@@ -36,52 +44,133 @@ namespace QuestFilterMod.RandomQuests
                 }
             }
 
-            string baseTypeKey = quest.Type switch
-            {
-                QuestTypeEnum.PickUp => "base_type_pickup",
-                QuestTypeEnum.Elimination => "base_type_elimination",
-                QuestTypeEnum.Discover => "base_type_discover",
-                QuestTypeEnum.Completion => "base_type_completion",
-                _ => "base_type_general"
-            };
+            string baseTypeKey;
+            string baseTypeFallback;
 
-            string baseTypeFallback = quest.Type switch
+            if (quest.Type == QuestTypeEnum.Discover && quest.Conditions?.AvailableForFinish is { } condList && condList.Any())
             {
-                QuestTypeEnum.PickUp => "Pick Up",
-                QuestTypeEnum.Elimination => "Elimination",
-                QuestTypeEnum.Discover => "Discover point",
-                QuestTypeEnum.Completion => "Completion",
-                _ => "General Quest"
-            };
+                var firstCondType = condList.FirstOrDefault()?.ConditionType;
+
+                baseTypeKey = firstCondType switch
+                {
+                    "LeaveItemAtLocation" => "base_type_leave_item",
+                    "PlaceBeacon" => "base_type_place_beacon",
+                    _ => "base_type_discover"
+                };
+
+                baseTypeFallback = firstCondType switch
+                {
+                    "LeaveItemAtLocation" => "Leave Item",
+                    "PlaceBeacon" => "Place Beacon",
+                    _ => "Discover point"
+                };
+            }
+            else
+            {
+                // Стандартный fallback для других типов
+                baseTypeKey = quest.Type switch
+                {
+                    QuestTypeEnum.PickUp => "base_type_pickup",
+                    QuestTypeEnum.Elimination => "base_type_elimination",
+                    QuestTypeEnum.Discover => "base_type_discover",
+                    QuestTypeEnum.Completion => "base_type_completion",
+                    _ => "base_type_general"
+                };
+
+                baseTypeFallback = quest.Type switch
+                {
+                    QuestTypeEnum.PickUp => "Pick Up",
+                    QuestTypeEnum.Elimination => "Elimination",
+                    QuestTypeEnum.Discover => "Discover point",
+                    QuestTypeEnum.Completion => "Completion",
+                    _ => "General Quest"
+                };
+            }
 
             string last6 = id.Length > 6 ? id.Substring(id.Length - 6) : id.PadLeft(6, '0');
 
             Add(baseTypeKey, baseTypeFallback);
 
             string[] conditionKeys = {
-        "condition_Elimination",
-        "condition_VisitPlace",
-        "condition_LeaveItemAtLocation",
-        "condition_PlaceBeacon",
-        "condition_ExitStatus",
-        "condition_Location",
-        "condition_Exploration",
-        "condition_Completion",
-        "condition_default"
-    };
+                "condition_Elimination",
+                "condition_VisitPlace",
+                "condition_LeaveItemAtLocation",
+                "condition_PlaceBeacon",
+                "condition_ExitStatus",
+                "condition_Location",
+                "condition_Exploration",
+                "condition_Completion",
+                "condition_default"
+            };
             foreach (var key in conditionKeys)
                 Add(key, key);
 
             string[] eventKeys = {
-        "quest_accept",
-        "quest_change",
-        "quest_complete",
-        "quest_started",
-        "quest_completed",
-        "quest_failed"
-    };
+                "quest_accept",
+                "quest_change",
+                "quest_complete",
+                "quest_started",
+                "quest_completed",
+                "quest_failed"
+            };
+
+
             foreach (var key in eventKeys)
-                Add(key, key);
+            {
+                // Получаем шаблон из локалей или fallback
+                string template = key;
+
+                // Пробуем текущий язык
+                foreach (var lang in _loadedLocales.Keys)
+                {
+                    if (!locales.ContainsKey(lang)) locales[lang] = new();
+
+                    string currentTemplate = key;
+
+                    // Шаг 1: взять из языка
+                    if (_loadedLocales.TryGetValue(lang, out var dictLang) &&
+                        dictLang.TryGetValue(key, out var val) &&
+                        !string.IsNullOrEmpty(val))
+                    {
+                        currentTemplate = val;
+                    }
+                    // Шаг 2: если не нашли в текущем языке — пробуем en
+                    else if (lang != "en" && _loadedLocales.TryGetValue("en", out var dictEn) &&
+                             dictEn.TryGetValue(key, out var enVal) &&
+                             !string.IsNullOrEmpty(enVal))
+                    {
+                        currentTemplate = enVal;
+                    }
+
+                    // 🔥 Шаг 3: подставить ID квеста в {0}
+                    string baseTypeName = baseTypeFallback;
+                    if (_loadedLocales.TryGetValue(lang, out var dictLang2) &&
+                        dictLang2.TryGetValue(baseTypeKey, out var baseTypeVal) &&
+                        !string.IsNullOrEmpty(baseTypeVal))
+                    {
+                        baseTypeName = baseTypeVal;
+                    }
+                    else if (lang != "en" && _loadedLocales.TryGetValue("en", out var dictEn2) &&
+                             dictEn2.TryGetValue(baseTypeKey, out var enBaseTypeVal) &&
+                             !string.IsNullOrEmpty(enBaseTypeVal))
+                    {
+                        baseTypeName = enBaseTypeVal;
+                    }
+
+                    string questIdentifier = $"{baseTypeName} #{last6}";
+                    string formatted = currentTemplate.Replace("{0}", questIdentifier);
+
+                    // 🔥 Сохраняем под тем же ключом — сервер будет читать это!
+                    locales[lang][key] = formatted;
+
+#if DEBUG
+                    _logger.Error($"[QuestFilterMod][LocalesQuest] [FINAL] Overrode '{key}' [{lang}] → '{formatted}'");
+#endif
+                }
+            }
+
+
+
 
             foreach (var lang in _loadedLocales.Keys)
             {
@@ -101,8 +190,9 @@ namespace QuestFilterMod.RandomQuests
 
                     string conditionTypeKey = cond.ConditionType switch
                     {
-                        "VisitPlace" => "condition_VisitPlace",
-                        "CounterCreator" when cond.Type == "Exploration" => "condition_Exploration",
+                        "VisitPlace" or
+                        _ when cond.ConditionType == "CounterCreator" && cond.Type == "Exploration"
+                            => "condition_VisitPlace",
                         "LeaveItemAtLocation" => "condition_LeaveItemAtLocation",
                         "PlaceBeacon" => "condition_PlaceBeacon",
                         "ExitStatus" => "condition_ExitStatus",
@@ -141,9 +231,10 @@ namespace QuestFilterMod.RandomQuests
 
                         string[] nameValues = cond.ConditionType switch
                         {
-                            "VisitPlace" => new[] { cond.Target?.ToString() ?? "", locationName, "" },
-                            "CounterCreator" when cond.Type == "Exploration" => new[] { "", "", "" },
-                            "LeaveItemAtLocation" => new[] { cond.ZoneId?.ToString() ?? "", cond.Target?.ToString() ?? "", locationName },
+                            "VisitPlace" => new[] { cond.Counter?.Conditions?[0].Target?.ToString() ?? "", locationName, "" },
+                            "CounterCreator" when cond.Type == "Exploration" => new[] { cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString() ?? "", locationName, "" },
+                            "LeaveItemAtLocation" => new[] { cond.ZoneId?.ToString() ?? "", GetItemName(cond.ExtensionData?["_item"]?.ToString() ?? "", lang), locationName },
+                            //"LeaveItemAtLocation" => new[] { cond.ZoneId?.ToString() ?? "", cond.Target?.ToString() ?? "", locationName },
                             "PlaceBeacon" => new[] { cond.ZoneId?.ToString() ?? "", "", locationName },
                             "ExitStatus" => new[] { "", "", "" },
                             "Location" => new[] { locationName, "", "" },
@@ -180,14 +271,15 @@ namespace QuestFilterMod.RandomQuests
         }
 
         private void AddLocalizedQuestLocales(
-            string lang,
-            Quest quest,
-            string id,
-            string last6,
-            string baseTypeKey,
-            string baseTypeFallback,
-            Dictionary<string, Dictionary<string, string>> locales)
+    string lang,
+    Quest quest,
+    string id,
+    string last6,
+    string baseTypeKey,
+    string baseTypeFallback,
+    Dictionary<string, Dictionary<string, string>> locales)
         {
+            // 🔹 Получаем название типа квеста (уже есть)
             string baseTypeName = baseTypeFallback;
 
             if (_loadedLocales.TryGetValue(lang, out var dictLang) &&
@@ -203,8 +295,83 @@ namespace QuestFilterMod.RandomQuests
                 baseTypeName = enBaseTypeVal;
             }
 
-            string displayNameTemplate = $"{baseTypeName} #{last6}";
-            string descTemplate = $"Complete the {baseTypeName}";
+            // 🔹 Местоположение
+            string locationName = LocationHelper.IsAllowed(quest.Location, СonfigRandom)
+                ? LocationHelper.GetPascalName(quest.Location)
+                : "Unknown";
+
+            // 🔹 Собираем предметы для описания
+            List<string> itemNames = new();
+            string? mainTargetName = null;
+            string? mainZone = null;
+
+            if (quest.Conditions?.AvailableForFinish is var conditions && conditions != null)
+            {
+                foreach (var cond in conditions.Where(c => c?.Id != null))
+                {
+                    switch (cond.ConditionType)
+                    {
+                        case "LeaveItemAtLocation":
+                            {
+                                string? itemId = cond.ExtensionData?["_item"]?.ToString();
+                                if (!string.IsNullOrEmpty(itemId))
+                                {
+                                    string itemName = GetItemName(itemId, lang);
+                                    int count = cond.Counter?.Conditions?.Count ?? 1;
+                                    itemNames.Add($"{itemName} (x{count})");
+                                }
+                                break;
+                            }
+
+                        case "VisitPlace":
+                        case "CounterCreator" when cond.Type == "Exploration":
+                            {
+                                if (string.IsNullOrEmpty(mainZone))
+                                    mainZone = locationName;
+                                break;
+                            }
+
+                        case "Kills" or "CounterCreator":
+                            if (cond.Type == "Elimination")
+                            {
+                                mainTargetName = GetTargetNameFromRaw(cond.Target?.ToString() ?? "");
+                            }
+                            break;
+                    }
+                }
+            }
+
+            string descTemplate;
+
+            if (itemNames.Any())
+            {
+                string itemsStr = string.Join(", ", itemNames);
+                if (!string.IsNullOrEmpty(mainZone))
+                    descTemplate = $"{baseTypeName} #{last6}\n* {mainZone}\n* {itemsStr}";
+                else
+                    descTemplate = $"{baseTypeName} #{last6}\n* {itemsStr}";
+            }
+            else if (!string.IsNullOrEmpty(mainTargetName))
+            {
+                if (!string.IsNullOrEmpty(mainZone))
+                    descTemplate = $"{baseTypeName} #{last6}\n* {mainZone}\n* {mainTargetName}";
+                else
+                    descTemplate = $"{baseTypeName} #{last6}\n* {mainTargetName}";
+            }
+            else if (!string.IsNullOrEmpty(locationName))
+            {
+                descTemplate = $"{baseTypeName} #{last6}\n* {locationName}";
+            }
+            else
+            {
+                descTemplate = $"{baseTypeName} #{last6}";
+            }
+
+            if (quest.ExtensionData?.TryGetValue("description", out var descObj) == true &&
+                descObj?.ToString() is { Length: > 0 } descStr)
+            {
+                descTemplate += $"\n{descStr}";
+            }
 
             void AddLoc(string key, string value)
             {
@@ -215,7 +382,7 @@ namespace QuestFilterMod.RandomQuests
 #endif
             }
 
-            AddLoc($"{id} name", displayNameTemplate);
+            AddLoc($"{id} name", baseTypeName);
             AddLoc($"{id} description", descTemplate);
 
             string[] eventKeys = { "accept", "change", "complete", "started", "completed", "failed" };
@@ -238,6 +405,9 @@ namespace QuestFilterMod.RandomQuests
                 {
                     eventValue = enVal;
                 }
+
+                string questIdentifier = $"{baseTypeName} #{last6}"; 
+                eventValue = eventValue.Replace("{0}", questIdentifier);
 
                 AddLoc($"{id} {evt}", eventValue);
             }
@@ -307,6 +477,46 @@ namespace QuestFilterMod.RandomQuests
                 _logger.Error($"[QuestFilterMod][LocalesQuest] Missing locale files for languages: {string.Join(", ", missingLangs)}");
 
             _localesLoaded = true;
+        }
+
+
+
+        private string GetItemName(string itemId, string lang = "en")
+        {
+            if (string.IsNullOrEmpty(itemId)) return "unknown item";
+
+            string nameKey = itemId + " Name";
+
+            string? GetNameInLang(string l)
+            {
+                if (!_databaseService.GetLocales().Global.TryGetValue(l, out var lazy))
+                    return null;
+
+                if (lazy?.Value is not Dictionary<string, string> dict)
+                    return null;
+
+                return dict.TryGetValue(nameKey, out var name) && !string.IsNullOrEmpty(name) ? name : null;
+            }
+
+            if (!string.IsNullOrEmpty(lang))
+            {
+                string? name = GetNameInLang(lang);
+                if (!string.IsNullOrEmpty(name)) return name;
+            }
+
+            if (lang != "en")
+            {
+                string? name = GetNameInLang("en");
+                if (!string.IsNullOrEmpty(name)) return name;
+            }
+            foreach (var (l, _) in _databaseService.GetLocales().Global)
+            {
+                if (l == lang || l == "en") continue; // уже проверили
+                string? name = GetNameInLang(l);
+                if (!string.IsNullOrEmpty(name)) return name;
+            }
+
+            return itemId; 
         }
 
     }

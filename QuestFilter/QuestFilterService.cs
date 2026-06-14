@@ -3,6 +3,7 @@ using QuestFilterMod.RandomQuests;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
+using SPTarkov.Server.Core.Models.Spt.Server;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Services;
 using SPTarkov.Server.Core.Services.Mod;
@@ -11,12 +12,19 @@ using System.Text.Json.Serialization;
 
 namespace QuestFilterMod.QuestFilter;
 
+#if DEBUG
+/*
+ * 1. Проверка фильтра по локациям квестов.
+*/
+#endif
+
 public class QuestFilterService
 {
     private readonly ISptLogger<Plugin> _logger;
     private readonly DatabaseService _databaseService;
     private readonly RandomQuestGenerator _randomQuestGenerator;
     private readonly CustomQuestService _customQuestService;
+    private readonly HashSet<MongoId> _randomQuestIds = new();
 
     private bool _hasAppliedFilters = false;
 
@@ -44,6 +52,8 @@ public class QuestFilterService
         _hasAppliedFilters = true;
 
         if (!Config.Enabled) return;
+
+        _randomQuestIds.Clear();
 
         var quests = _databaseService.GetQuests();
         if (quests == null || quests.Count == 0)
@@ -109,6 +119,8 @@ public class QuestFilterService
                         quests[randomQuest.Id] = randomQuest;
                     }
 
+                    _randomQuestIds.Add(randomQuest.Id);
+
                     if (Plugin.Config.Debug)
                     {
                         var locationName = LocationHelper.TryGetPascalName(randomQuest.Location, out var pascalName)
@@ -126,8 +138,10 @@ public class QuestFilterService
                 _logger.Success($"[QuestFilterMod][QuestFilterService] Done: Generated {generatedCount} random quests.");
         }
 
+        var standardQuests = selectedQuests.Where(q => !_randomQuestIds.Contains(q.Id)).ToList();
+        var randomQuests = selectedQuests.Where(q => _randomQuestIds.Contains(q.Id)).ToList();
 
-        ModifyQuests(quests, selectedQuests, Config);
+        ModifyQuests(quests, standardQuests, Config);
 
         var tables = _databaseService.GetTables();
         foreach (var quest in selectedQuests)
@@ -167,17 +181,57 @@ public class QuestFilterService
         var random = new Random();
         var selected = new List<Quest>();
 
+        // 🔍 Получаем таблицы локаций один раз
+        var tables = _databaseService.GetTables();
+        var locationDict = tables?.Locations?.GetDictionary()
+            ?? throw new InvalidOperationException("Failed to load location data. Check your database service.");
+
+        // 🗺️ Строим маппинг: любая форма ключа (snake_case, Pascal, ID) → lowercase PascalCase
+        var normalizedLocationKeyMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var kvp in locationDict)
+        {
+            var pascalName = kvp.Key; // "Factory4Day"
+            var normalized = pascalName.ToLowerInvariant(); // "factory4day"
+
+            // 1. Само имя: Factory4Day → factory4day
+            normalizedLocationKeyMap[pascalName] = normalized;
+            normalizedLocationKeyMap[normalized] = normalized;
+
+            // 2. snake_case (если вдруг кто-то всё же использует)
+            var mappedKey = tables.Locations.GetMappedKey(pascalName);
+            if (!string.IsNullOrEmpty(mappedKey) && !normalizedLocationKeyMap.ContainsKey(mappedKey))
+            {
+                normalizedLocationKeyMap[mappedKey.ToLowerInvariant()] = normalized;
+            }
+        }
+
+        // ✅ Добавляем "any"
+        normalizedLocationKeyMap["any"] = "any";
+
+        // 🔁 Группируем квесты по локациям
         var grouped = allQuests
-                .GroupBy(q =>
-                {
-                    if (LocationHelper.TryGetPascalName(q.Location, out var pascalName))
-                        return pascalName.ToLowerInvariant(); // → "woods", "rezervbase"
+            .GroupBy(q =>
+            {
+                if (string.IsNullOrWhiteSpace(q.Location))
                     return "unknown";
-                })
-                .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
 
-        var locationProps = typeof(LocationQuestConfig).GetProperties();
+                // 🔍 1️⃣ Пробуем через маппинг ID → PascalName → lowercase
+                var normalized = GetNormalizedLocationKey(q.Location, tables);
+                if (!string.IsNullOrEmpty(normalized))
+                    return normalized;
 
+                // 2️⃣ "any"
+                if (string.Equals(q.Location, "any", StringComparison.OrdinalIgnoreCase))
+                    return "any";
+
+                // 3️⃣ Всё остальное — "unknown"
+                return "unknown";
+            })
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+        // 🔁 Обрабатываем фильтры из конфига
+        var locationProps = Config.RandomQuests.Location.GetType().GetProperties();
         bool hasLocationFilters = locationProps
             .Select(p => p.GetValue(Config.RandomQuests.Location))
             .Any(v => v is int count && count > 0);
@@ -186,30 +240,31 @@ public class QuestFilterService
         {
             if (Config.GenerateRandomQuests.Enable && Config.GenerateRandomQuests.Count > 0)
             {
-                if (Plugin.Config.Debug)
+                if (Config.Debug)
                     _logger.Info("[QuestFilterMod][QuestFilterService] Random quests only mode: standard quests are NOT added");
 
                 return new List<Quest>();
             }
 
-            if (Plugin.Config.Debug)
+            if (Config.Debug)
                 _logger.Info($"[QuestFilterMod][QuestFilterService] 'All quests' mode: left {allQuests.Count} quests by type");
 
             return new List<Quest>(allQuests);
         }
 
+        // ✅ ИСПРАВЛЕНО: используем prop.Name напрямую, без JsonPropertyName
         foreach (var prop in locationProps)
         {
             var value = prop.GetValue(Config.RandomQuests.Location);
             if (value is not int count || count <= 0) continue;
 
-            var jsonAttr = prop.GetCustomAttribute<JsonPropertyNameAttribute>();
-            if (jsonAttr == null) continue;
-
-            string locationKey = jsonAttr.Name;
+            // 🔁 Используем имя свойства PascalCase и приводим к lowercase
+            string locationKey = prop.Name.ToLowerInvariant(); // "factory4Day" → "factory4day"
             AddFromGroup(grouped, locationKey, count, selected, random, Config.Debug);
+
         }
 
+        // 🔁 Если не хватает квестов — добавляем любые оставшиеся
         if (Config.RandomQuests.Count > 0 && selected.Count < Config.RandomQuests.Count)
         {
             var remaining = Config.RandomQuests.Count - selected.Count;
@@ -223,27 +278,174 @@ public class QuestFilterService
                 _logger.Info($"[QuestFilterMod][QuestFilterService] Added {extra.Count} quests to achieve total={Config.RandomQuests.Count}");
         }
 
+        if (Config.Debug)
+        {
+            _logger.Info("[QuestFilterMod] 🔍 Sample location checks:");
+            foreach (var q in allQuests.Take(5))
+            {
+                var normalized = GetNormalizedLocationKey(q.Location, tables);
+                _logger.Info($"  - Quest '{q.Name}' → loc='{q.Location}' → normalized='{normalized}'");
+            }
+        }
+
+
+
+
         return selected;
     }
 
-    private void AddFromGroup(
-        Dictionary<string, List<Quest>> groups,
-        string key,
-        int count,
-        List<Quest> selected,
-        Random random,
-        bool debug)
+    private string GetNormalizedLocationKey(string locationId, SPTarkov.Server.Core.Models.Spt.Server.DatabaseTables tables)
     {
-        if (count <= 0 || !groups.TryGetValue(key, out var list)) return;
+        // ✅ Сначала: проверка специального ключевого слова
+        if (string.Equals(locationId, "any", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.Info($"[QuestFilterMod] ✅ Special keyword 'any' → 'any'");
+            return "any";
+        }
 
+        var locationDict = tables.Locations.GetDictionary();
+
+        if (locationDict == null || locationDict.Count == 0)
+        {
+            _logger.Error($"[QuestFilterMod] ❌ locationDict is null or empty!");
+            return null;
+        }
+
+        // 🔹 1. TryGetPascalName → snake_case
+        if (LocationHelper.TryGetPascalName(locationId, out var pascalName))
+        {
+            _logger.Info($"[QuestFilterMod] ✅ Matched by TryGetPascalName: '{pascalName}'");
+            return pascalName.ToLowerInvariant();
+        }
+
+        // 🔹 2. GetMappedKey
+        var mappedKey = tables.Locations.GetMappedKey(locationId);
+        _logger.Info($"[QuestFilterMod] 🧪 GetMappedKey('{locationId}') = '{mappedKey}'");
+
+        if (!string.IsNullOrEmpty(mappedKey))
+        {
+            // ✅ ПЫТАЕМСЯ ПЕРЕВЕСТИ mappedKey в PascalCase
+            if (LocationHelper.TryGetPascalName(mappedKey, out var pascal2))
+            {
+                _logger.Info($"[QuestFilterMod] ✅ Matched by GetMappedKey → Pascal: '{pascal2}'");
+                return pascal2.ToLowerInvariant();
+            }
+
+            // 🔥 ЕСЛИ GetMappedKey ВЕРНУЛ ID (как "56f401..."), НАДО ПОИСКАТЬ В СЛОВАРЕ!
+            _logger.Info($"[QuestFilterMod] 🧪 mappedKey is NOT PascalCase, trying to find via dictionary...");
+            foreach (var loc in locationDict)
+            {
+                var locObj = loc.Value;
+                if (locObj?.Base == null) continue;
+
+                // ✅ Ищем по Base.IdField (MongoId)
+                if (locObj.Base.IdField.ToString() == locationId)
+                {
+                    _logger.Info($"[QuestFilterMod] ✅ Found by IdField: '{loc.Key}'");
+                    return loc.Key.ToLowerInvariant();
+                }
+
+                // ✅ Или по Base.Id (snake_case)
+                if (locObj.Base.Id == locationId)
+                {
+                    _logger.Info($"[QuestFilterMod] ✅ Found by Id: '{loc.Key}'");
+                    return loc.Key.ToLowerInvariant();
+                }
+            }
+
+            // ❌ Если всё равно не нашли — возвращаем как есть
+            _logger.Error($"[QuestFilterMod] ⚠️ GetMappedKey returned unmapped key '{mappedKey}', returning lowercase");
+            return mappedKey.ToLowerInvariant();
+        }
+
+        // 🔹 3. Поиск по словарю напрямую (если GetMappedKey не сработал)
+        foreach (var loc in locationDict)
+        {
+            var locObj = loc.Value;
+            if (locObj?.Base == null) continue;
+
+            // ✅ IdField (MongoId)
+            if (locObj.Base.IdField.ToString() == locationId)
+            {
+                _logger.Info($"[QuestFilterMod] ✅ Found by direct IdField lookup: '{loc.Key}'");
+                return loc.Key.ToLowerInvariant();
+            }
+
+            // ✅ Base.Id (snake_case)
+            if (locObj.Base.Id == locationId)
+            {
+                _logger.Info($"[QuestFilterMod] ✅ Found by direct Id lookup: '{loc.Key}'");
+                return loc.Key.ToLowerInvariant();
+            }
+        }
+
+        _logger.Error($"[QuestFilterMod] ❌ Could not find location for '{locationId}'");
+        return null;
+    }
+
+
+    private void AddFromGroup(
+    Dictionary<string, List<Quest>> groups,
+    string key,
+    int count,
+    List<Quest> selected,
+    Random random,
+    bool debug)
+    {
+        if (count <= 0) return;
+
+        // 🔁 Объявляем один раз — используется везде
         var alreadySelectedIds = selected.Select(s => s.Id).ToHashSet();
-        var available = list.Where(q => !alreadySelectedIds.Contains(q.Id)).ToList();
 
-        var picked = available.OrderBy(_ => random.Next()).Take(count).ToList();
-        selected.AddRange(picked);
+        // 🔹 "any" — берём квесты ТОЛЬКО из группы "any"
+        if (string.Equals(key, "any", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!groups.TryGetValue("any", out var anyList) || anyList.Count == 0)
+            {
+                if (debug)
+                    _logger.Info("[QuestFilterMod][QuestFilterService] ❌ No quests with Location='any' in DB");
+                return;
+            }
 
-        if (Plugin.Config.Debug)
-            _logger.Info($"[QuestFilterMod][QuestFilterService] {picked.Count} quests for '{key}'");
+            var availableQuests = anyList.Where(q => !alreadySelectedIds.Contains(q.Id)).ToList();
+
+            if (availableQuests.Count == 0)
+            {
+                if (debug)
+                    _logger.Info("[QuestFilterMod][QuestFilterService] ⚠️ All 'any' quests already selected");
+                return;
+            }
+
+            var picked = availableQuests.OrderBy(_ => random.Next()).Take(count).ToList();
+            selected.AddRange(picked);
+
+            if (debug)
+                _logger.Info($"[QuestFilterMod][QuestFilterService] 🌍 Picked {picked.Count} quests from group 'any' (Location='any')");
+            return;
+        }
+
+        // 🔹 Обработка обычных локаций
+        if (!groups.TryGetValue(key, out var list))
+        {
+            if (debug)
+                _logger.Info($"[QuestFilterMod][QuestFilterService] ❌ No group found for '{key}' (key not in groups)");
+            return;
+        }
+
+        var availableQuestsForLoc = list.Where(q => !alreadySelectedIds.Contains(q.Id)).ToList();
+
+        if (availableQuestsForLoc.Count == 0)
+        {
+            if (debug)
+                _logger.Info($"[QuestFilterMod][QuestFilterService] ⚠️ No available quests in group '{key}' (all already selected)");
+            return;
+        }
+
+        var pickedQuests = availableQuestsForLoc.OrderBy(_ => random.Next()).Take(count).ToList();
+        selected.AddRange(pickedQuests);
+
+        if (debug)
+            _logger.Info($"[QuestFilterMod][QuestFilterService] 📦 {pickedQuests.Count} quests for '{key}'");
     }
 
     private void ModifyQuests(
@@ -251,13 +453,17 @@ public class QuestFilterService
         List<Quest> selectedQuests,
         QuestFilterConfig config)
     {
+
         var selectedIds = selectedQuests.Select(q => q.Id).ToHashSet();
 
         var countRemoveQuest = 0;
         if (config.RemoveStandartQuests)
         {
-            
-            var toRemove = allQuests.Values.Where(q => !selectedIds.Contains(q.Id)).ToList();
+            var toRemove = allQuests.Values
+                .Where(q => !selectedIds.Contains(q.Id))
+                .Where(q => !_randomQuestIds.Contains(q.Id))
+                .ToList();
+
             foreach (var q in toRemove)
             {
                 allQuests.Remove(q.Id);
@@ -318,7 +524,7 @@ public class QuestFilterService
                         toRemove.Add(condition);
 #if DEBUG
                         if (Plugin.Config.Debug)
-                            _logger.Info($"[QuestFilterMod][QuestFilterService] Condition removed'{checkType}' from the quest '{q.Name}'");
+                            _logger.Info($"[QuestFilterMod][QuestFilterService] Condition removed '{checkType}' from the quest '{q.Id}'");
 #endif
 
                     }
@@ -350,7 +556,7 @@ public class QuestFilterService
                 locationStats[locKey] = locationStats.GetValueOrDefault(locKey, 0) + 1;
                 locationDetails.Add($"[QuestFilterMod][QuestFilterService] Quest '{quest.Name}' ({quest.Id}) → location '{locKey}'");
             }
-            _logger.Info($"[QuestFilterMod][QuestFilterService] Total quests left: {selectedQuests.Count}");
+            _logger.Info($"[QuestFilterMod][QuestFilterService] Total quests left: {allQuests.Count}");
 
         }
     }

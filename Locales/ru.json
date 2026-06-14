@@ -2,6 +2,8 @@
   "base_type_pickup": "Забрать предмет",
   "base_type_elimination": "Устранение",
   "base_type_discover": "Обследовать точку",
+  "base_type_leave_item": "Заложить предмет",
+  "base_type_place_beacon": "Пометить маяком",
   "base_type_completion": "Завершить",
   "base_type_general": "Обычный квест",
 

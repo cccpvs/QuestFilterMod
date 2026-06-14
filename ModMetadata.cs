@@ -19,12 +19,3 @@ public record ModMetadata : AbstractModMetadata
     public override string License { get; init; } = "MIT";
     
 }
-
-#if DEBUG
-
-/*
- * 1. Доработка функционала
- * 2. Комбинированные квесты.
- * 
- */
-#endif

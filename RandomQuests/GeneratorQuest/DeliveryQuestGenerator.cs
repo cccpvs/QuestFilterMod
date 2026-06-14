@@ -109,14 +109,14 @@ namespace QuestFilterMod.RandomQuests
                         IsEncoded = false,
                         Unknown = false,
                         Items = new List<Item>
-                {
-                    new()
-                    {
-                        Id = idItems,
-                        Template = itemTpl,
-                        Upd = new Upd { StackObjectsCount = 1 }
-                    }
-                }
+                        {
+                            new()
+                            {
+                                Id = idItems,
+                                Template = itemTpl,
+                                Upd = new Upd { StackObjectsCount = 1 }
+                            }
+                        }
                     });
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
@@ -141,7 +141,8 @@ namespace QuestFilterMod.RandomQuests
                     VisibilityConditions = [],
                     ExtensionData = new Dictionary<string?, object?>
                     {
-                        ["target"] = new[] { itemTpl }
+                        ["target"] = new[] { itemTpl },
+                        ["_item"] = itemTpl
                     }
                 }
             };
