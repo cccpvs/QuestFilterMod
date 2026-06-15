@@ -44,19 +44,16 @@ namespace QuestFilterMod.RepeatableQuestCleaner
 
         public void ClearAllTemplates()
         {
-            // ✅ Инициализируем Templates, если он null (вдруг отсутствует)
-            if (_questDatabase.Templates == null)
-            {
-                _questDatabase.Templates = new RepeatableTemplates();
-            }
+            // 🔁 Гарантированная инициализация Templates
+            _questDatabase.Templates ??= new RepeatableTemplates();
 
-            // ✅ Удаляем старые шаблоны — создаём новые с корректным QuestStatus
+            // ✅ Пересоздаём каждый шаблон с валидными данными (в т.ч. с правильным статусом)
             _questDatabase.Templates.Elimination = CreateQuestTemplate(QuestTypeEnum.Elimination);
             _questDatabase.Templates.Completion = CreateQuestTemplate(QuestTypeEnum.Completion);
             _questDatabase.Templates.Exploration = CreateQuestTemplate(QuestTypeEnum.Exploration);
             _questDatabase.Templates.Pickup = CreateQuestTemplate(QuestTypeEnum.PickUp);
 
-            // Очищаем ExtensionData, если есть
+            // 🧹 Очищаем ExtensionData, если есть
             _questDatabase.Templates.ExtensionData?.Clear();
 
             if (Plugin.Config.Debug)
@@ -65,17 +62,9 @@ namespace QuestFilterMod.RepeatableQuestCleaner
 
         private static RepeatableQuest CreateQuestTemplate(QuestTypeEnum type)
         {
-            // ❗ Обязательно: QuestStatus должен быть валиден — иначе SPT ругается
-            // В SPT есть фиксированный набор статусов — посмотрим, где он лежит
-            // Допустим: "Available", "Active", "Completed", "Failed"
-            // Но лучше — использовать реальные ID из базы, если есть.
-
-            // Для запуска — можно использовать placeholder ID, но лучше — из базы
-            // Пример: "62e6d7f4416420249f34f238" — это ID статуса "Available" из TarkovData, но не факт, что в твоей базе такой есть.
-
-            // ✅ Используем ID, совпадающий с SPT internal:
-            // В SPT шаблоны квестов используют "Available", "Active", "Completed", "Failed" — но это строка, а не enum
-            // Поэтому:QuestStatus = "Available"
+            // ✅ Обязательно: Status — это строка (не enum!)
+            // В SPT — это один из: "Available", "Active", "Completed", "Failed"
+            // Делай его всегда "Available" для временных/новых шаблонов.
 
             return new RepeatableQuest
             {
@@ -87,6 +76,7 @@ namespace QuestFilterMod.RepeatableQuestCleaner
                 Image = "placeholder_icon.png",
                 Side = "Usec",
                 TraderId = "579dc57fd2720b3c368b45ee",
+                Status = 0, // ← Ключевое поле!
                 Conditions = new QuestConditionTypes
                 {
                     Started = new List<QuestCondition>(),
@@ -100,7 +90,6 @@ namespace QuestFilterMod.RepeatableQuestCleaner
                 Restartable = false,
                 ChangeStandingCost = 0,
                 SptRepatableGroupName = null
-                
             };
         }
     }

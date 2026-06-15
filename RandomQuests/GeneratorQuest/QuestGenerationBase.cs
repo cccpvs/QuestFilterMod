@@ -15,7 +15,7 @@ namespace QuestFilterMod.RandomQuests
 
             if (Plugin.Config.Debug)
             {
-                _logger.Info($"[QuestFilterMod][GenerateBaseQuest] 🧪 _random test: {СonfigRandom.TraderIds?.RandomItem(_random) ?? "NULL"}");
+                _logger.Info($"[QuestFilterMod][GenerateBaseQuest] 🧪 _random test: {ConfigRandom.TraderIds?.RandomItem(_random) ?? "NULL"}");
             }
 
 
@@ -26,10 +26,10 @@ namespace QuestFilterMod.RandomQuests
                 QuestName = $"{questId} questName",
                 Description = $"{questId} description",
                 Note = $"{questId} note",
-                TraderId = new MongoId(СonfigRandom.TraderIds.RandomItem(_random)),
+                TraderId = new MongoId(ConfigRandom.TraderIds.RandomItem(_random)),
                 Side = "Pmc",
                 Location = "any",
-                Image = СonfigRandom.DefaultQuest.Image ?? "/files/quest/icon/default.jpg",
+                Image = ConfigRandom.DefaultQuest.Image ?? "/files/quest/icon/default.jpg",
                 Type = QuestTypeEnum.PickUp,
                 CanShowNotificationsInGame = true,
                 Restartable = false,

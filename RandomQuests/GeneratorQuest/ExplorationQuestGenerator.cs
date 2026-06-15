@@ -9,13 +9,13 @@ namespace QuestFilterMod.RandomQuests
     {
         private Quest? GenerateExplorationQuest()
         {
-            var allowed = LocationHelper.GetAllowedLocations(СonfigRandom).ToList();
+            var allowed = LocationHelper.GetAllowedLocations(ConfigRandom).ToList();
 
             var allPoints = new List<(LocationConfig Config, string Target)>();
 
             foreach (var (pascalName, locationId) in allowed)
             {
-                if (СonfigRandom.ExplorationQuest.TryGetValue(pascalName, out var config))
+                if (ConfigRandom.ExplorationQuest.TryGetValue(pascalName, out var config))
                 {
                     foreach (var target in config.Targets)
                     {

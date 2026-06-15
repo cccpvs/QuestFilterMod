@@ -17,7 +17,7 @@ namespace QuestFilterMod.RandomQuests
         }
         private void AddExperienceReward(Quest quest)
         {
-            var range = СonfigRandom.DefaultQuest.ExperienceRewardRange;
+            var range = ConfigRandom.DefaultQuest.ExperienceRewardRange;
             int exp = _random.Next(range.Min / range.Step, (range.Max / range.Step) + 1) * range.Step;
 
             GetOrCreateRewardList(quest, "Success").Add(new Reward
@@ -33,14 +33,14 @@ namespace QuestFilterMod.RandomQuests
 
         private void AddMoneyReward(Quest quest)
         {
-            if (!СonfigRandom.RewardMoney.Enabled || string.IsNullOrEmpty(СonfigRandom.RewardMoney.Tpl)) return;
+            if (!ConfigRandom.RewardMoney.Enabled || string.IsNullOrEmpty(ConfigRandom.RewardMoney.Tpl)) return;
 
-            int amount = GenerateRandomAmount(СonfigRandom.RewardMoney.Min, СonfigRandom.RewardMoney.Max, СonfigRandom.RewardMoney.Step);
-            AddItemReward(quest, СonfigRandom.RewardMoney.Tpl, amount, "RUB");
+            int amount = GenerateRandomAmount(ConfigRandom.RewardMoney.Min, ConfigRandom.RewardMoney.Max, ConfigRandom.RewardMoney.Step);
+            AddItemReward(quest, ConfigRandom.RewardMoney.Tpl, amount, "RUB");
         }
         private void AddRandomItemRewards(Quest quest)
         {
-            if (!СonfigRandom.RewardItems.Enabled || !СonfigRandom.RewardItems.Parents.Any()) return;
+            if (!ConfigRandom.RewardItems.Enabled || !ConfigRandom.RewardItems.Parents.Any()) return;
 
             var prices = _databaseService.GetPrices();
             var itemsPool = _databaseService.GetTemplates().Items;
@@ -52,14 +52,14 @@ namespace QuestFilterMod.RandomQuests
                 return;
             }
 
-            int minPrice = СonfigRandom.RewardItems.PriceRange.Min;
-            int maxPrice = СonfigRandom.RewardItems.PriceRange.Max;
+            int minPrice = ConfigRandom.RewardItems.PriceRange.Min;
+            int maxPrice = ConfigRandom.RewardItems.PriceRange.Max;
 
             if (minPrice < 0) minPrice = 0;
             if (maxPrice < minPrice) maxPrice = minPrice;
 
             // === Шаг 1: Выбираем родительские ID с учётом весов ===
-            var weightedParents = СonfigRandom.RewardItems.Parents
+            var weightedParents = ConfigRandom.RewardItems.Parents
                 .Where(p => p.Weight > 0 && !string.IsNullOrEmpty(p.Id))
                 .ToList();
 
@@ -108,7 +108,7 @@ namespace QuestFilterMod.RandomQuests
                 _logger.Info($"[QuestFilterMod][RewardSystem] Найдено {nonEmptyParents.Count} категорий с подходящими предметами.");
 #endif
             
-            int count = _random.Next(СonfigRandom.RewardItems.Count.Min, СonfigRandom.RewardItems.Count.Max + 1);
+            int count = _random.Next(ConfigRandom.RewardItems.Count.Min, ConfigRandom.RewardItems.Count.Max + 1);
             var usedTpls = new HashSet<string>();
 
             for (int i = 0; i < count; i++)
@@ -143,7 +143,7 @@ namespace QuestFilterMod.RandomQuests
         }
         private MongoId? GetRandomSpecialItem()
         {
-            var allowedTpls = СonfigRandom.DeliveryQuest.ItemPlant;
+            var allowedTpls = ConfigRandom.DeliveryQuest.ItemPlant;
             if (!allowedTpls.Any())
             {
                 _logger?.Info("[QuestFilterMod][RewardSystem] 📌 The ItemPlant list is empty!");
@@ -179,12 +179,12 @@ namespace QuestFilterMod.RandomQuests
         }
         private void AddTraderStandingReward(Quest quest)
         {
-            if (!СonfigRandom.RewardTraderStanding.Enabled)
+            if (!ConfigRandom.RewardTraderStanding.Enabled)
                 return;
 
             float value = (float)_random.NextDouble() *
-                          (СonfigRandom.RewardTraderStanding.Max - СonfigRandom.RewardTraderStanding.Min) +
-                          СonfigRandom.RewardTraderStanding.Min;
+                          (ConfigRandom.RewardTraderStanding.Max - ConfigRandom.RewardTraderStanding.Min) +
+                          ConfigRandom.RewardTraderStanding.Min;
 
             GetOrCreateRewardList(quest, "Success").Add(new Reward
             {

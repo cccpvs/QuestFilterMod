@@ -299,7 +299,9 @@ public class QuestFilterService
         // ✅ Сначала: проверка специального ключевого слова
         if (string.Equals(locationId, "any", StringComparison.OrdinalIgnoreCase))
         {
+#if Debug
             _logger.Info($"[QuestFilterMod] ✅ Special keyword 'any' → 'any'");
+#endif
             return "any";
         }
 
@@ -320,8 +322,9 @@ public class QuestFilterService
 
         // 🔹 2. GetMappedKey
         var mappedKey = tables.Locations.GetMappedKey(locationId);
+#if Debug
         _logger.Info($"[QuestFilterMod] 🧪 GetMappedKey('{locationId}') = '{mappedKey}'");
-
+#endif
         if (!string.IsNullOrEmpty(mappedKey))
         {
             // ✅ ПЫТАЕМСЯ ПЕРЕВЕСТИ mappedKey в PascalCase
@@ -332,7 +335,9 @@ public class QuestFilterService
             }
 
             // 🔥 ЕСЛИ GetMappedKey ВЕРНУЛ ID (как "56f401..."), НАДО ПОИСКАТЬ В СЛОВАРЕ!
+#if Debug
             _logger.Info($"[QuestFilterMod] 🧪 mappedKey is NOT PascalCase, trying to find via dictionary...");
+#endif
             foreach (var loc in locationDict)
             {
                 var locObj = loc.Value;

@@ -7,7 +7,6 @@ using System.Text.Json;
 
 #if DEBUG
 /*
- * Смотри на локализацию ищем косяки
 */
 #endif
 
@@ -178,7 +177,7 @@ namespace QuestFilterMod.RandomQuests
             }
 
             string locationId = quest.Location;
-            bool isAllowed = LocationHelper.IsAllowed(locationId, СonfigRandom);
+            bool isAllowed = LocationHelper.IsAllowed(locationId, ConfigRandom);
             string locationName = isAllowed ? LocationHelper.GetPascalName(locationId) : "Unknown";
 
             if (quest.Conditions?.AvailableForFinish is var conditions && conditions != null)
@@ -240,7 +239,12 @@ namespace QuestFilterMod.RandomQuests
                             "Location" => new[] { locationName, "", "" },
                             "Kills" or "CounterCreator" => cond.Type switch
                             {
-                                "Elimination" => new[] { GetTargetNameFromRaw(cond.Target?.ToString() ?? ""), "", "" },
+                                "Elimination" => new[]
+                                {
+                                   cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString() ?? "",
+                                    "",
+                                    ""
+                                },
                                 "Completion" => new[] { "", "", "" },
                                 _ => new[] { "", "", "" }
                             },
@@ -296,7 +300,7 @@ namespace QuestFilterMod.RandomQuests
             }
 
             // 🔹 Местоположение
-            string locationName = LocationHelper.IsAllowed(quest.Location, СonfigRandom)
+            string locationName = LocationHelper.IsAllowed(quest.Location, ConfigRandom)
                 ? LocationHelper.GetPascalName(quest.Location)
                 : "Unknown";
 
@@ -334,7 +338,9 @@ namespace QuestFilterMod.RandomQuests
                         case "Kills" or "CounterCreator":
                             if (cond.Type == "Elimination")
                             {
-                                mainTargetName = GetTargetNameFromRaw(cond.Target?.ToString() ?? "");
+                                // 🔁 Берём из вложенного ExtensionData (как в FillQuestLocales)
+                                string? targetRaw = cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString();
+                                mainTargetName = GetTargetNameFromRaw(targetRaw ?? "");
                             }
                             break;
                     }
@@ -413,16 +419,6 @@ namespace QuestFilterMod.RandomQuests
             }
         }
 
-        private string GetTargetNameFromRaw(string targetRaw)
-        {
-            if (string.IsNullOrEmpty(targetRaw)) return "target";
-            string lower = targetRaw.ToLower();
-            if (lower.Contains("anypmc")) return "PMC";
-            if (lower.Contains("savage")) return "Scav";
-            if (lower == "usec") return "USEC";
-            if (lower == "bear") return "BEAR";
-            return "target";
-        }
 
         private void LoadLocales()
         {
@@ -479,7 +475,22 @@ namespace QuestFilterMod.RandomQuests
             _localesLoaded = true;
         }
 
+        private string GetTargetNameFromRaw(string targetRaw)
+        {
+            if (string.IsNullOrEmpty(targetRaw)) return "target";
 
+            string normalized = targetRaw.Trim().ToLowerInvariant();
+
+            return normalized switch
+            {
+                "any" => "Any",
+                "anypmc" => "Any PMC",
+                "savage" or "scav" => "Scav",
+                "usec" => "USEC",
+                "bear" => "BEAR",
+                _ => "target"
+            };
+        }
 
         private string GetItemName(string itemId, string lang = "en")
         {

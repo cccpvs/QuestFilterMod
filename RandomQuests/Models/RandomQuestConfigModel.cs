@@ -97,7 +97,7 @@ namespace QuestFilterMod.RandomQuests.Models
     {
         public int MinKills { get; set; } = 5;
         public int MaxKills { get; set; } = 15;
-        public string Target { get; set; } = "Any";
+        public string[] Target { get; set; } = ["Any"];
     }
     public class ZoneConfig
     {

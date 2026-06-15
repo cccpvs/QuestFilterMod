@@ -17,7 +17,7 @@ namespace QuestFilterMod.RandomQuests
         private readonly DatabaseService _databaseService;
         private readonly DatabaseServer databaseServer;
         private readonly Random _random = new();
-        private readonly QuestConfig СonfigRandom;
+        private readonly QuestConfig ConfigRandom;
         private readonly UniqueQuestTracker _tracker = new();
         private readonly CustomQuestService _customQuestService;
         private bool _hasExhaustedAllOptions = false;
@@ -70,7 +70,7 @@ namespace QuestFilterMod.RandomQuests
                 throw new FileNotFoundException("[QuestFilterMod][RandomQuestGenerator] Quest configuration not found", configPath);
             }
 
-            СonfigRandom = JsonHelper.LoadFromJson<QuestConfig>(configPath)
+            ConfigRandom = JsonHelper.LoadFromJson<QuestConfig>(configPath)
                 ?? throw new InvalidOperationException("[QuestFilterMod][RandomQuestGenerator] Failed to load quest configuration.");
         }
 
@@ -84,19 +84,18 @@ namespace QuestFilterMod.RandomQuests
                     LocationHelper.Initialize(locations);
                 }
 
-                // 🔁 Подготовка типов квестов (один раз)
                 var candidates = new List<(string Type, Func<Quest?> Generator)>();
 
-                if (СonfigRandom.QuestGeneration.Types.Exploration)
+                if (ConfigRandom.QuestGeneration.Types.Exploration)
                     candidates.Add(("Exploration", GenerateExplorationQuest));
 
-                if (СonfigRandom.QuestGeneration.Types.Delivery)
+                if (ConfigRandom.QuestGeneration.Types.Delivery)
                     candidates.Add(("Delivery", GenerateDeliveryQuest));
 
-                if (СonfigRandom.QuestGeneration.Types.Beacon)
+                if (ConfigRandom.QuestGeneration.Types.Beacon)
                     candidates.Add(("Beacon", GenerateBeaconQuest));
 
-                if (СonfigRandom.QuestGeneration.Types.Kills)
+                if (ConfigRandom.QuestGeneration.Types.Kills)
                     candidates.Add(("Kill", GenerateKillQuest));
 
                 if (!candidates.Any())
@@ -106,10 +105,8 @@ namespace QuestFilterMod.RandomQuests
                     return null;
                 }
 
-                // 🔁 Перемешиваем типы ОДИН РАЗ
                 candidates = candidates.OrderBy(_ => _random.Next()).ToList();
 
-                // 🔄 Пытаемся до maxAttempts раз (с учетом дубликатов)
                 for (int attempt = 0; attempt < maxAttempts; attempt++)
                 {
                     foreach (var (type, generator) in candidates)
@@ -119,15 +116,18 @@ namespace QuestFilterMod.RandomQuests
                         {
                             if (Plugin.Config.Debug)
                                 _logger.Info($"[QuestFilterMod][RandomQuestGenerator] ✅ Quest generated successfully on attempt #{attempt + 1}: {type}");
+
+                            // 👇 САМОЕ ВАЖНОЕ — добавь это!
+                            //_tracker.Clear();
+
                             _hasExhaustedAllOptions = false;
                             return quest;
                         }
                     }
 
-                    // После каждой итерации по всем типам — сбрасываем трекер, если хочешь разрешить повторы
-                    // _tracker.Clear(); // ← раскомментируй, если ты хочешь разрешить повторные квесты
+                    // После завершения всех типов — тоже сбросим (на всякий случай)
+                    //_tracker.Clear();
                 }
-
 
                 if (Plugin.Config.Debug)
                     _logger.Warning($"[QuestFilterMod][RandomQuestGenerator] Could not generate a quest in {maxAttempts} attempts.");

@@ -1109,7 +1109,7 @@
   "KillQuest": {
     "MinKills": 10,
     "MaxKills": 15,
-    "Target": "Any"
+    "Target": [ "Any","AnyPmc","Savage", "Usec","Bear"]
   },
   "RewardMoney": {
     "Enabled": true,

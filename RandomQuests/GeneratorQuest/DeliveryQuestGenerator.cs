@@ -11,7 +11,7 @@ namespace QuestFilterMod.RandomQuests
         {
             return GenerateDeployQuest(
                 questType: "Delivery",
-                config: СonfigRandom.DeliveryQuest,
+                config: ConfigRandom.DeliveryQuest,
                 conditionType: "LeaveItemAtLocation"
             );
         }
@@ -20,7 +20,7 @@ namespace QuestFilterMod.RandomQuests
         {
             return GenerateDeployQuest(
                 questType: "Delivery",
-                config: СonfigRandom.BeaconQuest,
+                config: ConfigRandom.BeaconQuest,
                 conditionType: "PlaceBeacon"
             );
         }
@@ -32,7 +32,7 @@ namespace QuestFilterMod.RandomQuests
         {
             if (!config.Locations.Any()) return null;
 
-            var allowed = LocationHelper.GetAllowedLocations(СonfigRandom).ToList();
+            var allowed = LocationHelper.GetAllowedLocations(ConfigRandom).ToList();
 
             var allPoints = new List<(LocationConfig Config, string Target)>();
 
@@ -75,7 +75,7 @@ namespace QuestFilterMod.RandomQuests
             {
                 var itemTpl = randomItemTpl;
 
-                var key = new QuestKey(loc.Id, targetPoint, itemTpl, questType);
+                var key = new QuestKey(loc.Id, targetPoint, "", questType);
 
 #if DEBUG
                 _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] Attempting to use QuestKey: {key}");
