@@ -31,9 +31,7 @@ namespace QuestFilterMod.RandomQuests
                 var key = new QuestKey(loc.Id, target, "__EXPLORATION__", "Exploration");
                 if (!_tracker.TryUse(key)) continue;
 
-                var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
-
-                return GenerateBaseQuest("Exploration", (q, id) =>
+                return GenerateBaseQuest("Exploration", (q, idFactory) =>
                 {
                     q.Location = loc.Id;
                     q.Type = QuestTypeEnum.Discover;
@@ -55,7 +53,7 @@ namespace QuestFilterMod.RandomQuests
                             GlobalQuestCounterId = "",
                             IsNecessary = false,
                             IsResetOnConditionFailed = false,
-                            OneSessionOnly = false,
+                            OneSessionOnly = true,
                             VisibilityConditions = [],
                             Index = 0,
                             Type = "Exploration",
@@ -87,7 +85,7 @@ namespace QuestFilterMod.RandomQuests
                             GlobalQuestCounterId = "",
                             IsNecessary = false,
                             IsResetOnConditionFailed = false,
-                            OneSessionOnly = false,
+                            OneSessionOnly = true,
                             VisibilityConditions = [],
                             Index = 1,
                             Type = "Completion",

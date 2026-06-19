@@ -65,7 +65,10 @@ namespace QuestFilterMod.RandomQuests
             quest.GameModes = new();
             quest.RankingModes = new();
 
+
             build(quest, idFactory);
+
+
 #if DEBUG
             if (Plugin.Config.Debug)
             {

@@ -99,6 +99,7 @@ namespace QuestFilterMod.RandomQuests
                 "condition_Location",
                 "condition_Exploration",
                 "condition_Completion",
+                "condition_FindItem",
                 "condition_default"
             };
             foreach (var key in conditionKeys)
@@ -202,6 +203,7 @@ namespace QuestFilterMod.RandomQuests
                             "Completion" => "condition_Completion",
                             _ => "condition_default"
                         },
+                        "FindItem" => "condition_FindItem",
                         _ => "condition_default"
                     };
 
@@ -233,7 +235,6 @@ namespace QuestFilterMod.RandomQuests
                             "VisitPlace" => new[] { cond.Counter?.Conditions?[0].Target?.ToString() ?? "", locationName, "" },
                             "CounterCreator" when cond.Type == "Exploration" => new[] { cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString() ?? "", locationName, "" },
                             "LeaveItemAtLocation" => new[] { cond.ZoneId?.ToString() ?? "", GetItemName(cond.ExtensionData?["_item"]?.ToString() ?? "", lang), locationName },
-                            //"LeaveItemAtLocation" => new[] { cond.ZoneId?.ToString() ?? "", cond.Target?.ToString() ?? "", locationName },
                             "PlaceBeacon" => new[] { cond.ZoneId?.ToString() ?? "", "", locationName },
                             "ExitStatus" => new[] { "", "", "" },
                             "Location" => new[] { locationName, "", "" },
@@ -247,6 +248,10 @@ namespace QuestFilterMod.RandomQuests
                                 },
                                 "Completion" => new[] { "", "", "" },
                                 _ => new[] { "", "", "" }
+                            },
+                            "FindItem" => new[]
+                            {
+                                GetItemName(cond.ExtensionData?["_item"]?.ToString() ?? "", lang), "", ""
                             },
                             _ => new[] { "", "", "" }
                         };
@@ -311,16 +316,32 @@ namespace QuestFilterMod.RandomQuests
 
             if (quest.Conditions?.AvailableForFinish is var conditions && conditions != null)
             {
+                QuestCondition? findItemCond = null;
+                QuestCondition? handoverItemCond = null;
+
+                foreach (var cond in conditions)
+                {
+                    if (cond?.ConditionType == "FindItem") findItemCond = cond;
+                    else if (cond?.ConditionType == "HandoverItem") handoverItemCond = cond;
+                }
+
+                string itemId = findItemCond?.ExtensionData?["_item"]?.ToString() ?? "";
+                if (!string.IsNullOrEmpty(itemId))
+                {
+                    string itemName = GetItemName(itemId, lang);
+                    itemNames.Add(itemName);
+                }
+
                 foreach (var cond in conditions.Where(c => c?.Id != null))
                 {
                     switch (cond.ConditionType)
                     {
                         case "LeaveItemAtLocation":
                             {
-                                string? itemId = cond.ExtensionData?["_item"]?.ToString();
-                                if (!string.IsNullOrEmpty(itemId))
+                                string? itemId2 = cond.ExtensionData?["_item"]?.ToString();
+                                if (!string.IsNullOrEmpty(itemId2))
                                 {
-                                    string itemName = GetItemName(itemId, lang);
+                                    string itemName = GetItemName(itemId2, lang);
                                     int count = cond.Counter?.Conditions?.Count ?? 1;
                                     itemNames.Add($"{itemName} (x{count})");
                                 }
@@ -338,7 +359,6 @@ namespace QuestFilterMod.RandomQuests
                         case "Kills" or "CounterCreator":
                             if (cond.Type == "Elimination")
                             {
-                                // 🔁 Берём из вложенного ExtensionData (как в FillQuestLocales)
                                 string? targetRaw = cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString();
                                 mainTargetName = GetTargetNameFromRaw(targetRaw ?? "");
                             }

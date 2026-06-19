@@ -87,7 +87,7 @@ namespace QuestFilterMod.RandomQuests
                 _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] QuestKey: {loc.Id}, {targetPoint}, {itemTpl}, \"{questType}\"");
 #endif
 
-                return GenerateBaseQuest(questType, (q, id) =>
+                return GenerateBaseQuest(questType, (q, idFactory) =>
                 {
                     q.Location = loc.Id;
                     q.Type = QuestTypeEnum.Discover;
@@ -95,13 +95,12 @@ namespace QuestFilterMod.RandomQuests
                     if (!LocationHelper.TryGetPascalName(loc.Id, out var pascalName))
                         return;
 
-                    var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
-                    var itemId = id();
+                    var itemId = idFactory();
                     var idItems = itemId;
 
                     GetOrCreateRewardList(q, "Started").Add(new Reward
                     {
-                        Id = id(),
+                        Id = idFactory(),
                         Type = RewardType.Item,
                         Target = idItems,
                         Value = 1,
@@ -120,32 +119,32 @@ namespace QuestFilterMod.RandomQuests
                     });
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
-            {
-                new()
-                {
-                    Id = idFactory(),
-                    ConditionType = conditionType,
-                    DogtagLevel = 0,
-                    GlobalQuestCounterId = "",
-                    IsEncoded = false,
-                    OnlyFoundInRaid = false,
-                    OneSessionOnly = false,
-                    Value = 1,
-                    Index = 1,
-                    ZoneId = targetPoint,
-                    DynamicLocale = false,
-                    MaxDurability = 100,
-                    MinDurability = 0,
-                    ParentId = "",
-                    PlantTime = config.PlantTime,
-                    VisibilityConditions = [],
-                    ExtensionData = new Dictionary<string?, object?>
                     {
-                        ["target"] = new[] { itemTpl },
-                        ["_item"] = itemTpl
-                    }
-                }
-            };
+                        new()
+                        {
+                            Id = idFactory(),
+                            ConditionType = conditionType,
+                            DogtagLevel = 0,
+                            GlobalQuestCounterId = "",
+                            IsEncoded = false,
+                            OnlyFoundInRaid = false,
+                            OneSessionOnly = false,
+                            Value = 1,
+                            Index = 1,
+                            ZoneId = targetPoint,
+                            DynamicLocale = false,
+                            MaxDurability = 100,
+                            MinDurability = 0,
+                            ParentId = "",
+                            PlantTime = config.PlantTime,
+                            VisibilityConditions = [],
+                            ExtensionData = new Dictionary<string?, object?>
+                            {
+                                ["target"] = new[] { itemTpl },
+                                ["_item"] = itemTpl
+                            }
+                        }
+                    };
 
 #if DEBUG
                     q.Conditions.AvailableForStart = new List<QuestCondition>
@@ -171,23 +170,3 @@ namespace QuestFilterMod.RandomQuests
         }
     }
 }
-
-
-
-#if DEBUG
-/*
- * Точки которые не для квестов
- * Bigmap - "Wrong_wheels"
- * Lab - "Halloween_zone_for_antivirus(lab)"
- * 
- * Неизвестные точки.
- * "em_quest4_3","1","place_peacemaker_007_2_N3"
- *
- *
- * Квесты на //ConditionType = "PlaceBeacon",
- * в процессе работы.
- *
- *
- *
- * */
-#endif

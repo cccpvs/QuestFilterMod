@@ -346,7 +346,9 @@ public class QuestFilterService
                 // ✅ Ищем по Base.IdField (MongoId)
                 if (locObj.Base.IdField.ToString() == locationId)
                 {
+#if Debug
                     _logger.Info($"[QuestFilterMod] ✅ Found by IdField: '{loc.Key}'");
+#endif
                     return loc.Key.ToLowerInvariant();
                 }
 
@@ -359,7 +361,9 @@ public class QuestFilterService
             }
 
             // ❌ Если всё равно не нашли — возвращаем как есть
+#if Debug
             _logger.Error($"[QuestFilterMod] ⚠️ GetMappedKey returned unmapped key '{mappedKey}', returning lowercase");
+#endif
             return mappedKey.ToLowerInvariant();
         }
 

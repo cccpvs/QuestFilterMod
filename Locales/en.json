@@ -15,6 +15,7 @@
   "condition_Location": "Exit location: {0}",
   "condition_Exploration": "Visit point",
   "condition_Completion": "Survive or Transit",
+  "condition_FindItem": "Find {0}",
   "condition_default": "Complete condition: {0}",
 
   "quest_accept": "Quest accepted: {0}",

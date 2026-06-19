@@ -21,6 +21,8 @@ namespace QuestFilterMod.RandomQuests
         private readonly UniqueQuestTracker _tracker = new();
         private readonly CustomQuestService _customQuestService;
         private bool _hasExhaustedAllOptions = false;
+        private readonly SaveServer _saveServer;
+
 
         public bool HasExhaustedAllOptions => _hasExhaustedAllOptions;
         public record QuestKey(string LocationId, string TargetPoint, string ItemTpl = "", string QuestType = "");
@@ -43,7 +45,8 @@ namespace QuestFilterMod.RandomQuests
                 ISptLogger<Plugin> logger,
                 DatabaseService databaseService,
                  DatabaseServer databaseServer,
-                CustomQuestService customQuestService)
+                CustomQuestService customQuestService,
+                SaveServer saveServer)
         {
             _logger = logger;
             _databaseService = databaseService;
@@ -72,6 +75,7 @@ namespace QuestFilterMod.RandomQuests
 
             ConfigRandom = JsonHelper.LoadFromJson<QuestConfig>(configPath)
                 ?? throw new InvalidOperationException("[QuestFilterMod][RandomQuestGenerator] Failed to load quest configuration.");
+            _saveServer = saveServer;
         }
 
         public Quest? GenerateSingleQuest(int maxAttempts = 10)
@@ -97,6 +101,22 @@ namespace QuestFilterMod.RandomQuests
 
                 if (ConfigRandom.QuestGeneration.Types.Kills)
                     candidates.Add(("Kill", GenerateKillQuest));
+
+                if (ConfigRandom.QuestGeneration.Types.Transfer)
+                {
+                    _logger.Warning("[RandomQuestGenerator] ❗️ Adding Transfer generator...");
+                    try
+                    {
+                        candidates.Add(("Transfer", GenerateTransferQuest));
+                        _logger.Warning("[RandomQuestGenerator] ✅ Transfer generator added (SUCCESS)");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error($"[RandomQuestGenerator] ❌ EXCEPTION when adding Transfer generator: {ex}");
+                        _logger.Error($"[RandomQuestGenerator] StackTrace: {ex.StackTrace}");
+                        // 👇 НЕ ПРОПУСКАЙ ЭТО — если ошибка в add, то и выполнение не дойдёт до generator()
+                    }
+                }
 
                 if (!candidates.Any())
                 {

@@ -44,66 +44,65 @@ namespace QuestFilterMod.RandomQuests
 
                 _logger.Info($"[QuestFilterMod][KillQuest] ✅ Using key: {keyStr} (tracker count now: {_tracker})");
 
-                var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
                 var randomKill = _random.Next(cfg.MinKills, cfg.MaxKills + 1);
 
-                var quest = GenerateBaseQuest("Kill", (q, id) =>
+                var quest = GenerateBaseQuest("Kill", (q, idFactory) =>
                 {
                     q.Location = locationId;
                     q.Type = QuestTypeEnum.Elimination;
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
-            {
-                new()
-                {
-                    Id = idFactory(),
-                    ConditionType = "CounterCreator",
-                    DynamicLocale = false,
-                    Value = randomKill,
-                    ParentId = "",
-                    Type = "Elimination",
-                    VisibilityConditions = [],
-                    Counter = new QuestConditionCounter()
                     {
-                        Conditions = new List<QuestConditionCounterCondition>
+                        new()
                         {
-                            new()
+                            Id = idFactory(),
+                            ConditionType = "CounterCreator",
+                            DynamicLocale = false,
+                            Value = randomKill,
+                            ParentId = "",
+                            Type = "Elimination",
+                            VisibilityConditions = [],
+                            Counter = new QuestConditionCounter()
                             {
-                                ConditionType = "Kills",
-                                CompareMethod = ">=",
-                                Daytime = new() { From = 0, To = 0 },
-                                Distance = new() { CompareMethod = ">=", Value = 0 },
-                                DynamicLocale = false,
-                                EnemyEquipmentExclusive = [],
-                                EnemyEquipmentInclusive = [],
-                                EnemyHealthEffects = [],
-                                Weapon = [],
-                                WeaponCaliber = [],
-                                WeaponModsExclusive = [],
-                                WeaponModsInclusive = [],
-                                Id = idFactory(),
-                                ResetOnSessionEnd = false,
-                                ExtensionData = new Dictionary<string?, object?>
+                                Conditions = new List<QuestConditionCounterCondition>
                                 {
-                                    ["target"] = target
+                                    new()
+                                    {
+                                        ConditionType = "Kills",
+                                        CompareMethod = ">=",
+                                        Daytime = new() { From = 0, To = 0 },
+                                        Distance = new() { CompareMethod = ">=", Value = 0 },
+                                        DynamicLocale = false,
+                                        EnemyEquipmentExclusive = [],
+                                        EnemyEquipmentInclusive = [],
+                                        EnemyHealthEffects = [],
+                                        Weapon = [],
+                                        WeaponCaliber = [],
+                                        WeaponModsExclusive = [],
+                                        WeaponModsInclusive = [],
+                                        Id = idFactory(),
+                                        ResetOnSessionEnd = false,
+                                        ExtensionData = new Dictionary<string?, object?>
+                                        {
+                                            ["target"] = target
+                                        },
+                                        Value = 1
+                                    },
+                                    new()
+                                    {
+                                        ConditionType = "Location",
+                                        DynamicLocale = false,
+                                        Id = idFactory(),
+                                        ExtensionData = new Dictionary<string?, object?>
+                                        {
+                                            ["target"] = new[] { pascalName }
+                                        }
+                                    }
                                 },
-                                Value = 1
-                            },
-                            new()
-                            {
-                                ConditionType = "Location",
-                                DynamicLocale = false,
-                                Id = idFactory(),
-                                ExtensionData = new Dictionary<string?, object?>
-                                {
-                                    ["target"] = new[] { pascalName }
-                                }
+                                Id = idFactory()
                             }
-                        },
-                        Id = idFactory()
-                    }
-                }
-            };
+                        }
+                    };
                 });
 
                 _logger.Info($"[QuestFilterMod][KillQuest] ✅ Generated: {locationId} → {target} ({randomKill} kills)");

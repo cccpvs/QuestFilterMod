@@ -80,6 +80,8 @@ namespace QuestFilterMod.RandomQuests.Models
         public bool Delivery { get; set; } = true;
         public bool Beacon { get; set; } = true;
         public bool Kills { get; set; } = true;
+        public bool Transfer { get; set; } = true;
+
     }
 
     public class DeployQuestBaseConfig
@@ -98,6 +100,12 @@ namespace QuestFilterMod.RandomQuests.Models
         public int MinKills { get; set; } = 5;
         public int MaxKills { get; set; } = 15;
         public string[] Target { get; set; } = ["Any"];
+    }
+    public class TransferQuestConfig
+    {
+        public List<string> ItemIds { get; set; } = new();
+        public int[] ItemCount { get; set; } = [1, 5];
+        public int[] Condition { get; set; } = [1, 5];
     }
     public class ZoneConfig
     {
@@ -118,6 +126,7 @@ namespace QuestFilterMod.RandomQuests.Models
         public DeployQuestConfig BeaconQuest { get; set; } = new();
         public QuestGenerationConfig QuestGeneration { get; set; } = new();
         public KillQuestConfig KillQuest { get; set; } = new();
+        public TransferQuestConfig TransferQuest { get; set; } = new();
         public TraderStandingRewardConfig RewardTraderStanding { get; set; } = new();
     }
 }

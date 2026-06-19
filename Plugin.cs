@@ -135,7 +135,8 @@ public class Plugin : IOnUpdate
                    _logger,
                    _databaseService,
                    databaseServer,
-                   _customQuestService);
+                   _customQuestService,
+                   _saveServer);
 
                 _questFilterService = new QuestFilterService(
                     _logger,
