@@ -22,8 +22,9 @@ namespace QuestFilterMod.RandomQuests
 
             string id = quest.Id.ToString();
             LoadLocales();
-
+#if DEBUG
             _logger.Warning($"[QuestFilterMod][LocalesQuest] Filling locales for quest ID: {id}, Type: {quest.Type}");
+#endif
 
             void Add(string key, string fallbackTemplate = "")
             {
@@ -182,7 +183,9 @@ namespace QuestFilterMod.RandomQuests
             {
                 foreach (var cond in conditions.Where(c => c?.Id != null))
                 {
+#if DEBUG
                     _logger.Error($"[QuestFilterMod][LocalesQuest] CondType: {cond.ConditionType}, Id: {cond.Id}, Target: {cond.Target}, ZoneId: {cond.ZoneId}");
+#endif
                     string condKey = cond.Id.ToString();
 
                     string conditionTypeKey = cond.ConditionType switch
@@ -484,10 +487,13 @@ namespace QuestFilterMod.RandomQuests
                     _loadedLocales[lang] = new Dictionary<string, string>(); 
                 }
             }
+            if(Plugin.Config.Debug)
+                _logger.Warning($"[QuestFilterMod][LocalesQuest] Loaded locale languages: {string.Join(", ", loadedLangs)}");
 
-            _logger.Warning($"[QuestFilterMod][LocalesQuest] Loaded locale languages: {string.Join(", ", loadedLangs)}");
             if (missingLangs.Count > 0)
+#if DEBUG
                 _logger.Error($"[QuestFilterMod][LocalesQuest] Missing locale files for languages: {string.Join(", ", missingLangs)}");
+#endif
 
             _localesLoaded = true;
         }

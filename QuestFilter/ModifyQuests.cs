@@ -2,16 +2,23 @@
 using QuestFilterMod.RandomQuests;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
+using SPTarkov.Server.Core.Models.Logging;
+
 
 namespace QuestFilterMod.QuestFilter
 {
     public partial class QuestFilterService
     {
-        private void ModifyQuests(Dictionary<MongoId, Quest> allQuests,List<Quest> selectedQuests,QuestFilterConfig config,Random random)
+        int q_deleted = 0;
+        int q_moved = 0;
+        int q_left = 0;
+        int q_random = 0;
+
+        private void ModifyQuests(Dictionary<MongoId, Quest> allQuests,List<Quest> selectedQuests,QuestFilterConfig config, Random random)
         {
             var selectedIds = selectedQuests.Select(q => q.Id).ToHashSet();
 
-            var countRemoveQuest = 0;
+
             if (config.RemoveStandartQuests)
             {
                 var toRemove = allQuests.Values
@@ -22,14 +29,13 @@ namespace QuestFilterMod.QuestFilter
                 foreach (var q in toRemove)
                 {
                     allQuests.Remove(q.Id);
-                    if (config.Debug)
-                        countRemoveQuest++;
+                    q_deleted++;
                 }
             }
-            if (Plugin.Config.Debug)
-                _logger.Info($"[QuestFilterMod][QuestFilterService] Total deleted: {countRemoveQuest}");
+            
+            //if (Plugin.Config.Debug)
+                //_logger.Info($"[QuestFilterMod][ModifyQuests] Total deleted: {countRemoveQuest}");
 
-            var countTraiderTransfer = 0;
             foreach (var q in selectedQuests)
             {
                 if (q.Rewards == null)
@@ -41,7 +47,7 @@ namespace QuestFilterMod.QuestFilter
                     {
                         q.Rewards[status] = new List<Reward>();
                         if (Plugin.Config.Debug)
-                            _logger.Info($"[QuestFilterMod][QuestFilterService] ⚠️ Reward status restored: '{status}' for the quest '{q.Id}'");
+                            _logger.Info($"[QuestFilterMod][ModifyQuests] ⚠️ Reward status restored: '{status}' for the quest '{q.Id}'");
                     }
                 }
 
@@ -51,18 +57,19 @@ namespace QuestFilterMod.QuestFilter
                     {
                         string selectedTraderId = config.TargetTraderIds[random.Next(config.TargetTraderIds.Length)];
                         q.TraderId = selectedTraderId;
-
+                        q_moved++;
                         if (Plugin.Config.Debug)
-                            _logger.Info($"[QuestFilterMod][QuestFilterService] Quest '{q.Name}' ({q.Id}) → trader {selectedTraderId}");
+                            _logger.Info($"[QuestFilterMod][ModifyQuests] Quest '{q.Name}' ({q.Id}) → trader {selectedTraderId}");
                     }
-                    countTraiderTransfer = selectedQuests.Count;
+                    
+                    
                 }
 
                 if (config.RemoveStartConditionsQuest && q.Conditions?.AvailableForStart != null)
                 {
                     q.Conditions.AvailableForStart.Clear();
                     if (Plugin.Config.Debug)
-                        _logger.Info($"[QuestFilterMod][QuestFilterService] Start conditions have been removed for the quest '{q.Name}'");
+                        _logger.Info($"[QuestFilterMod][ModifyQuests] Start conditions have been removed for the quest '{q.Name}'");
                 }
 
                 if (config.RemoveFinishConditionTypes?.Count > 0 && q.Conditions?.AvailableForFinish != null)
@@ -80,7 +87,7 @@ namespace QuestFilterMod.QuestFilter
                             toRemove.Add(condition);
 #if DEBUG
                         if (Plugin.Config.Debug)
-                            _logger.Info($"[QuestFilterMod][QuestFilterService] Condition removed '{checkType}' from the quest '{q.Id}'");
+                            _logger.Info($"[QuestFilterMod][ModifyQuests] Condition removed '{checkType}' from the quest '{q.Id}'");
 #endif
                         }
                     }
@@ -91,17 +98,18 @@ namespace QuestFilterMod.QuestFilter
                     }
                 }
             }
-
+            
+            q_left = allQuests.Count;
             if (Plugin.Config.Debug)
             {
                 var locationStats = new Dictionary<string, int>();
                 var locationDetails = new List<string>();
-
-                _logger.Info($"[QuestFilterMod][QuestFilterService] Trader quests moved: {countTraiderTransfer}");
+                
+                //_logger.Info($"[QuestFilterMod][ModifyQuests] Trader quests moved: {countTraiderTransfer}");
 
                 foreach (var kvp in locationStats.OrderBy(x => x.Key))
                 {
-                    _logger.Info($"[QuestFilterMod][QuestFilterService]  • {kvp.Key}: {kvp.Value} шт.");
+                    _logger.Info($"[QuestFilterMod][ModifyQuests]  • {kvp.Key}: {kvp.Value} count.");
                 }
                 foreach (var quest in selectedQuests)
                 {
@@ -109,11 +117,15 @@ namespace QuestFilterMod.QuestFilter
                         ? pascalName.ToLowerInvariant()
                         : "unknown";
                     locationStats[locKey] = locationStats.GetValueOrDefault(locKey, 0) + 1;
-                    locationDetails.Add($"[QuestFilterMod][QuestFilterService] Quest '{quest.Name}' ({quest.Id}) → location '{locKey}'");
+                    locationDetails.Add($"[QuestFilterMod][ModifyQuests] Quest '{quest.Name}' ({quest.Id}) → location '{locKey}'");
                 }
-                _logger.Info($"[QuestFilterMod][QuestFilterService] Total quests left: {allQuests.Count}");
+                
+                //_logger.Info($"[QuestFilterMod][ModifyQuests] Total quests left: {allQuests.Count}");
 
             }
+            _logger.Warning($"|🗑️{"Deleted",-11} |➡️{"Moved",-11} |🎲{"Random",-11} |✅{"Left",-11} |");
+            _logger.Warning($"-------------------------------------------------------------");
+            _logger.Warning($"| {q_deleted,-12} | {q_moved,-12} | {q_random,-12} | {q_left,-12} |");
         }
     }
 }

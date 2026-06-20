@@ -12,12 +12,13 @@ namespace QuestFilterMod.RandomQuests
             var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
             var questId = idFactory();
 
+#if debug
 
             if (Plugin.Config.Debug)
             {
                 _logger.Info($"[QuestFilterMod][GenerateBaseQuest] 🧪 _random test: {ConfigRandom.TraderIds?.RandomItem(_random) ?? "NULL"}");
             }
-
+#endif
 
             var quest = new Quest
             {

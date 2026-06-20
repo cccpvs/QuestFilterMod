@@ -1,6 +1,7 @@
 ﻿using QuestFilterMod.RandomQuests.Models;
 using QuestFilterMod.RandomQuests.Utils;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
+using SPTarkov.Server.Core.Models.Logging;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Servers;
 using SPTarkov.Server.Core.Services;
@@ -63,7 +64,7 @@ namespace QuestFilterMod.RandomQuests
             );
 
             if (Plugin.Config.Debug)
-                _logger.Info($"[QuestFilterMod][RandomQuestGenerator] I'm looking for a config: {configPath}");
+                _logger.LogWithColor($"[QuestFilterMod][RandomQuestGenerator] I'm looking for a config: {configPath}", LogTextColor.Magenta);
 
             if (!File.Exists(configPath))
             {
@@ -103,11 +104,16 @@ namespace QuestFilterMod.RandomQuests
 
                 if (ConfigRandom.QuestGeneration.Types.Transfer)
                 {
+#if DEBUG
+
                     _logger.Warning("[RandomQuestGenerator] ❗️ Adding Transfer generator...");
+#endif
                     try
                     {
                         candidates.Add(("Transfer", GenerateTransferQuest));
+#if DEBUG
                         _logger.Warning("[RandomQuestGenerator] ✅ Transfer generator added (SUCCESS)");
+#endif
                     }
                     catch (Exception ex)
                     {

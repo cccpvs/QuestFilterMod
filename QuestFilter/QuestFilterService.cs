@@ -119,15 +119,15 @@ public partial class QuestFilterService
                         var locationName = LocationHelper.TryGetPascalName(randomQuest.Location, out var pascalName)
                         ? pascalName.ToLowerInvariant()
                         : "unknown";
-                        _logger.Info($"[QuestFilterMod][QuestFilterService] Quest generated: '{randomQuest.Name}' (ID: {randomQuest.Id}, location: {locationName})");
+                        _logger.Success($"[QuestFilterMod][QuestFilterService] Quest generated: '{randomQuest.Name}' (ID: {randomQuest.Id}, location: {locationName})");
 
                     }
                 }
             }
             selectedQuests.AddRange(generatedQuests);
-
-            if (Plugin.Config.Debug)
-                _logger.Success($"[QuestFilterMod][QuestFilterService] Done: Generated {generatedCount} random quests.");
+            q_random = generatedCount;
+            /*if (Plugin.Config.Debug)
+                _logger.Success($"[QuestFilterMod][QuestFilterService] Done: Generated {generatedCount} random quests.");*/
         }
 
         var standardQuests = selectedQuests.Where(q => !_randomQuestIds.Contains(q.Id)).ToList();

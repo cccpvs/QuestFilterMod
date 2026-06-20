@@ -4,6 +4,7 @@ using QuestFilterMod.RandomQuests;
 using QuestFilterMod.RepeatableQuestCleaner;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
+using SPTarkov.Server.Core.Models.Logging;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Servers;
 using SPTarkov.Server.Core.Services;
@@ -149,26 +150,19 @@ public class Plugin : IOnUpdate
                 var repeatableDb = tables.Templates.RepeatableQuests;
 
                 _temporaryQuestCleaner.SetQuestDatabase(repeatableDb);
-                _temporaryQuestCleaner.ClearAllTemplates();
 
                 if (Config.Debug)
                     _logger.Success("[QuestFilterMod] ✅ All repeatable quest templates cleared.");
             }
-
-
             var allQuestsSnapshot = quests.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-            
             _questFilterService.ApplyFilters(Config);
 
             _applied = true;
-
-            _logger.Success("[QuestFilterMod] ✅ Quest filtering successfully applied.");
-            _logger.Success("[QuestFilterMod] ----------🚀 Loaded 🚀----------");
-
-
-
-
+         
+            _logger.Warning($"-------------------------------------------------------------");
+            _logger.Warning($"|{"",-15}{"QuestFilterMod Loaded 🚀",-44}|");
+            _logger.Warning($"-------------------------------------------------------------");
         }
         catch (Exception ex)
         {
@@ -199,7 +193,7 @@ public class Plugin : IOnUpdate
                 return;
             }
             if (Config.Debug)
-                _logger.Info($"[QuestFilterMod][] 🔍 Cleaning DroppedItems from {profiles.Count} profiles...");
+                _logger.LogWithColor($"[QuestFilterMod][Plugin] 🔍 Cleaning DroppedItems from {profiles.Count} profiles...", LogTextColor.Magenta);
 
             int cleanedCount = 0;
             foreach (var kvp in profiles)
@@ -217,8 +211,8 @@ public class Plugin : IOnUpdate
 
             if (Config.Debug)
             {
-                _logger.Info($"[QuestFilterMod] ✅ Cleared DroppedItems from {cleanedCount} profiles (in-memory).");
-                _logger.Info("[QuestFilterMod] 📌 Changes will be saved on next profile save (exit or auto-save).");
+                _logger.Success($"[QuestFilterMod] ✅ Cleared DroppedItems from {cleanedCount} profiles (in-memory).");
+                _logger.Success("[QuestFilterMod] 📌 Changes will be saved on next profile save (exit or auto-save).");
             }
                 
         }
@@ -243,12 +237,18 @@ public class Plugin : IOnUpdate
             var json = File.ReadAllText(ConfigPath);
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             Config = JsonSerializer.Deserialize<QuestFilterConfig>(json, options) ?? new QuestFilterConfig();
-            _logger.Success("[QuestFilterMod] ----------🚀 Starting 🚀----------");
+            //_logger.Warning($"------------------QuestFilterMod Starting 🚀-----------------");
+            _logger.Warning($"-------------------------------------------------------------");
+            _logger.Warning($"|{"",-15}{"QuestFilterMod Starting 🚀",-44}|");
+            _logger.Warning($"-------------------------------------------------------------");
+
             if (Config.Debug)
             {
                
                 _logger.Info("[QuestFilterMod] ✅ The Config is loaded.");
-                _logger.Info($"[QuestFilterMod][Config] Enabled={Config.Enabled}, GenerateRandom={Config.GenerateRandomQuests?.Enable}");
+#if DEBUG
+                _logger.Warning($"[QuestFilterMod][Plugin] Enabled={Config.Enabled}, GenerateRandom={Config.GenerateRandomQuests?.Enable}");
+#endif
             }
         }
         catch (Exception ex)
