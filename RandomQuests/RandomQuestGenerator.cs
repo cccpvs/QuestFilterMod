@@ -23,7 +23,6 @@ namespace QuestFilterMod.RandomQuests
         private bool _hasExhaustedAllOptions = false;
         private readonly SaveServer _saveServer;
 
-
         public bool HasExhaustedAllOptions => _hasExhaustedAllOptions;
         public record QuestKey(string LocationId, string TargetPoint, string ItemTpl = "", string QuestType = "");
 
@@ -137,16 +136,10 @@ namespace QuestFilterMod.RandomQuests
                             if (Plugin.Config.Debug)
                                 _logger.Info($"[QuestFilterMod][RandomQuestGenerator] ✅ Quest generated successfully on attempt #{attempt + 1}: {type}");
 
-                            // 👇 САМОЕ ВАЖНОЕ — добавь это!
-                            //_tracker.Clear();
-
                             _hasExhaustedAllOptions = false;
                             return quest;
                         }
                     }
-
-                    // После завершения всех типов — тоже сбросим (на всякий случай)
-                    //_tracker.Clear();
                 }
 
                 if (Plugin.Config.Debug)
@@ -192,7 +185,7 @@ namespace QuestFilterMod.RandomQuests
                     return item;
             }
 
-            return list[^1]; // fallback
+            return list[^1];
         }
     }
 }

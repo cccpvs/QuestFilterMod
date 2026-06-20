@@ -42,8 +42,8 @@ namespace QuestFilterMod.RandomQuests
 
             foreach (var kvp in locations)
             {
-                string pascalName = kvp.Key;                    // "Woods", "Interchange"
-                string? locationId = kvp.Value?.Base?.IdField;  // "5704e3c2d2720bac5b8b4567"
+                string pascalName = kvp.Key;                    
+                string? locationId = kvp.Value?.Base?.IdField;  
 
                 if (!string.IsNullOrEmpty(locationId))
                 {

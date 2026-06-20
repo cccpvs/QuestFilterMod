@@ -66,38 +66,9 @@ namespace QuestFilterMod.RandomQuests
                             {
                                 Conditions = new List<QuestConditionCounterCondition>
                                 {
-                                    new()
-                                    {
-                                        ConditionType = "Kills",
-                                        CompareMethod = ">=",
-                                        Daytime = new() { From = 0, To = 0 },
-                                        Distance = new() { CompareMethod = ">=", Value = 0 },
-                                        DynamicLocale = false,
-                                        EnemyEquipmentExclusive = [],
-                                        EnemyEquipmentInclusive = [],
-                                        EnemyHealthEffects = [],
-                                        Weapon = [],
-                                        WeaponCaliber = [],
-                                        WeaponModsExclusive = [],
-                                        WeaponModsInclusive = [],
-                                        Id = idFactory(),
-                                        ResetOnSessionEnd = false,
-                                        ExtensionData = new Dictionary<string?, object?>
-                                        {
-                                            ["target"] = target
-                                        },
-                                        Value = 1
-                                    },
-                                    new()
-                                    {
-                                        ConditionType = "Location",
-                                        DynamicLocale = false,
-                                        Id = idFactory(),
-                                        ExtensionData = new Dictionary<string?, object?>
-                                        {
-                                            ["target"] = new[] { pascalName }
-                                        }
-                                    }
+                                    ConditionKillEnemy(target, idFactory),
+                                    ConditionLocation(pascalName, idFactory)
+
                                 },
                                 Id = idFactory()
                             }

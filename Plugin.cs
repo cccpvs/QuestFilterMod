@@ -11,8 +11,6 @@ using SPTarkov.Server.Core.Services.Mod;
 using System.Reflection;
 using System.Text.Json;
 
-
-
 [assembly: AssemblyVersion("1.0.1.0")]
 [assembly: AssemblyFileVersion("1.0.1.0")]
 [assembly: AssemblyInformationalVersion("1.0.1")]
@@ -35,7 +33,6 @@ public class Plugin : IOnUpdate
     private readonly CustomQuestService _customQuestService;
     private ClearRepetableQuest _temporaryQuestCleaner = null!;
     private readonly SaveServer _saveServer;
-
 
     public Plugin(
     ISptLogger<Plugin> logger,
@@ -167,7 +164,7 @@ public class Plugin : IOnUpdate
             _applied = true;
 
             _logger.Success("[QuestFilterMod] ✅ Quest filtering successfully applied.");
-            _logger.Success("[QuestFilterMod] 🚀 The mod is fully initialized.");
+            _logger.Success("[QuestFilterMod] ----------🚀 Loaded 🚀----------");
 
 
 
@@ -246,9 +243,10 @@ public class Plugin : IOnUpdate
             var json = File.ReadAllText(ConfigPath);
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             Config = JsonSerializer.Deserialize<QuestFilterConfig>(json, options) ?? new QuestFilterConfig();
-
+            _logger.Success("[QuestFilterMod] ----------🚀 Starting 🚀----------");
             if (Config.Debug)
             {
+               
                 _logger.Info("[QuestFilterMod] ✅ The Config is loaded.");
                 _logger.Info($"[QuestFilterMod][Config] Enabled={Config.Enabled}, GenerateRandom={Config.GenerateRandomQuests?.Enable}");
             }

@@ -1,6 +1,6 @@
 {
   "Enabled": true,
-  "TargetTraderId": "",
+  "TargetTraderIds": [ "579dc571d53a0658a154fbec", "54cb57776803fa99248b456e" ],
   "ExcludeArenaQuests": true,
   "Debug": false,
   "CleanDroppedItems": true,

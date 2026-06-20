@@ -40,7 +40,7 @@ public class GenerateRandomQuestsConfig
 public class QuestFilterConfig
 {
     public bool Enabled { get; set; } = true;
-    public string TargetTraderId { get; set; } = "";
+    public string[]? TargetTraderIds { get; set; } = null;
     public bool Debug { get; set; } = true;
     public bool CleanDroppedItems { get; set; } = true;
     public List<string> QuestTypes { get; set; } = new() { "PickUp" };

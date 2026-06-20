@@ -51,7 +51,6 @@ namespace QuestFilterMod.RandomQuests
                 }
             };
 
-            // Устанавливаем не-required поля
             quest.InstantComplete = false;
             quest.IsKey = false;
             quest.ProgressSource = "eft";
@@ -88,11 +87,10 @@ namespace QuestFilterMod.RandomQuests
                 _logger.Info($"[QuestFilterMod][QuestGenerationBase] ✅ Quest '{quest.Id}' ({type}) created");
 
 #if DEBUG
-            // 🔹 Логируем квест в консоль как JSON
             var json = System.Text.Json.JsonSerializer.Serialize(quest, new System.Text.Json.JsonSerializerOptions
             {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                WriteIndented = true  // для читаемости
+                WriteIndented = true
             });
 
             //_logger.Info($"[QuestFilterMod][QuestGenerationBase] 📜 Quest '{quest.Id}' ({type}) generated:\n{json}");

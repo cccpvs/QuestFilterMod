@@ -41,9 +41,9 @@ namespace QuestFilterMod.RandomQuests
 
                     q.Conditions ??= new QuestConditionTypes();
 
-
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
                     {
+
                         new()
                         {
                             Id = idFactory(),
@@ -62,21 +62,9 @@ namespace QuestFilterMod.RandomQuests
                                 {
                                     Conditions = new List<QuestConditionCounterCondition>
                                     {
-                                        new()
-                                        {
-                                            ConditionType = "VisitPlace",
-                                            DynamicLocale = false,
-                                            Id = idFactory(),
-                                            Value = 1,
-                                            ExtensionData = new Dictionary<string?, object?>
-                                            {
-                                                ["target"] = target
-                                            }
-                                        }
-                                        
-                                    },
-                                    Id = idFactory(),
-                                }
+                                        ConditionVisitPlace(target, idFactory),
+                                    }
+                            }
                         },
                         new() {
                             Id = idFactory(),
@@ -92,33 +80,16 @@ namespace QuestFilterMod.RandomQuests
                             Value = 1,
                             Counter = new QuestConditionCounter() {
                                 Conditions = new List<QuestConditionCounterCondition> {
-                                        new()
-                                        {
-                                            ConditionType = "ExitStatus",
-                                            DynamicLocale = false,
-                                            Id = idFactory(),
-                                            Status = new List<string> {
-                                                "Survived","Transit"
-                                            }
-
-                                        },
-                                        new()
-                                        {
-                                            ConditionType = "Location",
-                                            DynamicLocale = false,
-                                            Id = idFactory(),
-                                            ExtensionData = new Dictionary<string?, object?>
-                                            {
-                                                ["target"] = new[] { pascalName }
-                                            }
-                                        }
+                                        ConditionSurvivedExit(idFactory),
+                                        ConditionLocation(pascalName, idFactory),
                                 },
                                 Id = idFactory(),
                             }
-
                         }
-
                     };
+
+
+
 
                 });
             }

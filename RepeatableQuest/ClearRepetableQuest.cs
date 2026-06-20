@@ -6,42 +6,17 @@ using SPTarkov.Server.Core.Services;
 
 namespace QuestFilterMod.RepeatableQuestCleaner
 {
+
 #if DEBUG
     /*
-     * 1. Полноценно не понятно как сработает удаление временных квестов. Нужна проверка.
      * 
-     * 
-     * 
-     * [Запрос клиента] 26.196.29.49 /client/repeatalbeQuests/activityPeriods
-Не найден статус квеста для: Elimination
-Не удалось сгенерировать квест elimination — отсутствует шаблон квеста
-Error handling request: /client/repeatalbeQuests/activityPeriods
-Object reference not set to an instance of an object.
-   at SPTarkov.Server.Core.Controllers.RepeatableQuestController.GetClientRepeatableQuests(MongoId sessionID)
-   at SPTarkov.Server.Core.Callbacks.QuestCallbacks.ActivityPeriods(String url, EmptyRequestData _, MongoId sessionID)
-   at SPTarkov.Server.Core.Routers.Static.QuestStaticRouter.<>c__DisplayClass0_0.<<-ctor>b__1>d.MoveNext()
---- End of stack trace from previous location ---
-   at SPTarkov.Server.Core.DI.RouteAction`1.<>c__DisplayClass0_0.<<-ctor>b__0>d.MoveNext()
---- End of stack trace from previous location ---
-   at SPTarkov.Server.Core.DI.StaticRouter.HandleStatic(String url, String body, MongoId sessionId, String output)
-   at SPTarkov.Server.Core.Routers.HttpRouter.HandleRoute(HttpRequest request, MongoId sessionID, ResponseWrapper wrapper, IEnumerable`1 routers, Boolean dynamic, String body)
-   at SPTarkov.Server.Core.Routers.HttpRouter.GetResponse(HttpRequest req, MongoId sessionID, String body)
-   at FikaServer.Overrides.Routers.GetResponseOverride.Postfix(ValueTask`1 __result, HttpRequest req)
-   at CompoundingPerf.Features.CachingHttpRouter.GetResponse(HttpRequest req, MongoId sessionID, String body)
-   at SPTarkov.Server.Core.Servers.Http.SptHttpListener.GetResponse(MongoId sessionId, HttpContext context, String body)
-   at SPTarkov.Server.Core.Servers.Http.SptHttpListener.Handle(MongoId sessionId, HttpContext context)
-   at SPTarkov.Server.Core.Servers.HttpServer.HandleRequest(HttpContext context, RequestDelegate next)
-   at SPTarkov.Server.Program.<>c.<<ConfigureWebApp>b__3_0>d.MoveNext()
---- End of stack trace from previous location ---
-   at SPTarkov.Server.Services.NoGCRegionMiddleware.InvokeAsync(HttpContext context)
-   at SPTarkov.Server.Logger.SptLoggerMiddleware.InvokeAsync(HttpContext context)
     */
 #endif
+
     public class ClearRepetableQuest
     {
         private readonly ISptLogger<Plugin> _logger;
         private readonly DatabaseService _databaseService;
-
         private RepeatableQuestDatabase _questDatabase;
 
         public ClearRepetableQuest(
@@ -51,18 +26,37 @@ Object reference not set to an instance of an object.
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
         }
-
         public void SetQuestDatabase(RepeatableQuestDatabase database)
         {
             _questDatabase = database ?? throw new ArgumentNullException(nameof(database));
+            EnsureInitializedDatabase();
+            ClearAllTemplates();
         }
 
-        public RepeatableQuestDatabase GetQuestDatabase() => _questDatabase;
+        public RepeatableQuestDatabase EnsureInitializedDatabase()
+        {
+            _questDatabase ??= new RepeatableQuestDatabase
+            {
+                Samples = new List<SampleQuests>(),
+                Templates = new RepeatableTemplates()
+            };
 
+            // 🔁 Убедимся, что Templates и все его поля НЕ null
+            _questDatabase.Templates ??= new RepeatableTemplates();
+            _questDatabase.Templates.Elimination ??= CreateQuestTemplate(QuestTypeEnum.Elimination);
+            _questDatabase.Templates.Completion ??= CreateQuestTemplate(QuestTypeEnum.Completion);
+            _questDatabase.Templates.Exploration ??= CreateQuestTemplate(QuestTypeEnum.Exploration);
+            _questDatabase.Templates.Pickup ??= CreateQuestTemplate(QuestTypeEnum.PickUp);
+
+            return _questDatabase;
+        }
+        public RepeatableQuestDatabase GetQuestDatabase() => _questDatabase;
         public void ClearAllQuests()
         {
-            var count = _questDatabase.Samples?.Count ?? 0;
-            _questDatabase.Samples?.Clear();
+            var db = EnsureInitializedDatabase(); 
+
+            var count = db.Samples?.Count ?? 0;
+            db.Samples?.Clear();
 
             if (count > 0 && Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][ClearRepetableQuest] Removed {count} quests from Samples.");
@@ -70,22 +64,19 @@ Object reference not set to an instance of an object.
 
         public void ClearAllTemplates()
         {
-            // 🔁 Гарантированная инициализация Templates
+            _questDatabase ??= new RepeatableQuestDatabase();
             _questDatabase.Templates ??= new RepeatableTemplates();
 
-            // ✅ Пересоздаём каждый шаблон с валидными данными (в т.ч. с правильным статусом)
             _questDatabase.Templates.Elimination = CreateQuestTemplate(QuestTypeEnum.Elimination);
             _questDatabase.Templates.Completion = CreateQuestTemplate(QuestTypeEnum.Completion);
             _questDatabase.Templates.Exploration = CreateQuestTemplate(QuestTypeEnum.Exploration);
             _questDatabase.Templates.Pickup = CreateQuestTemplate(QuestTypeEnum.PickUp);
 
-            // 🧹 Очищаем ExtensionData, если есть
             _questDatabase.Templates.ExtensionData?.Clear();
 
             if (Plugin.Config.Debug)
                 _logger.Info("[QuestFilterMod][ClearRepetableQuest] Replaced all repeatable quest templates.");
         }
-
         private static RepeatableQuest CreateQuestTemplate(QuestTypeEnum type)
         {
             return new RepeatableQuest

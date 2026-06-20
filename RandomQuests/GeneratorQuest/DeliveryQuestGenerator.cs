@@ -1,5 +1,4 @@
 ﻿using QuestFilterMod.RandomQuests.Models;
-using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 
@@ -25,10 +24,7 @@ namespace QuestFilterMod.RandomQuests
             );
         }
 
-        private Quest? GenerateDeployQuest(
-    string questType,
-    DeployQuestConfig config,
-    string conditionType)
+        private Quest? GenerateDeployQuest(string questType,DeployQuestConfig config,string conditionType)
         {
             if (!config.Locations.Any()) return null;
 
@@ -120,47 +116,13 @@ namespace QuestFilterMod.RandomQuests
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
                     {
-                        new()
-                        {
-                            Id = idFactory(),
-                            ConditionType = conditionType,
-                            DogtagLevel = 0,
-                            GlobalQuestCounterId = "",
-                            IsEncoded = false,
-                            OnlyFoundInRaid = false,
-                            OneSessionOnly = false,
-                            Value = 1,
-                            Index = 1,
-                            ZoneId = targetPoint,
-                            DynamicLocale = false,
-                            MaxDurability = 100,
-                            MinDurability = 0,
-                            ParentId = "",
-                            PlantTime = config.PlantTime,
-                            VisibilityConditions = [],
-                            ExtensionData = new Dictionary<string?, object?>
-                            {
-                                ["target"] = new[] { itemTpl },
-                                ["_item"] = itemTpl
-                            }
-                        }
+                        ConditionDeployItem(itemTpl, targetPoint, config.PlantTime, conditionType, idFactory)
                     };
 
 #if DEBUG
                     q.Conditions.AvailableForStart = new List<QuestCondition>
                     {
-                        new()
-                        {
-                            Id = idFactory(),
-                            CompareMethod = ">=",
-                            ConditionType = "Level",
-                            DynamicLocale = false,
-                            GlobalQuestCounterId = "",
-                            Index = 0,
-                            ParentId = "",
-                            Value = 1,
-                            VisibilityConditions = []
-                        }
+                        ConditionRequiredLevel(1, idFactory)
                     };
 #endif
                 });

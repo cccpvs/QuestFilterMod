@@ -30,7 +30,6 @@ namespace QuestFilterMod.RandomQuests
                 IsHidden = false
             });
         }
-
         private void AddMoneyReward(Quest quest)
         {
             if (!ConfigRandom.RewardMoney.Enabled || string.IsNullOrEmpty(ConfigRandom.RewardMoney.Tpl)) return;
@@ -107,7 +106,7 @@ namespace QuestFilterMod.RandomQuests
             if (Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][RewardSystem] Найдено {nonEmptyParents.Count} категорий с подходящими предметами.");
 #endif
-            
+
             int count = _random.Next(ConfigRandom.RewardItems.Count.Min, ConfigRandom.RewardItems.Count.Max + 1);
             var usedTpls = new HashSet<string>();
 
@@ -191,7 +190,7 @@ namespace QuestFilterMod.RandomQuests
                 Id = new MongoId(Guid.NewGuid().ToString("N")[..24]),
                 Type = RewardType.TraderStanding,
                 Target = quest.TraderId,
-                Value = (float)Math.Round(value, 3), 
+                Value = (float)Math.Round(value, 3),
                 FindInRaid = false,
                 IsEncoded = false,
                 IsHidden = false,
@@ -200,13 +199,11 @@ namespace QuestFilterMod.RandomQuests
                 AvailableInGameEditions = new HashSet<string>()
             });
         }
-
         private int GenerateRandomAmount(int min, int max, int step)
         {
             int range = (max - min) / step;
             return min + _random.Next(range + 1) * step;
         }
-
         private void AddItemReward(Quest quest, string tpl, int count, string name = "Item", string rewardType = "Success")
         {
             string itemId = Guid.NewGuid().ToString("N")[..24];
@@ -217,7 +214,7 @@ namespace QuestFilterMod.RandomQuests
             gameItem.Upd = new Upd()
             {
                 StackObjectsCount = count,
-                
+
             };
 
             var reward = new Reward

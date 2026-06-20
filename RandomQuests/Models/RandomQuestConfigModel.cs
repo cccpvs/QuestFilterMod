@@ -7,20 +7,17 @@ namespace QuestFilterMod.RandomQuests.Models
         public string Id { get; set; } = "";
         public List<string> Targets { get; set; } = new();
     }
-
     public class DefaultQuestConfig
     {
         public string Image { get; set; } = "";
         public ExperienceRange ExperienceRewardRange { get; set; } = new();
     }
-
     public class ExperienceRange
     {
         public int Min { get; set; } = 1000;
         public int Max { get; set; } = 5000;
         public int Step { get; set; } = 100;
     }
-
     public class MoneyRewardConfig
     {
         public bool Enabled { get; set; } = true;
@@ -29,7 +26,6 @@ namespace QuestFilterMod.RandomQuests.Models
         public int Max { get; set; } = 100000;
         public int Step { get; set; } = 10000;
     }
-
     public class RewardItemsConfig
     {
         public bool Enabled { get; set; } = true;
@@ -83,18 +79,15 @@ namespace QuestFilterMod.RandomQuests.Models
         public bool Transfer { get; set; } = true;
 
     }
-
     public class DeployQuestBaseConfig
     {
         public int PlantTime { get; set; } = 30000;
         public Dictionary<string, LocationConfig> Locations { get; set; } = new();
     }
-
     public class DeployQuestConfig : DeployQuestBaseConfig
     {
         public List<string> ItemPlant { get; set; } = new();
     }
-
     public class KillQuestConfig
     {
         public int MinKills { get; set; } = 5;
@@ -113,11 +106,9 @@ namespace QuestFilterMod.RandomQuests.Models
         public string Target { get; set; } = "";
         public int Weight { get; set; } = 1;
     }
-
     public class QuestConfig
     {
         public Dictionary<string, LocationConfig> ExplorationQuest { get; set; } = new();
-
         public List<string> TraderIds { get; set; } = new();
         public DefaultQuestConfig DefaultQuest { get; set; } = new();
         public MoneyRewardConfig RewardMoney { get; set; } = new();

@@ -8,3 +8,7 @@ Random quest generator, rewards, conditions.
 Full information on mod parameters - **README.md**
 
 Complete information on the parameters of the quest generator - **RandomQuests/README.md**
+
+----------------------------------------------------------------------------------------
+
+Report any problems or suggestions you find anywhere you can.

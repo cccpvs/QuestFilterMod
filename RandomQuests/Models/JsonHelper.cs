@@ -12,12 +12,10 @@ namespace QuestFilterMod.RandomQuests.Utils
             PropertyNameCaseInsensitive = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
-
         static JsonHelper()
         {
             Options.Converters.Add(new ObjectConverter());
         }
-
         public static T? LoadFromJson<T>(string filePath)
         {
             if (!File.Exists(filePath))
