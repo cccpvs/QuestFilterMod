@@ -116,7 +116,7 @@ namespace QuestFilterMod.RandomQuests
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
                     {
-                        ConditionDeployItem(itemTpl, targetPoint, config.PlantTime, conditionType, idFactory)
+                        ConditionDeployItem(itemTpl, targetPoint, config.PlantTime, conditionType,pascalName, idFactory)
                     };
 
 #if DEBUG

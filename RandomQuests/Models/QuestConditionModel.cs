@@ -51,7 +51,7 @@ namespace QuestFilterMod.RandomQuests
                 ExtensionData = new Dictionary<string?, object?> { ["_item"] = itemId }
             };
         }
-        private QuestCondition ConditionDeployItem(string itemTpl, string zoneId, int plantTime, string conditionType, Func<MongoId> idFactory)
+        private QuestCondition ConditionDeployItem(string itemTpl, string zoneId, int plantTime, string conditionType, string pascalName, Func<MongoId> idFactory)
         {
             return new QuestCondition
             {
@@ -74,7 +74,8 @@ namespace QuestFilterMod.RandomQuests
                 ExtensionData = new Dictionary<string?, object?>
                 {
                     ["target"] = new[] { itemTpl },
-                    ["_item"] = itemTpl
+                    ["_item"] = itemTpl,
+                    ["_pascalName"] = pascalName
                 }
             };
         }
@@ -93,7 +94,7 @@ namespace QuestFilterMod.RandomQuests
                 VisibilityConditions = []
             };
         }
-        private QuestConditionCounterCondition ConditionKillEnemy(string target, Func<MongoId> idFactory)
+        private QuestConditionCounterCondition ConditionKillEnemy(string target, string pascalName, Func<MongoId> idFactory)
         {
             return new QuestConditionCounterCondition
             {
@@ -114,7 +115,8 @@ namespace QuestFilterMod.RandomQuests
                 ResetOnSessionEnd = false,
                 ExtensionData = new Dictionary<string?, object?>
                 {
-                    ["target"] = target
+                    ["target"] = target,
+                    ["_pascalName"] = pascalName
                 },
                 Value = 1
               
@@ -148,7 +150,7 @@ namespace QuestFilterMod.RandomQuests
                 }
             };
         }
-        private QuestConditionCounterCondition ConditionVisitPlace(string target, Func<MongoId> idFactory)
+        private QuestConditionCounterCondition ConditionVisitPlace(string target, string pascalName, Func<MongoId> idFactory)
         {
             return new QuestConditionCounterCondition
             {
@@ -158,7 +160,8 @@ namespace QuestFilterMod.RandomQuests
                 Value = 1,
                 ExtensionData = new Dictionary<string?, object?>
                 {
-                    ["target"] = target
+                    ["target"] = target,
+                    ["_pascalName"] = pascalName
                 }
  
             };

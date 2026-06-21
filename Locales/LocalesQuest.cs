@@ -230,12 +230,14 @@ namespace QuestFilterMod.RandomQuests
                         }
 
 
+   
+
                         string[] nameValues = cond.ConditionType switch
                         {
-                            "VisitPlace" => new[] { cond.Counter?.Conditions?[0].Target?.ToString() ?? "", locationName, "" },
-                            "CounterCreator" when cond.Type == "Exploration" => new[] { cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString() ?? "", locationName, "" },
-                            "LeaveItemAtLocation" => new[] { cond.ZoneId?.ToString() ?? "", GetItemName(cond.ExtensionData?["_item"]?.ToString() ?? "", lang), locationName },
-                            "PlaceBeacon" => new[] { cond.ZoneId?.ToString() ?? "", "", locationName },
+                            "VisitPlace" => new[] { cond.Counter?.Conditions?[0].Target?.ToString() ?? "", cond.ExtensionData["_pascalName"]?.ToString() ?? "Unknown", "" },
+                            "CounterCreator" when cond.Type == "Exploration" => new[] { cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString() ?? "", cond.Counter?.Conditions?[0]?.ExtensionData?["_pascalName"]?.ToString() ?? "Unknown", "" },
+                            "LeaveItemAtLocation" => new[] { cond.ZoneId?.ToString() ?? "", GetItemName(cond.ExtensionData?["_item"]?.ToString() ?? "", lang), cond.ExtensionData["_pascalName"]?.ToString() ?? "Unknown" },
+                            "PlaceBeacon" => new[] { GetItemName(cond.ExtensionData?["_item"]?.ToString() ?? "", lang), cond.ZoneId?.ToString() ?? "", cond.ExtensionData["_pascalName"]?.ToString() ?? "Unknown" },
                             "ExitStatus" => new[] { "", "", "" },
                             "Location" => new[] { locationName, "", "" },
                             "Kills" or "CounterCreator" => cond.Type switch
@@ -243,7 +245,7 @@ namespace QuestFilterMod.RandomQuests
                                 "Elimination" => new[]
                                 {
                                    cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString() ?? "",
-                                    "",
+                                    cond.Counter?.Conditions?[0]?.ExtensionData?["_pascalName"]?.ToString() ?? "",
                                     ""
                                 },
                                 "Completion" => new[] { "", "", "" },

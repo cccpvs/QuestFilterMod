@@ -37,6 +37,13 @@ public class GenerateRandomQuestsConfig
     public int Count { get; set; } = 3;
 }
 
+public class QuestFilterLinkedQuest
+{
+    public bool Enable { get; set; } = false; // 🟢 Вкл/Выкл ветвящуюся цепочку
+    public int[] StartQuest { get; set; } = [1, 3];  // диапазон стартовых квестов
+    public int[] QuestFinish { get; set; } = [2, 4]; // диапазон новых после каждого
+}
+
 public class QuestFilterConfig
 {
     public bool Enabled { get; set; } = true;
@@ -51,4 +58,5 @@ public class QuestFilterConfig
     public List<string> RemoveFinishConditionTypes { get; set; } = new();
     public RandomQuestsConfig RandomQuests { get; set; } = new();
     public GenerateRandomQuestsConfig GenerateRandomQuests { get; set; } = new();
+    public QuestFilterLinkedQuest? LinkedQuest { get; set; } = null;
 }

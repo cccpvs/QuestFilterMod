@@ -101,10 +101,12 @@ namespace QuestFilterMod.RandomQuests
         }
         private void AddRewards(Quest quest)
         {
+            AddSkillReward(quest);
             AddExperienceReward(quest);
             AddMoneyReward(quest);
             AddRandomItemRewards(quest);
             AddTraderStandingReward(quest);
+            
         }
     }
 }

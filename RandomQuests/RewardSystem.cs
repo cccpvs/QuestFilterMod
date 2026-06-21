@@ -17,7 +17,7 @@ namespace QuestFilterMod.RandomQuests
         }
         private void AddExperienceReward(Quest quest)
         {
-            var range = ConfigRandom.DefaultQuest.ExperienceRewardRange;
+            var range = ConfigRandom.ExperienceRewardRange;
             int exp = _random.Next(range.Min / range.Step, (range.Max / range.Step) + 1) * range.Step;
 
             GetOrCreateRewardList(quest, "Success").Add(new Reward
@@ -27,7 +27,8 @@ namespace QuestFilterMod.RandomQuests
                 Value = exp,
                 FindInRaid = false,
                 IsEncoded = false,
-                IsHidden = false
+                IsHidden = false,
+                Unknown = ConfigRandom.ExperienceRewardRange.Unknown
             });
         }
         private void AddMoneyReward(Quest quest)
@@ -194,7 +195,7 @@ namespace QuestFilterMod.RandomQuests
                 FindInRaid = false,
                 IsEncoded = false,
                 IsHidden = false,
-                Unknown = false,
+                Unknown = ConfigRandom.RewardTraderStanding.Unknown,
                 GameMode = new HashSet<string> { "regular", "pve" },
                 AvailableInGameEditions = new HashSet<string>()
             });
@@ -226,13 +227,46 @@ namespace QuestFilterMod.RandomQuests
                 FindInRaid = true,
                 IsEncoded = false,
                 IsHidden = false,
-                Unknown = false,
+                Unknown = ConfigRandom.RewardItems.Unknown,
                 GameMode = new HashSet<string> { "regular", "pve" },
                 AvailableInGameEditions = new HashSet<string>(),
                 Items = new List<Item> { gameItem }
             };
 
             GetOrCreateRewardList(quest, "Success").Add(reward);
+        }
+        private void AddSkillReward(Quest quest)
+        {
+            if (!ConfigRandom.RewardSkills.Enabled)
+                return;
+
+            if (ConfigRandom.RewardSkills.Skill == null || !ConfigRandom.RewardSkills.Skill.Any())
+            {
+                _logger.Error("[QuestFilterMod][Skill] ❌ Skill list is empty or null!");
+                return;
+            }
+
+            int count = ConfigRandom.RewardSkills.Count;
+            int value = ConfigRandom.RewardSkills.Value;
+            string[] skillList = ConfigRandom.RewardSkills.Skill;
+
+            for (int i = 0; i < count; i++)
+            {
+                string skillName = skillList[_random.Next(skillList.Length)];
+                GetOrCreateRewardList(quest, "Success").Add(new Reward
+                {
+                    Id = new MongoId(Guid.NewGuid().ToString("N")[..24]),
+                    Type = RewardType.Skill,
+                    Target = skillName,
+                    Value = value,
+                    FindInRaid = false,
+                    IsEncoded = false,
+                    IsHidden = false,
+                    Unknown = ConfigRandom.RewardSkills.Unknown,
+                    GameMode = new HashSet<string> { "regular", "pve" },
+                    AvailableInGameEditions = new HashSet<string>()
+                });
+            }
         }
     }
 }

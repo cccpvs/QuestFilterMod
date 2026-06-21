@@ -1,20 +1,25 @@
 {
   "Enabled": true,
-  "TargetTraderIds": [ "579dc571d53a0658a154fbec", "54cb57776803fa99248b456e" ],
+  "TargetTraderIds": [ "579dc571d53a0658a154fbec" ],
   "ExcludeArenaQuests": true,
-  "Debug": false,
+  "Debug": true,
   "CleanDroppedItems": true,
   "QuestTypes": [ "Completion", "Discover", "Elimination", "Experience", "Exploration", "Loyalty", "Merchant", "Multi", "PickUp", "Skill", "Standing", "WeaponAssembly" ],
-  "RemoveStandartQuests": false,
-  "RemoveStartConditionsQuest": false,
+  "LinkedQuest": {
+    "Enable": true,
+    "StartQuest": [ 1, 5 ],
+    "QuestFinish": [ 1, 3 ]
+  },
+  "RemoveStandartQuests": true,
+  "RemoveStartConditionsQuest": true,
   "RemoveFinishConditionTypes": [],
-  "RemoveRepeatableQuests": false,
+  "RemoveRepeatableQuests": true,
   "GenerateRandomQuests": {
     "enable": false,
     "count": 10
   },
   "RandomQuests": {
-    "count": 0,
+    "count": 100,
     "location": {
       "any": 0,
       "Bigmap": 0,

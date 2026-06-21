@@ -12,9 +12,11 @@ using SPTarkov.Server.Core.Services.Mod;
 using System.Reflection;
 using System.Text.Json;
 
-[assembly: AssemblyVersion("1.0.1.0")]
-[assembly: AssemblyFileVersion("1.0.1.0")]
-[assembly: AssemblyInformationalVersion("1.0.1")]
+[assembly: AssemblyVersion("1.0.2.0")]
+[assembly: AssemblyFileVersion("1.0.2.0")]
+[assembly: AssemblyInformationalVersion("1.0.2")]
+[assembly: AssemblyTitle("QuestFilterMod Mod SPT ~4.0.13")]
+[assembly: AssemblyProduct("QuestFilterMod")]
 
 namespace QuestFilterMod;
 
@@ -62,6 +64,7 @@ public class Plugin : IOnUpdate
 
     public async Task<bool> OnUpdate(long secondsSinceLastRun)
     {
+
         try
         {
             if (_applied) return true;
@@ -141,6 +144,7 @@ public class Plugin : IOnUpdate
                     _databaseService,
                     _randomQuestGenerator,
                     _customQuestService);
+
                 _temporaryQuestCleaner = new ClearRepetableQuest(_logger, _databaseService);
             }
 
@@ -173,7 +177,6 @@ public class Plugin : IOnUpdate
 
         return true;
     }
-
 
     private void CleanDroppedItems()
     {

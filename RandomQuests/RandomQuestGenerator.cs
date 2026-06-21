@@ -11,7 +11,6 @@ using System.Reflection;
 
 namespace QuestFilterMod.RandomQuests
 {
-
     public partial class RandomQuestGenerator
     {
         private readonly ISptLogger<Plugin> _logger;
@@ -117,11 +116,17 @@ namespace QuestFilterMod.RandomQuests
                     }
                     catch (Exception ex)
                     {
+#if DEBUG
                         _logger.Error($"[RandomQuestGenerator] ❌ EXCEPTION when adding Transfer generator: {ex}");
                         _logger.Error($"[RandomQuestGenerator] StackTrace: {ex.StackTrace}");
-                        // 👇 НЕ ПРОПУСКАЙ ЭТО — если ошибка в add, то и выполнение не дойдёт до generator()
+#endif
                     }
                 }
+                if (ConfigRandom.QuestGeneration.Types.Combo)
+                    candidates.Add(("ComboQuest", GenerateComboQuest));
+
+
+
 
                 if (!candidates.Any())
                 {

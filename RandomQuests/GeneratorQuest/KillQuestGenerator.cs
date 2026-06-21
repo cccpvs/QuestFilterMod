@@ -1,5 +1,4 @@
-﻿using SPTarkov.Server.Core.Models.Common;
-using SPTarkov.Server.Core.Models.Eft.Common.Tables;
+﻿using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 
 namespace QuestFilterMod.RandomQuests
@@ -70,7 +69,7 @@ namespace QuestFilterMod.RandomQuests
                             {
                                 Conditions = new List<QuestConditionCounterCondition>
                                 {
-                                    ConditionKillEnemy(target, idFactory),
+                                    ConditionKillEnemy(target,pascalName, idFactory),
                                     ConditionLocation(pascalName, idFactory)
 
                                 },

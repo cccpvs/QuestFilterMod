@@ -22,6 +22,7 @@ public partial class QuestFilterService
     private readonly HashSet<MongoId> _randomQuestIds = new();
 
     private bool _hasAppliedFilters = false;
+    private readonly System.Random _random = new();
 
     public QuestFilterService(
         ISptLogger<Plugin> logger,
@@ -130,6 +131,13 @@ public partial class QuestFilterService
                 _logger.Success($"[QuestFilterMod][QuestFilterService] Done: Generated {generatedCount} random quests.");*/
         }
 
+
+        if (Config.LinkedQuest?.Enable == true)
+        {
+            var (startQuest, finishMin, finishMax) = ResolveRandomLinkedQuest(Config.LinkedQuest);
+            ApplyBranchingQuestChain(selectedQuests, quests, Config, startQuest, finishMin, finishMax);
+        }
+
         var standardQuests = selectedQuests.Where(q => !_randomQuestIds.Contains(q.Id)).ToList();
         var randomQuests = selectedQuests.Where(q => _randomQuestIds.Contains(q.Id)).ToList();
 
@@ -147,8 +155,7 @@ public partial class QuestFilterService
                     quest.Rewards[status] = new List<Reward>();
             }
 
-
-            if (!quests.ContainsKey(quest.Id))
+            //if (!quests.ContainsKey(quest.Id))
                 quests[quest.Id] = quest;
         }
     }

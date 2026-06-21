@@ -10,10 +10,10 @@ namespace QuestFilterMod.RandomQuests.Models
     public class DefaultQuestConfig
     {
         public string Image { get; set; } = "";
-        public ExperienceRange ExperienceRewardRange { get; set; } = new();
     }
     public class ExperienceRange
     {
+        public bool Unknown { get; set; } = false;
         public int Min { get; set; } = 1000;
         public int Max { get; set; } = 5000;
         public int Step { get; set; } = 100;
@@ -29,6 +29,7 @@ namespace QuestFilterMod.RandomQuests.Models
     public class RewardItemsConfig
     {
         public bool Enabled { get; set; } = true;
+        public bool Unknown { get; set; } = false;
         public CountRange Count { get; set; } = new();
         public PriceRange PriceRange { get; set; } = new();
         [JsonPropertyName("Parents")]
@@ -50,9 +51,21 @@ namespace QuestFilterMod.RandomQuests.Models
         [JsonPropertyName("Max")]
         public int Max { get; set; } = 100000;
     }
+
+
+    public class SkillReward
+    {
+        public bool Enabled { get; set; } = false;
+        public bool Unknown { get; set; } = false;
+        public int Count { get; set; } = 1;
+        public int Value { get; set; } = 100;
+        public string[] Skill { get; set; } = [];
+    }
+
     public class TraderStandingRewardConfig
     {
         public bool Enabled { get; set; } = false;
+        public bool Unknown { get; set; } = false;
         public float Min { get; set; } = 0.01f;
         public float Max { get; set; } = 0.03f;
     }
@@ -77,6 +90,7 @@ namespace QuestFilterMod.RandomQuests.Models
         public bool Beacon { get; set; } = true;
         public bool Kills { get; set; } = true;
         public bool Transfer { get; set; } = true;
+        public bool Combo { get; set; } = false;
 
     }
     public class DeployQuestBaseConfig
@@ -100,6 +114,14 @@ namespace QuestFilterMod.RandomQuests.Models
         public int[] ItemCount { get; set; } = [1, 5];
         public int[] Condition { get; set; } = [1, 5];
     }
+
+    public class ComboQuestConfig
+    {
+        public int[] Conditions { get; set; } = [2, 4];
+        public bool Location { get; set; } = true;
+        public string[] Type { get; set; } = ["Exploration", "Kills"];
+    }
+
     public class ZoneConfig
     {
         public string Location { get; set; } = "";
@@ -119,5 +141,8 @@ namespace QuestFilterMod.RandomQuests.Models
         public KillQuestConfig KillQuest { get; set; } = new();
         public TransferQuestConfig TransferQuest { get; set; } = new();
         public TraderStandingRewardConfig RewardTraderStanding { get; set; } = new();
+        public ExperienceRange ExperienceRewardRange { get; set; } = new();
+        public SkillReward RewardSkills { get; set; } = new();
+        public ComboQuestConfig ComboQuest { get; set; } = new();
     }
 }

@@ -5,7 +5,8 @@
       "Delivery": true,
       "Beacon": true,
       "Kills": true,
-      "Transfer" : true
+      "Transfer": true,
+      "Combo" : false
     },
     "AllowedLocations": {
       "Bigmap": true,
@@ -401,7 +402,7 @@
   },
   "DeliveryQuest": {
     "PlantTime": 30,
-    "ItemPlant": [ "56742c324bdc2d150f8b456d", "56742c2e4bdc2d95058b456d", "56742c284bdc2d98058b456d", "567849dd4bdc2d150f8b456e", "5672cb724bdc2dc2088b456b" ],
+    "ItemPlant": [ "56742c324bdc2d150f8b456d", "56742c2e4bdc2d95058b456d", "56742c284bdc2d98058b456d", "5672cb124bdc2d1a0f8b4568", "5672cb724bdc2dc2088b456b" ],
     "Locations": {
       "Bigmap": {
         "Id": "56f40101d2720b2a4d8b45d6",
@@ -1117,6 +1118,11 @@
     "Condition": [ 1, 5 ],
     "ItemIds": [ "573475fb24597737fb1379e1", "573476d324597737da2adc13", "573476f124597737e04bf328", "5734770f24597738025ee254", "57347b8b24597737dd42e192", "5734795124597738002c6176", "573477e124597737dd42e191", "573477e124597737dd42e191", "573474f924597738002c6174", "5c06782b86f77426df5407d2", "5c06779c86f77426e00dd782", "5bd073c986f7747f627e796c", "5734781f24597737e04bf32a" ]
   },
+  "ComboQuest": {
+    "Type": [ "Exploration", "Delivery", "Beacon", "Kills", "Transfer" ],
+    "Conditions": [ 3, 5 ],
+    "Location": true
+  },
   "RewardMoney": {
     "Enabled": true,
     "Tpl": "5449016a4bdc2d6f028b456f",
@@ -1126,6 +1132,7 @@
   },
   "RewardItems": {
     "Enabled": true,
+    "Unknown": false,
     "Count": {
       "Min": 1,
       "Max": 5
@@ -1174,17 +1181,104 @@
 
   },
   "DefaultQuest": {
-    "Image": "/files/quest/icon/default.jpg",
-    "ExperienceRewardRange": {
-      "Min": 100,
-      "Max": 1000,
-      "Step": 100
-    }
+    "Image": "/files/quest/icon/default.jpg"
   },
   "RewardTraderStanding": {
     "Enabled": true,
+    "Unknown": false,
     "Min": 0.01,
     "Max": 0.03
   },
-  "TraderIds": [ "54cb50c76803fa8b248b4571", "54cb57776803fa99248b456e", "579dc571d53a0658a154fbec", "58330581ace78e27b8b10cee", "5935c25fb3acc3127c3d8cd9", "5a7c2eca46aef81a7ca2145d", "5ac3b934156ae10c4430e83c", "5c0647fdd443bc2504c2d371", "6617beeaa9cfa777ca915b7c" ]
+  "ExperienceRewardRange": {
+    "Unknown": false,
+    "Min": 100,
+    "Max": 1000,
+    "Step": 100
+  },
+  "RewardSkills": {
+    "Enabled": false,
+    "Unknown": false,
+    "Count": 1,
+    "Value": 100,
+    "Skill": [
+      "Endurance",
+      "Strength",
+      "Vitality",
+      "Health",
+      "StressResistance",
+      "Metabolism",
+      "Immunity",
+      "Perception",
+      "Intellect",
+      "Attention",
+      "Charisma",
+      "Memory",
+      "MagDrills",
+      "Pistol",
+      "Revolver",
+      "SMG",
+      "Assault",
+      "Shotgun",
+      "Sniper",
+      "LMG",
+      "HMG",
+      "Launcher",
+      "AttachedLauncher",
+      "Throwing",
+      "Misc",
+      "Melee",
+      "DMR",
+      "DrawMaster",
+      "AimMaster",
+      "RecoilControl",
+      "TroubleShooting",
+      "Sniping",
+      "CovertMovement",
+      "ProneMovement",
+      "FirstAid",
+      "FieldMedicine",
+      "Surgery",
+      "LightVests",
+      "HeavyVests",
+      "WeaponModding",
+      "AdvancedModding",
+      "NightOps",
+      "SilentOps",
+      "Lockpicking",
+      "Search",
+      "WeaponTreatment",
+      "Freetrading",
+      "Auctions",
+      "Cleanoperations",
+      "Barter",
+      "Shadowconnections",
+      "Taskperformance",
+      "BearAssaultoperations",
+      "BearAuthority",
+      "BearAksystems",
+      "BearHeavycaliber",
+      "BearRawpower",
+      "UsecArsystems",
+      "UsecDeepweaponmodding",
+      "UsecLongrangeoptics",
+      "UsecNegotiations",
+      "UsecTactics",
+      "BotReload",
+      "BotSound",
+      "AimDrills",
+      "HideoutManagement",
+      "Crafting"
+    ]
+  },
+  "TraderIds": [
+    "54cb50c76803fa8b248b4571",
+    "54cb57776803fa99248b456e",
+    "579dc571d53a0658a154fbec",
+    "58330581ace78e27b8b10cee",
+    "5935c25fb3acc3127c3d8cd9",
+    "5a7c2eca46aef81a7ca2145d",
+    "5ac3b934156ae10c4430e83c",
+    "5c0647fdd443bc2504c2d371",
+    "6617beeaa9cfa777ca915b7c"
+  ]
 }
