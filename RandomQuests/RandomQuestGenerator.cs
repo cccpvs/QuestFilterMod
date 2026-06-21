@@ -11,7 +11,6 @@ using System.Reflection;
 
 namespace QuestFilterMod.RandomQuests
 {
-
     public partial class RandomQuestGenerator
     {
         private readonly ISptLogger<Plugin> _logger;

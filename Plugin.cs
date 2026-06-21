@@ -12,9 +12,11 @@ using SPTarkov.Server.Core.Services.Mod;
 using System.Reflection;
 using System.Text.Json;
 
-[assembly: AssemblyVersion("1.0.1.0")]
-[assembly: AssemblyFileVersion("1.0.1.0")]
-[assembly: AssemblyInformationalVersion("1.0.1")]
+[assembly: AssemblyVersion("1.0.2.0")]
+[assembly: AssemblyFileVersion("1.0.2.0")]
+[assembly: AssemblyInformationalVersion("1.0.2")]
+[assembly: AssemblyTitle("QuestFilterMod Mod SPT ~4.0.13")]
+[assembly: AssemblyProduct("QuestFilterMod")]
 
 namespace QuestFilterMod;
 
