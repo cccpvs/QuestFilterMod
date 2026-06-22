@@ -5,7 +5,7 @@
       "Delivery": true,
       "Beacon": true,
       "Kills": true,
-      "Transfer" : true
+      "Transfer": true
     },
     "AllowedLocations": {
       "Bigmap": true,
@@ -1126,6 +1126,7 @@
   },
   "RewardItems": {
     "Enabled": true,
+    "Unknown": false,
     "Count": {
       "Min": 1,
       "Max": 5
@@ -1174,17 +1175,104 @@
 
   },
   "DefaultQuest": {
-    "Image": "/files/quest/icon/default.jpg",
-    "ExperienceRewardRange": {
-      "Min": 100,
-      "Max": 1000,
-      "Step": 100
-    }
+    "Image": "/files/quest/icon/default.jpg"
   },
   "RewardTraderStanding": {
     "Enabled": true,
+    "Unknown": false,
     "Min": 0.01,
     "Max": 0.03
   },
-  "TraderIds": [ "54cb50c76803fa8b248b4571", "54cb57776803fa99248b456e", "579dc571d53a0658a154fbec", "58330581ace78e27b8b10cee", "5935c25fb3acc3127c3d8cd9", "5a7c2eca46aef81a7ca2145d", "5ac3b934156ae10c4430e83c", "5c0647fdd443bc2504c2d371", "6617beeaa9cfa777ca915b7c" ]
+  "ExperienceRewardRange": {
+    "Unknown": false,
+    "Min": 100,
+    "Max": 1000,
+    "Step": 100
+  },
+  "RewardSkills": {
+    "Enabled": false,
+    "Unknown": false,
+    "Count": 1,
+    "Value": 100,
+    "Skill": [
+      "Endurance",
+      "Strength",
+      "Vitality",
+      "Health",
+      "StressResistance",
+      "Metabolism",
+      "Immunity",
+      "Perception",
+      "Intellect",
+      "Attention",
+      "Charisma",
+      "Memory",
+      "MagDrills",
+      "Pistol",
+      "Revolver",
+      "SMG",
+      "Assault",
+      "Shotgun",
+      "Sniper",
+      "LMG",
+      "HMG",
+      "Launcher",
+      "AttachedLauncher",
+      "Throwing",
+      "Misc",
+      "Melee",
+      "DMR",
+      "DrawMaster",
+      "AimMaster",
+      "RecoilControl",
+      "TroubleShooting",
+      "Sniping",
+      "CovertMovement",
+      "ProneMovement",
+      "FirstAid",
+      "FieldMedicine",
+      "Surgery",
+      "LightVests",
+      "HeavyVests",
+      "WeaponModding",
+      "AdvancedModding",
+      "NightOps",
+      "SilentOps",
+      "Lockpicking",
+      "Search",
+      "WeaponTreatment",
+      "Freetrading",
+      "Auctions",
+      "Cleanoperations",
+      "Barter",
+      "Shadowconnections",
+      "Taskperformance",
+      "BearAssaultoperations",
+      "BearAuthority",
+      "BearAksystems",
+      "BearHeavycaliber",
+      "BearRawpower",
+      "UsecArsystems",
+      "UsecDeepweaponmodding",
+      "UsecLongrangeoptics",
+      "UsecNegotiations",
+      "UsecTactics",
+      "BotReload",
+      "BotSound",
+      "AimDrills",
+      "HideoutManagement",
+      "Crafting"
+    ]
+  },
+  "TraderIds": [
+    "54cb50c76803fa8b248b4571",
+    "54cb57776803fa99248b456e",
+    "579dc571d53a0658a154fbec",
+    "58330581ace78e27b8b10cee",
+    "5935c25fb3acc3127c3d8cd9",
+    "5a7c2eca46aef81a7ca2145d",
+    "5ac3b934156ae10c4430e83c",
+    "5c0647fdd443bc2504c2d371",
+    "6617beeaa9cfa777ca915b7c"
+  ]
 }

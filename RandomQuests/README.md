@@ -63,6 +63,12 @@ Types - Типы квестов
 ### RewardItems
 Список случайных наград для выдачи игроку за выполненый квест.
 
+* Enabled - Включение награды.
+* Unknown - Включение/Отключение видимости в квесте.
+	
+	Внимание! Данная настройка будет работать на все виды наград предметов.
+	Так же сработает на **RewardMoney**
+
 * Count - Количество предметов на выдачу от 1 до 10.
 	(Слишком большое число до может быть ограничего интерфейсом игры)
 * PriceRange - Стоимость подобранных предметов для подарка.
@@ -73,17 +79,35 @@ Types - Типы квестов
 	* Weight - Вес или шанс (0 - отключает).
 	* Comment - Комментарий.
 
+
+### RewardSkills
+Система награды игроку за выполнение случайного квеста в виде скилла.
+
+* Enabled - включение награды.
+* Unknown - скрытие награды в квесте.
+* Count - количество наград скилла.
+* Value - полученный уровен (100 - 1 уровень)
+* Skill - список получаемых скиллов игроку. Случайное значение значений.
+Возможные варианты. Некоторые полноценно не проверены.		["Endurance", "Strength", "Vitality", "Health", "StressResistance", "Metabolism", "Immunity", "Perception", "Intellect", "Attention", "Charisma", "Memory", "MagDrills", "Pistol", "Revolver", "SMG", "Assault", "Shotgun", "Sniper", "LMG", "HMG", "Launcher", "AttachedLauncher", "Throwing", "Misc", "Melee", "DMR", "DrawMaster", "AimMaster", "RecoilControl", "TroubleShooting", "Sniping", "CovertMovement", "ProneMovement", "FirstAid", "FieldMedicine", "Surgery", "LightVests", "HeavyVests", "WeaponModding", "AdvancedModding", "NightOps", "SilentOps", "Lockpicking", "Search", "WeaponTreatment", "Freetrading", "Auctions", "Cleanoperations", "Barter", "Shadowconnections", "Taskperformance", "BearAssaultoperations", "BearAuthority", "BearAksystems", "BearHeavycaliber", "BearRawpower", "UsecArsystems", "UsecDeepweaponmodding", "UsecLongrangeoptics", "UsecNegotiations", "UsecTactics", "BotReload", "BotSound", "AimDrills", "HideoutManagement", "Crafting"]	
+
 ### DefaultQuest
 Общие настройки квеста.
 * Image - Фотография созданного случайного квеста.
-* ExperienceRewardRange - опыт за выполненый квест.
-	* Min - Минимально опыта
-	* Max - Максимально опыта
-	* Step - Шаг опыта между минимальным и максимальным.
+
+
+### ExperienceRewardRange
+Опыт получаемый за выполнение квеста
+	
+* Unknown - Включение/Отключение видимости в квесте.
+* Min - Минимально опыта
+* Max - Максимально опыта
+* Step - Шаг опыта между минимальным и максимальным.
 
 ### RewardTraderStanding
-Репутация с торговцем после выполния квеста.
+Награда репутация торговца после выполния квеста.
+
 * Enabled - Включение награды отношения с торговцем.
+* Unknown - Включение/Отключение видимости в квесте.
 * Min - Минимальная репутация за квест.
 * Max - Максимальная репутация за квест.
 

@@ -12,7 +12,7 @@ namespace QuestFilterMod.QuestFilter
     public partial class QuestFilterService
     {
 
-        // 🌳 ГЛАВНЫЙ МЕТОД: генерирует зависимости и применяет их
+        
         private void ApplyBranchingQuestChain(
         List<Quest> selectedQuests,
         Dictionary<MongoId, Quest> quests,
@@ -21,15 +21,15 @@ namespace QuestFilterMod.QuestFilter
         int finishQuestMin,
         int finishQuestMax)
         {
-            var dependencyMap = new Dictionary<MongoId, List<MongoId>>(); // childId → [parentIds]
+            var dependencyMap = new Dictionary<MongoId, List<MongoId>>(); 
             var currentQuestIndex = startQuest;
             var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
 
-            // 👇 Генерируем зависимости — каждый родитель открывает случайное число новых
+
             for (int i = 0; i < startQuest; i++)
             {
                 var parentQuest = selectedQuests[i];
-                var finishQuest = _random.Next(finishQuestMin, finishQuestMax + 1); // ← СЛУЧАЙНО ДЛЯ КАЖДОГО!
+                var finishQuest = _random.Next(finishQuestMin, finishQuestMax + 1);
 
                 if (config.Debug)
                     _logger.Info($"[QuestFilterMod] 🎲 Start quest #{i} ('{parentQuest.Name}') opens {finishQuest} quests");
@@ -49,7 +49,7 @@ namespace QuestFilterMod.QuestFilter
             while (currentQuestIndex < selectedQuests.Count)
             {
                 var parentQuest = selectedQuests[currentQuestIndex - 1];
-                var finishQuest = _random.Next(finishQuestMin, finishQuestMax + 1); // ← СЛУЧАЙНО ДЛЯ КАЖДОГО!
+                var finishQuest = _random.Next(finishQuestMin, finishQuestMax + 1); 
 
                 if (config.Debug)
                     _logger.Info($"[QuestFilterMod] 🎲 Quest '{parentQuest.Name}' opens {finishQuest} quests");
@@ -66,12 +66,11 @@ namespace QuestFilterMod.QuestFilter
                 }
             }
 
-            // 📋 Шаг 2: Очищаем и применяем зависимости
             foreach (var quest in selectedQuests)
             {
                 quest.Conditions ??= new QuestConditionTypes();
                 quest.Conditions.AvailableForStart ??= new List<QuestCondition>();
-                quest.Conditions.AvailableForStart.Clear(); // ← ВСЕ КВЕСТЫ — без условий по умолчанию
+                quest.Conditions.AvailableForStart.Clear(); 
 
                 if (dependencyMap.TryGetValue(quest.Id, out var parentIds))
                 {
@@ -103,7 +102,6 @@ namespace QuestFilterMod.QuestFilter
             }
         }
 
-        // 🎲 Генерация случайных параметров из конфига
         private (int startQuest, int finishMin, int finishMax) ResolveRandomLinkedQuest(QuestFilterLinkedQuest config)
         {
             var startMin = config.StartQuest.Length > 0 ? config.StartQuest[0] : 1;
