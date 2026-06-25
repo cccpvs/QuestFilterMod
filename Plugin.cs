@@ -64,6 +64,7 @@ public class Plugin : IOnUpdate
 
     public async Task<bool> OnUpdate(long secondsSinceLastRun)
     {
+
         try
         {
             if (_applied) return true;
@@ -143,6 +144,7 @@ public class Plugin : IOnUpdate
                     _databaseService,
                     _randomQuestGenerator,
                     _customQuestService);
+
                 _temporaryQuestCleaner = new ClearRepetableQuest(_logger, _databaseService);
             }
 
@@ -175,7 +177,6 @@ public class Plugin : IOnUpdate
 
         return true;
     }
-
 
     private void CleanDroppedItems()
     {

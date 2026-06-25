@@ -6,12 +6,13 @@
 ---
 
 ## QuestGeneration
-Types - Типы квестов
+Types - Типы квестов - Включение и отключение генерации
 	* Exploration - Квест на посещение точки на карте.
     * Delivery - Получение предмета и закладка на точке карты.
 	* Kills - Квест на убийства.
 	* Beacon - Квест пометить позицию или точку маркером.
 	* Transfer - Квест доставить предмет из рейда.
+	* Combo - Квесты из разных типов квеста.
 
 ### AllowedLocations
 Локации разрешенные для генерации случайного квеста. Отключение и включение локаций.
@@ -26,11 +27,12 @@ Types - Типы квестов
 	* PlantTime - Время на закладку предмета в секундах.
 	* ItemPlant - ИД Предмета, выданные для выполнения квеста.
 	* Locations - Список локаций для зон.
+Внимание! Некоторые предметы могу сломать генерацию и логику, проверяйте перед использованием.
 
 ### BeaconQuest
 Квест на использования маяка для метки позиции или места.
 	* PlantTime - Время на закладку предмета в секундах.
-	* ItemPlant - ИД Предмета, для маяка. 
+	* ItemPlant - ИД Предмета, для маяка.  
 	* Locations - Список локаций для зон.
 Внимание! Предметы не имею анимации закладки или метки могут сломать руки персанажу.
 
@@ -41,6 +43,24 @@ Types - Типы квестов
 * ItemCount - Количество передаваемых предметов за раз. От и До. Например от 1 до 5.
 * Condition - Количество условий от и до. Случайное количество условий передаваемых предметов в одном квесте.
 * ItemIds - Список предметов передаваемых торговцу. 
+
+### ComboQuest
+Случайные квесты со случайными условиями и типами задач.
+Создает квест в котором разные типы заданий.
+Настройка привязки к локации, количества условий и типа.
+
+Помните! Все базовые настройки для типов (Type) квестов будут из настроек базового квеста.
+
+* Type - Типы условий для создания квеста. Выбирает тип квеста для условия при создании
+	
+	Возможные варианты:
+
+	  [ "Exploration", "Delivery", "Beacon", "Kills", "Transfer" ]
+
+* Conditions - Количество условий для квеста - от и до. Внимание! Условия согласно в рамках одного квеста.
+* Location - Привязка к локации. 
+	Если **true** все условия будут на одной локации, 
+	если **false**, условия квеста будут на разных локациях.
 
 ### KillQuest
 Квесты на убийства разных типов игроков.
@@ -88,7 +108,10 @@ Types - Типы квестов
 * Count - количество наград скилла.
 * Value - полученный уровен (100 - 1 уровень)
 * Skill - список получаемых скиллов игроку. Случайное значение значений.
-Возможные варианты. Некоторые полноценно не проверены.		["Endurance", "Strength", "Vitality", "Health", "StressResistance", "Metabolism", "Immunity", "Perception", "Intellect", "Attention", "Charisma", "Memory", "MagDrills", "Pistol", "Revolver", "SMG", "Assault", "Shotgun", "Sniper", "LMG", "HMG", "Launcher", "AttachedLauncher", "Throwing", "Misc", "Melee", "DMR", "DrawMaster", "AimMaster", "RecoilControl", "TroubleShooting", "Sniping", "CovertMovement", "ProneMovement", "FirstAid", "FieldMedicine", "Surgery", "LightVests", "HeavyVests", "WeaponModding", "AdvancedModding", "NightOps", "SilentOps", "Lockpicking", "Search", "WeaponTreatment", "Freetrading", "Auctions", "Cleanoperations", "Barter", "Shadowconnections", "Taskperformance", "BearAssaultoperations", "BearAuthority", "BearAksystems", "BearHeavycaliber", "BearRawpower", "UsecArsystems", "UsecDeepweaponmodding", "UsecLongrangeoptics", "UsecNegotiations", "UsecTactics", "BotReload", "BotSound", "AimDrills", "HideoutManagement", "Crafting"]	
+
+Возможные варианты. Некоторые полноценно не проверены.
+
+		["Endurance", "Strength", "Vitality", "Health", "StressResistance", "Metabolism", "Immunity", "Perception", "Intellect", "Attention", "Charisma", "Memory", "MagDrills", "Pistol", "Revolver", "SMG", "Assault", "Shotgun", "Sniper", "LMG", "HMG", "Launcher", "AttachedLauncher", "Throwing", "Misc", "Melee", "DMR", "DrawMaster", "AimMaster", "RecoilControl", "TroubleShooting", "Sniping", "CovertMovement", "ProneMovement", "FirstAid", "FieldMedicine", "Surgery", "LightVests", "HeavyVests", "WeaponModding", "AdvancedModding", "NightOps", "SilentOps", "Lockpicking", "Search", "WeaponTreatment", "Freetrading", "Auctions", "Cleanoperations", "Barter", "Shadowconnections", "Taskperformance", "BearAssaultoperations", "BearAuthority", "BearAksystems", "BearHeavycaliber", "BearRawpower", "UsecArsystems", "UsecDeepweaponmodding", "UsecLongrangeoptics", "UsecNegotiations", "UsecTactics", "BotReload", "BotSound", "AimDrills", "HideoutManagement", "Crafting"]	
 
 ### DefaultQuest
 Общие настройки квеста.

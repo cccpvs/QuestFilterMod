@@ -90,6 +90,7 @@ namespace QuestFilterMod.RandomQuests.Models
         public bool Beacon { get; set; } = true;
         public bool Kills { get; set; } = true;
         public bool Transfer { get; set; } = true;
+        public bool Combo { get; set; } = false;
 
     }
     public class DeployQuestBaseConfig
@@ -113,6 +114,14 @@ namespace QuestFilterMod.RandomQuests.Models
         public int[] ItemCount { get; set; } = [1, 5];
         public int[] Condition { get; set; } = [1, 5];
     }
+
+    public class ComboQuestConfig
+    {
+        public int[] Conditions { get; set; } = [2, 4];
+        public bool Location { get; set; } = true;
+        public string[] Type { get; set; } = ["Exploration", "Kills"];
+    }
+
     public class ZoneConfig
     {
         public string Location { get; set; } = "";
@@ -134,5 +143,6 @@ namespace QuestFilterMod.RandomQuests.Models
         public TraderStandingRewardConfig RewardTraderStanding { get; set; } = new();
         public ExperienceRange ExperienceRewardRange { get; set; } = new();
         public SkillReward RewardSkills { get; set; } = new();
+        public ComboQuestConfig ComboQuest { get; set; } = new();
     }
 }

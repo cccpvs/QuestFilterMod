@@ -1,4 +1,4 @@
-﻿// LinearQuest.cs — ТОЛЬКО НУЖНОЕ
+﻿// LinearQuest.cs
 
 using QuestFilterMod.QuestFilter.Models;
 using SPTarkov.Server.Core.Models.Common;
@@ -6,13 +6,10 @@ using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 using SPTarkov.Server.Core.Utils.Json;
 
-
 namespace QuestFilterMod.QuestFilter
 {
     public partial class QuestFilterService
     {
-
-        
         private void ApplyBranchingQuestChain(
         List<Quest> selectedQuests,
         Dictionary<MongoId, Quest> quests,

@@ -62,28 +62,11 @@ namespace QuestFilterMod.RandomQuests
                                 {
                                     Conditions = new List<QuestConditionCounterCondition>
                                     {
-                                        ConditionVisitPlace(target, idFactory),
-                                    }
-                            }
-                        },
-                        new() {
-                            Id = idFactory(),
-                            DynamicLocale = false,
-                            ConditionType = "CounterCreator",
-                            GlobalQuestCounterId = "",
-                            IsNecessary = false,
-                            IsResetOnConditionFailed = false,
-                            OneSessionOnly = true,
-                            VisibilityConditions = [],
-                            Index = 1,
-                            Type = "Completion",
-                            Value = 1,
-                            Counter = new QuestConditionCounter() {
-                                Conditions = new List<QuestConditionCounterCondition> {
+                                        ConditionVisitPlace(target, pascalName, idFactory),
                                         ConditionSurvivedExit(idFactory),
                                         ConditionLocation(pascalName, idFactory),
-                                },
-                                Id = idFactory(),
+                                    },
+                                    Id = idFactory(),
                             }
                         }
                     };

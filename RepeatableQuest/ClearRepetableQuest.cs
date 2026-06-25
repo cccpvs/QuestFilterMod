@@ -9,30 +9,11 @@ namespace QuestFilterMod.RepeatableQuestCleaner
 
 #if DEBUG
     /*
+     * Новая ошибка от 24.06.2026 ------------
+     * 
      * [Запрос клиента] 26.196.29.49 /client/repeatalbeQuests/activityPeriods
-Не найден статус квеста для: Completion
-Quest template null when attempting to create completion operational task.
-Не найден статус квеста для: Exploration
-Не удалось сгенерировать квест exploration — отсутствует шаблон квеста
-Не найден статус квеста для: Completion
-Quest template null when attempting to create completion operational task.
 Не найден статус квеста для: Elimination
 Не удалось сгенерировать квест elimination — отсутствует шаблон квеста
-Не найден статус квеста для: Exploration
-Не удалось сгенерировать квест exploration — отсутствует шаблон квеста
-Не найден статус квеста для: Completion
-Quest template null when attempting to create completion operational task.
-Не найден статус квеста для: Exploration
-Не удалось сгенерировать квест exploration — отсутствует шаблон квеста
-Не найден статус квеста для: Elimination
-Не удалось сгенерировать квест elimination — отсутствует шаблон квеста
-Не найден статус квеста для: Elimination
-Не удалось сгенерировать квест elimination — отсутствует шаблон квеста
-Не найден статус квеста для: Exploration
-Не удалось сгенерировать квест exploration — отсутствует шаблон квеста
-Не найден статус квеста для: Elimination
-Не удалось сгенерировать квест elimination — отсутствует шаблон квеста
-We were stuck in repeatable quest generation. This should never happen. Please report
 Error handling request: /client/repeatalbeQuests/activityPeriods
 Object reference not set to an instance of an object.
    at SPTarkov.Server.Core.Controllers.RepeatableQuestController.GetClientRepeatableQuests(MongoId sessionID)

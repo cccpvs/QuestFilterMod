@@ -5,7 +5,8 @@
       "Delivery": true,
       "Beacon": true,
       "Kills": true,
-      "Transfer": true
+      "Transfer": true,
+      "Combo" : false
     },
     "AllowedLocations": {
       "Bigmap": true,
@@ -401,7 +402,7 @@
   },
   "DeliveryQuest": {
     "PlantTime": 30,
-    "ItemPlant": [ "56742c324bdc2d150f8b456d", "56742c2e4bdc2d95058b456d", "56742c284bdc2d98058b456d", "567849dd4bdc2d150f8b456e", "5672cb724bdc2dc2088b456b" ],
+    "ItemPlant": [ "56742c324bdc2d150f8b456d", "56742c2e4bdc2d95058b456d", "56742c284bdc2d98058b456d", "5672cb124bdc2d1a0f8b4568", "5672cb724bdc2dc2088b456b" ],
     "Locations": {
       "Bigmap": {
         "Id": "56f40101d2720b2a4d8b45d6",
@@ -1116,6 +1117,11 @@
     "ItemCount": [ 1, 5 ],
     "Condition": [ 1, 5 ],
     "ItemIds": [ "573475fb24597737fb1379e1", "573476d324597737da2adc13", "573476f124597737e04bf328", "5734770f24597738025ee254", "57347b8b24597737dd42e192", "5734795124597738002c6176", "573477e124597737dd42e191", "573477e124597737dd42e191", "573474f924597738002c6174", "5c06782b86f77426df5407d2", "5c06779c86f77426e00dd782", "5bd073c986f7747f627e796c", "5734781f24597737e04bf32a" ]
+  },
+  "ComboQuest": {
+    "Type": [ "Exploration", "Delivery", "Beacon", "Kills", "Transfer" ],
+    "Conditions": [ 3, 5 ],
+    "Location": true
   },
   "RewardMoney": {
     "Enabled": true,
