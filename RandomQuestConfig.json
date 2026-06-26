@@ -401,6 +401,7 @@
     }
   },
   "DeliveryQuest": {
+    "StartItem": true,
     "PlantTime": 30,
     "ItemPlant": [ "56742c324bdc2d150f8b456d", "56742c2e4bdc2d95058b456d", "56742c284bdc2d98058b456d", "5672cb124bdc2d1a0f8b4568", "5672cb724bdc2dc2088b456b" ],
     "Locations": {
@@ -755,6 +756,7 @@
     }
   },
   "BeaconQuest": {
+    "StartItem" : true,
     "PlantTime": 30,
     "ItemPlant": [ "5991b51486f77447b112d44f", "5ac78a9b86f7741cca0bbd8d" ],
     "Locations": {
@@ -1111,7 +1113,17 @@
   "KillQuest": {
     "MinKills": 10,
     "MaxKills": 15,
-    "Target": [ "Any", "AnyPmc", "Savage", "Usec", "Bear" ]
+    "Target": [ "Any", "AnyPmc", "Savage", "Usec", "Bear" ],
+    "TimeDay": {
+      "Enable": false,
+      "Minimal": [ 0, 0 ],
+      "Interval": 5
+    },
+    "Weapons": {
+      "Enable": false,
+      "Ids": [],
+      "StartedItem" : false
+    }
   },
   "TransferQuest": {
     "ItemCount": [ 1, 5 ],
@@ -1120,7 +1132,7 @@
   },
   "ComboQuest": {
     "Type": [ "Exploration", "Delivery", "Beacon", "Kills", "Transfer" ],
-    "Conditions": [ 3, 5 ],
+    "Conditions": [ 2, 6 ],
     "Location": true
   },
   "RewardMoney": {

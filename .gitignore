@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/QuestFilter/AddBase.cs
+/VERSION.md
+/QuestFilter/AddBase.cs
+/VERSION.md

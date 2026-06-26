@@ -9,41 +9,18 @@ namespace QuestFilterMod.RepeatableQuestCleaner
 
 #if DEBUG
     /*
-     * Новая ошибка от 24.06.2026 ------------
-     * 
-     * [Запрос клиента] 26.196.29.49 /client/repeatalbeQuests/activityPeriods
-Не найден статус квеста для: Elimination
-Не удалось сгенерировать квест elimination — отсутствует шаблон квеста
-Error handling request: /client/repeatalbeQuests/activityPeriods
-Object reference not set to an instance of an object.
-   at SPTarkov.Server.Core.Controllers.RepeatableQuestController.GetClientRepeatableQuests(MongoId sessionID)
-   at SPTarkov.Server.Core.Callbacks.QuestCallbacks.ActivityPeriods(String url, EmptyRequestData _, MongoId sessionID)
-   at SPTarkov.Server.Core.Routers.Static.QuestStaticRouter.<>c__DisplayClass0_0.<<-ctor>b__1>d.MoveNext()
---- End of stack trace from previous location ---
-   at SPTarkov.Server.Core.DI.RouteAction`1.<>c__DisplayClass0_0.<<-ctor>b__0>d.MoveNext()
---- End of stack trace from previous location ---
-   at SPTarkov.Server.Core.DI.StaticRouter.HandleStatic(String url, String body, MongoId sessionId, String output)
-   at SPTarkov.Server.Core.Routers.HttpRouter.HandleRoute(HttpRequest request, MongoId sessionID, ResponseWrapper wrapper, IEnumerable`1 routers, Boolean dynamic, String body)
-   at SPTarkov.Server.Core.Routers.HttpRouter.GetResponse(HttpRequest req, MongoId sessionID, String body)
-   at FikaServer.Overrides.Routers.GetResponseOverride.Postfix(ValueTask`1 __result, HttpRequest req)
-   at CompoundingPerf.Features.CachingHttpRouter.GetResponse(HttpRequest req, MongoId sessionID, String body)
-   at SPTarkov.Server.Core.Servers.Http.SptHttpListener.GetResponse(MongoId sessionId, HttpContext context, String body)
-   at SPTarkov.Server.Core.Servers.Http.SptHttpListener.Handle(MongoId sessionId, HttpContext context)
-   at SPTarkov.Server.Core.Servers.HttpServer.HandleRequest(HttpContext context, RequestDelegate next)
-   at SPTarkov.Server.Program.<>c.<<ConfigureWebApp>b__3_0>d.MoveNext()
---- End of stack trace from previous location ---
-   at SPTarkov.Server.Services.NoGCRegionMiddleware.InvokeAsync(HttpContext context)
-   at SPTarkov.Server.Logger.SptLoggerMiddleware.InvokeAsync(HttpContext context)
+     Логика устарела. Будет удалена по возможности.
+    Проверка причины ошибки. Временно перешли на патч сервера - клиента.
     */
 #endif
 
-    public class ClearRepetableQuest
+    public class Clear
     {
         private readonly ISptLogger<Plugin> _logger;
         private readonly DatabaseService _databaseService;
         private RepeatableQuestDatabase _questDatabase;
 
-        public ClearRepetableQuest(
+        public Clear(
             ISptLogger<Plugin> logger,
             DatabaseService databaseService)
         {
@@ -64,8 +41,6 @@ Object reference not set to an instance of an object.
                 Samples = new List<SampleQuests>(),
                 Templates = new RepeatableTemplates()
             };
-
-            // 🔁 Убедимся, что Templates и все его поля НЕ null
             _questDatabase.Templates ??= new RepeatableTemplates();
             _questDatabase.Templates.Elimination ??= CreateQuestTemplate(QuestTypeEnum.Elimination);
             _questDatabase.Templates.Completion ??= CreateQuestTemplate(QuestTypeEnum.Completion);

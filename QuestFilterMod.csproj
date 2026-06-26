@@ -36,7 +36,7 @@
     <GenerateBindingRedirectsOutputType>false</GenerateBindingRedirectsOutputType>
     <!-- 🔹 Современные фичи -->
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <AssemblyVersion></AssemblyVersion>
     <FileVersion></FileVersion>
   </PropertyGroup>
@@ -50,18 +50,6 @@
 
   <ItemGroup>
     <!-- 🔥 Добавляем <Private>false</Private>, чтобы НЕ копировать .dll -->
-    <Reference Include="Assembly-CSharp">
-      <HintPath>G:\Games\Escape from Tarkov\EscapeFromTarkov_Data\Managed\Assembly-CSharp.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="FikaServer">
-      <HintPath>G:\Games\Escape from Tarkov\SPT\user\mods\fika-server\FikaServer.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="FikaShared">
-      <HintPath>G:\Games\Escape from Tarkov\SPT\user\mods\fika-server\FikaShared.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>G:\Games\Escape from Tarkov\EscapeFromTarkov_Data\Managed\Newtonsoft.Json.dll</HintPath>
       <Private>false</Private>
@@ -102,6 +90,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="VERSION.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

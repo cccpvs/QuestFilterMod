@@ -8,12 +8,12 @@ using SPTarkov.Server.Core.Utils.Json;
 
 namespace QuestFilterMod.QuestFilter
 {
-    public partial class QuestFilterService
+    public partial class FilterService
     {
         private void ApplyBranchingQuestChain(
         List<Quest> selectedQuests,
         Dictionary<MongoId, Quest> quests,
-        QuestFilterConfig config,
+        ModelConfig config,
         int startQuest,
         int finishQuestMin,
         int finishQuestMax)
@@ -21,7 +21,6 @@ namespace QuestFilterMod.QuestFilter
             var dependencyMap = new Dictionary<MongoId, List<MongoId>>(); 
             var currentQuestIndex = startQuest;
             var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
-
 
             for (int i = 0; i < startQuest; i++)
             {
@@ -84,15 +83,14 @@ namespace QuestFilterMod.QuestFilter
                             Id = idFactory(),
                             Index = 0,
                             ParentId = "",
-                            Target = new ListOrT<string>(new List<string> { parentId }, (string?)null),
+                            Target = new ListOrT<string>(new List<string> { parentId }, (string)null),
                             Status = new HashSet<QuestStatusEnum> { QuestStatusEnum.Success },
                             VisibilityConditions = [],
-                            ExtensionData = new Dictionary<string?, object?>
+                            ExtensionData = new Dictionary<string, object>
                             {
                                 ["target"] = parentId
                             }
                         };
-
                         quest.Conditions.AvailableForStart.Add(condition);
                     }
                 }

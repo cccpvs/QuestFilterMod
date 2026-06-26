@@ -6,14 +6,14 @@ using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 
 namespace QuestFilterMod.QuestFilter
 {
-    public partial class QuestFilterService
+    public partial class FilterService
     {
         int q_deleted = 0;
         int q_moved = 0;
         int q_left = 0;
         int q_random = 0;
 
-        private void ModifyQuests(Dictionary<MongoId, Quest> allQuests,List<Quest> selectedQuests,QuestFilterConfig config, Random random)
+        private void ModifyQuests(Dictionary<MongoId, Quest> allQuests,List<Quest> selectedQuests,ModelConfig config, Random random)
         {
             var selectedIds = selectedQuests.Select(q => q.Id).ToHashSet();
 
@@ -56,9 +56,7 @@ namespace QuestFilterMod.QuestFilter
                         q_moved++;
                         if (Plugin.Config.Debug)
                             _logger.Info($"[QuestFilterMod][ModifyQuests] Quest '{q.Name}' ({q.Id}) → trader {selectedTraderId}");
-                    }
-                    
-                    
+                    }  
                 }
 
                 if (config.RemoveStartConditionsQuest && q.Conditions?.AvailableForStart != null && !config.LinkedQuest.Enable)
@@ -71,15 +69,15 @@ namespace QuestFilterMod.QuestFilter
                 if (config.RemoveFinishConditionTypes?.Count > 0 && q.Conditions?.AvailableForFinish != null)
                 {
                     var toRemove = new HashSet<string>(config.RemoveFinishConditionTypes, StringComparer.OrdinalIgnoreCase);
+#if DEBUG
                     _logger.Info($"[DEBUG] RemoveFinishConditionTypes count = {toRemove.Count}");
-
+#endif
                     for (int i = q.Conditions.AvailableForFinish.Count - 1; i >= 0; i--)
                     {
                         var condition = q.Conditions.AvailableForFinish[i];
-                        string? conditionType = condition.ConditionType;
-                        string? typeValue = condition.Type; // ← есть у внешних условий в JSON
+                        string conditionType = condition.ConditionType;
+                        string typeValue = condition.Type;
 
-                        // 🔍 Удаляем, если conditionType ИЛИ type есть в списке
                         bool shouldRemove =
                             (!string.IsNullOrEmpty(conditionType) && toRemove.Contains(conditionType)) ||
                             (!string.IsNullOrEmpty(typeValue) && toRemove.Contains(typeValue));
@@ -87,19 +85,19 @@ namespace QuestFilterMod.QuestFilter
                         if (shouldRemove)
                         {
                             q.Conditions.AvailableForFinish.RemoveAt(i);
+#if DEBUG
                             _logger.Info($"[DEBUG] Removed condition: conditionType='{conditionType ?? "null"}', type='{typeValue ?? "null"}'");
+#endif
                             continue;
                         }
 
-                        // 🔁 Обработка CounterCreator: чистим во вложенных (только по conditionType)
                         if (conditionType == "CounterCreator" && condition.Counter?.Conditions != null)
                         {
                             var beforeCount = condition.Counter.Conditions.Count;
 
                             condition.Counter.Conditions.RemoveAll(inner =>
                             {
-                                string? innerType = inner.ConditionType;
-                                // У вложенных нет .Type — только conditionType
+                                string innerType = inner.ConditionType;
                                 bool shouldRemoveInner = !string.IsNullOrEmpty(innerType) && toRemove.Contains(innerType);
 
                                 if (shouldRemoveInner)
@@ -114,7 +112,6 @@ namespace QuestFilterMod.QuestFilter
                                 _logger.Info($"[DEBUG] Removed {beforeCount - afterCount} nested conditions from CounterCreator in quest '{q.Id}', remaining = {afterCount}");
                             }
 
-                            // ⚠️ Если CounterCreator стал пустым — удаляем и его
                             if (afterCount == 0)
                             {
                                 q.Conditions.AvailableForFinish.RemoveAt(i);
@@ -132,6 +129,40 @@ namespace QuestFilterMod.QuestFilter
                     //_logger.Info($"[FINAL JSON for quest '{q.Id}']:\n{json}");
 #endif
                 }
+
+
+                if (config.ModifyBaseQuest.Enabled)
+                {
+                    var countCond = config.ModifyBaseQuest?.CountCond;
+                    int min = countCond?.Length > 0 ? countCond[0] : 1;
+                    int max = countCond?.Length > 1 ? countCond[1] : min;
+                    if (min <= 0) min = 1;
+                    if (max < min) (min, max) = (max, min);
+                    int count = random.Next(min, max + 1);
+
+                    if (q.Conditions?.AvailableForFinish == null)
+                        q.Conditions.AvailableForFinish = new List<QuestCondition>();
+
+                    int attempts = 0;
+                    int maxAttempts = count * 2;
+                    while (q.Conditions.AvailableForFinish.Count < count && attempts < maxAttempts)
+                    {
+
+                        var condition2 = GenerateRandomFinishCondition(random, () => new MongoId());
+                        if (condition2 != null)
+                        {
+                            q.Conditions.AvailableForFinish.Add(condition2);
+                        }
+                        attempts++;
+                    }
+                    var locales = new Dictionary<string, Dictionary<string, string>>();
+                    _randomQuestGenerator.FillQuestLocales(q, locales);
+                    AddConditionLocales(locales);
+
+                    if (Plugin.Config.Debug)
+                        _logger.Info($"[QuestFilterMod][ModifyQuests] ✅ Added {count} random finish conditions to '{q.Name}' ({q.Id})");
+                }
+
             }
             
             q_left = allQuests.Count;
@@ -146,7 +177,7 @@ namespace QuestFilterMod.QuestFilter
                 }
                 foreach (var quest in selectedQuests)
                 {
-                    string locKey = LocationHelper.TryGetPascalName(quest.Location, out var pascalName)
+                    string locKey = Location.TryGetPascalName(quest.Location, out var pascalName)
                         ? pascalName.ToLowerInvariant()
                         : "unknown";
                     locationStats[locKey] = locationStats.GetValueOrDefault(locKey, 0) + 1;

@@ -11,13 +11,13 @@ using System.Reflection;
 
 namespace QuestFilterMod.RandomQuests
 {
-    public partial class RandomQuestGenerator
+    public partial class Generator
     {
         private readonly ISptLogger<Plugin> _logger;
         private readonly DatabaseService _databaseService;
         private readonly DatabaseServer databaseServer;
         private readonly Random _random = new();
-        private readonly QuestConfig ConfigRandom;
+        public readonly QuestConfig ConfigRandom;
         private readonly UniqueQuestTracker _tracker = new();
         private readonly CustomQuestService _customQuestService;
         private bool _hasExhaustedAllOptions = false;
@@ -36,11 +36,10 @@ namespace QuestFilterMod.RandomQuests
             {
                 return _usedKeys.Add(key);
             }
-
             public void Clear() => _usedKeys.Clear();
         }
 
-        public RandomQuestGenerator(
+        public Generator(
                 ISptLogger<Plugin> logger,
                 DatabaseService databaseService,
                  DatabaseServer databaseServer,
@@ -77,17 +76,17 @@ namespace QuestFilterMod.RandomQuests
             _saveServer = saveServer;
         }
 
-        public Quest? GenerateSingleQuest(int maxAttempts = 10)
+        public Quest GenerateSingleQuest(int maxAttempts = 10)
         {
             try
             {
                 var locations = _databaseService.GetLocations()?.GetDictionary();
-                if (locations != null && !LocationHelper.IdToPascalName.Any())
+                if (locations != null && !Location.IdToPascalName.Any())
                 {
-                    LocationHelper.Initialize(locations);
+                    Location.Initialize(locations);
                 }
 
-                var candidates = new List<(string Type, Func<Quest?> Generator)>();
+                var candidates = new List<(string Type, Func<Quest> Generator)>();
 
                 if (ConfigRandom.QuestGeneration.Types.Exploration)
                     candidates.Add(("Exploration", GenerateExplorationQuest));
@@ -124,9 +123,6 @@ namespace QuestFilterMod.RandomQuests
                 }
                 if (ConfigRandom.QuestGeneration.Types.Combo)
                     candidates.Add(("ComboQuest", GenerateComboQuest));
-
-
-
 
                 if (!candidates.Any())
                 {
@@ -166,7 +162,6 @@ namespace QuestFilterMod.RandomQuests
                 return null;
             }
         }
-
         public void ResetTracker()
         {
             _tracker.Clear();
@@ -176,7 +171,7 @@ namespace QuestFilterMod.RandomQuests
 
     public static class ListExtensions
     {
-        public static T? RandomItem<T>(this IReadOnlyList<T> list, Random random)
+        public static T RandomItem<T>(this IReadOnlyList<T> list, Random random)
         {
             if (list == null || list.Count == 0)
                 return default;

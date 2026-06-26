@@ -6,6 +6,8 @@ using SPTarkov.Server.Core.Models.Enums;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Services;
 using SPTarkov.Server.Core.Services.Mod;
+using QuestFilterMod.RandomQuests.Models;
+
 
 namespace QuestFilterMod.QuestFilter;
 
@@ -13,21 +15,24 @@ namespace QuestFilterMod.QuestFilter;
 /***/
 #endif
 
-public partial class QuestFilterService
+public partial class FilterService
 {
     private readonly ISptLogger<Plugin> _logger;
     private readonly DatabaseService _databaseService;
-    private readonly RandomQuestGenerator _randomQuestGenerator;
+    private readonly Generator _randomQuestGenerator;
     private readonly CustomQuestService _customQuestService;
     private readonly HashSet<MongoId> _randomQuestIds = new();
+
+    private QuestConfig ConfigRandom => _randomQuestGenerator?.ConfigRandom;
+
 
     private bool _hasAppliedFilters = false;
     private readonly System.Random _random = new();
 
-    public QuestFilterService(
+    public FilterService(
         ISptLogger<Plugin> logger,
         DatabaseService databaseService,
-        RandomQuestGenerator randomQuestGenerator,
+        Generator randomQuestGenerator,
         CustomQuestService customQuestService)
     {
         _logger = logger;
@@ -36,7 +41,7 @@ public partial class QuestFilterService
         _customQuestService = customQuestService;
     }
 
-    public void ApplyFilters(QuestFilterConfig Config)
+    public void ApplyFilters(ModelConfig Config)
     {
 
         if (_hasAppliedFilters)
@@ -117,7 +122,7 @@ public partial class QuestFilterService
 
                     if (Plugin.Config.Debug)
                     {
-                        var locationName = LocationHelper.TryGetPascalName(randomQuest.Location, out var pascalName)
+                        var locationName = Location.TryGetPascalName(randomQuest.Location, out var pascalName)
                         ? pascalName.ToLowerInvariant()
                         : "unknown";
                         _logger.Success($"[QuestFilterMod][QuestFilterService] Quest generated: '{randomQuest.Name}' (ID: {randomQuest.Id}, location: {locationName})");
@@ -160,13 +165,13 @@ public partial class QuestFilterService
         }
     }
 
-    private bool ShouldExcludeByProgressSource(Quest quest, QuestFilterConfig config)
+    private bool ShouldExcludeByProgressSource(Quest quest, ModelConfig config)
     {
         if (!config.ExcludeArenaQuests) return false;
         return string.Equals(quest.ProgressSource, "arena", StringComparison.OrdinalIgnoreCase);
     }
 
-    private HashSet<QuestTypeEnum> GetAllowedTypes(QuestFilterConfig config)
+    private HashSet<QuestTypeEnum> GetAllowedTypes(ModelConfig config)
     {
         return config.QuestTypes
             .Select(type => Enum.TryParse<QuestTypeEnum>(type, true, out var val) ? val : (QuestTypeEnum?)null)
@@ -175,7 +180,7 @@ public partial class QuestFilterService
             .ToHashSet();
     }
 
-    private List<Quest> SelectQuests(List<Quest> allQuests, QuestFilterConfig Config, Random random)
+    private List<Quest> SelectQuests(List<Quest> allQuests, ModelConfig Config, Random random)
     {
         var selected = new List<Quest>();
 
@@ -190,7 +195,6 @@ public partial class QuestFilterService
         {
             var pascalName = kvp.Key;
             var normalized = pascalName.ToLowerInvariant();
-
 
             normalizedLocationKeyMap[pascalName] = normalized;
             normalizedLocationKeyMap[normalized] = normalized;
@@ -218,7 +222,6 @@ public partial class QuestFilterService
 
                 if (string.Equals(q.Location, "any", StringComparison.OrdinalIgnoreCase))
                     return "any";
-
 
                 return "unknown";
             })
@@ -278,9 +281,6 @@ public partial class QuestFilterService
             }
         }
 
-
-
-
         return selected;
     }
 
@@ -302,7 +302,7 @@ public partial class QuestFilterService
             return null;
         }
 
-        if (LocationHelper.TryGetPascalName(locationId, out var pascalName))
+        if (Location.TryGetPascalName(locationId, out var pascalName))
         {
             _logger.Info($"[QuestFilterMod] ✅ Matched by TryGetPascalName: '{pascalName}'");
             return pascalName.ToLowerInvariant();
@@ -314,7 +314,7 @@ public partial class QuestFilterService
 #endif
         if (!string.IsNullOrEmpty(mappedKey))
         {
-            if (LocationHelper.TryGetPascalName(mappedKey, out var pascal2))
+            if (Location.TryGetPascalName(mappedKey, out var pascal2))
             {
                 _logger.Info($"[QuestFilterMod] ✅ Matched by GetMappedKey → Pascal: '{pascal2}'");
                 return pascal2.ToLowerInvariant();
@@ -335,8 +335,6 @@ public partial class QuestFilterService
 #endif
                     return loc.Key.ToLowerInvariant();
                 }
-
-                // ✅ Или по Base.Id (snake_case)
                 if (locObj.Base.Id == locationId)
                 {
                     _logger.Info($"[QuestFilterMod] ✅ Found by Id: '{loc.Key}'");
@@ -373,19 +371,17 @@ public partial class QuestFilterService
     }
 
     private void AddFromGroup(
-    Dictionary<string, List<Quest>> groups,
-    string key,
-    int count,
-    List<Quest> selected,
-    Random random,
-    bool debug)
+            Dictionary<string, List<Quest>> groups,
+            string key,
+            int count,
+            List<Quest> selected,
+            Random random,
+            bool debug)
     {
         if (count <= 0) return;
 
-        // 🔁 Объявляем один раз — используется везде
         var alreadySelectedIds = selected.Select(s => s.Id).ToHashSet();
 
-        // 🔹 "any" — берём квесты ТОЛЬКО из группы "any"
         if (string.Equals(key, "any", StringComparison.OrdinalIgnoreCase))
         {
             if (!groups.TryGetValue("any", out var anyList) || anyList.Count == 0)

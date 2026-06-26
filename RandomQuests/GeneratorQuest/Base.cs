@@ -4,10 +4,10 @@ using SPTarkov.Server.Core.Models.Enums;
 
 namespace QuestFilterMod.RandomQuests
 {
-    public partial class RandomQuestGenerator
+    public partial class Generator
 
     {
-        private Quest? GenerateBaseQuest(string type, Action<Quest, Func<MongoId>> build)
+        private Quest GenerateBaseQuest(string type, Action<Quest, Func<MongoId>> build)
         {
             var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
             var questId = idFactory();
@@ -19,7 +19,6 @@ namespace QuestFilterMod.RandomQuests
                 _logger.Info($"[QuestFilterMod][GenerateBaseQuest] 🧪 _random test: {ConfigRandom.TraderIds?.RandomItem(_random) ?? "NULL"}");
             }
 #endif
-
             var quest = new Quest
             {
                 Id = questId,
@@ -65,7 +64,6 @@ namespace QuestFilterMod.RandomQuests
             quest.GameModes = new();
             quest.RankingModes = new();
 
-
             build(quest, idFactory);
 
 
@@ -106,7 +104,6 @@ namespace QuestFilterMod.RandomQuests
             AddMoneyReward(quest);
             AddRandomItemRewards(quest);
             AddTraderStandingReward(quest);
-            
         }
     }
 }

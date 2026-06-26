@@ -3,7 +3,7 @@ using SPTarkov.Server.Core.Models.Eft.Common;
 
 namespace QuestFilterMod.RandomQuests
 {
-    public static class LocationHelper
+    public static class Location
     {
 #if DEBUG
         /*
@@ -36,14 +36,14 @@ namespace QuestFilterMod.RandomQuests
         /// Вызывается один раз при старте мода.
         /// </summary>
         /// <param name="locations">Dictionary из Locations.GetDictionary() — ключ: PascalName</param>
-        public static void Initialize(Dictionary<string, Location> locations)
+        public static void Initialize(Dictionary<string, SPTarkov.Server.Core.Models.Eft.Common.Location> locations)
         {
             IdToPascalName.Clear();
 
             foreach (var kvp in locations)
             {
                 string pascalName = kvp.Key;                    
-                string? locationId = kvp.Value?.Base?.IdField;  
+                string locationId = kvp.Value?.Base?.IdField;  
 
                 if (!string.IsNullOrEmpty(locationId))
                 {
@@ -92,7 +92,6 @@ namespace QuestFilterMod.RandomQuests
             {
                 string locationId = kvp.Key;
                 string pascalName = kvp.Value;
-
                 if (IsAllowed(locationId, config))
                 {
                     yield return (pascalName, locationId);

@@ -1,15 +1,14 @@
 ﻿using QuestFilterMod.RandomQuests.Models;
-using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 
 namespace QuestFilterMod.RandomQuests
 {
-    public partial class RandomQuestGenerator
+    public partial class Generator
     {
-        private Quest? GenerateExplorationQuest()
+        private Quest GenerateExplorationQuest()
         {
-            var allowed = LocationHelper.GetAllowedLocations(ConfigRandom).ToList();
+            var allowed = Location.GetAllowedLocations(ConfigRandom).ToList();
 
             var allPoints = new List<(LocationConfig Config, string Target)>();
 
@@ -36,7 +35,7 @@ namespace QuestFilterMod.RandomQuests
                     q.Location = loc.Id;
                     q.Type = QuestTypeEnum.Discover;
 
-                    if (!LocationHelper.TryGetPascalName(loc.Id, out var pascalName))
+                    if (!Location.TryGetPascalName(loc.Id, out var pascalName))
                         return;
 
                     q.Conditions ??= new QuestConditionTypes();

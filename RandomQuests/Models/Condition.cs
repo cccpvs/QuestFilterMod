@@ -1,13 +1,14 @@
-﻿using SPTarkov.Server.Core.Models.Common;
+﻿using QuestFilterMod.RandomQuests.Models;
+using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Utils.Json;
 
 
 namespace QuestFilterMod.RandomQuests
 {
-    public partial class RandomQuestGenerator
+    public partial class Generator
     {
-        private QuestCondition ConditionFindItem(string itemId, Func<string> idFactory, Random random)
+        public static QuestCondition ConditionFindItem(string itemId, Func<string> idFactory, Random random)
         {
             return new QuestCondition
             {
@@ -26,10 +27,10 @@ namespace QuestFilterMod.RandomQuests
                 OnlyFoundInRaid = true,
                 VisibilityConditions = [],
                 Target = new ListOrT<string>(new List<string> { itemId }, null),
-                ExtensionData = new Dictionary<string?, object?> { ["_item"] = itemId }
+                ExtensionData = new Dictionary<string, object> { ["_item"] = itemId }
             };
         }
-        private QuestCondition ConditionHandoverItem(string itemId, int count, Func<string> idFactory, Random random)
+        public static QuestCondition ConditionHandoverItem(string itemId, int count, Func<string> idFactory, Random random)
         {
             return new QuestCondition
             {
@@ -48,10 +49,10 @@ namespace QuestFilterMod.RandomQuests
                 OnlyFoundInRaid = true,
                 VisibilityConditions = [],
                 Target = new ListOrT<string>(new List<string> { itemId }, null),
-                ExtensionData = new Dictionary<string?, object?> { ["_item"] = itemId }
+                ExtensionData = new Dictionary<string, object> { ["_item"] = itemId }
             };
         }
-        private QuestCondition ConditionDeployItem(string itemTpl, string zoneId, int plantTime, string conditionType, string pascalName, Func<MongoId> idFactory)
+        public static QuestCondition ConditionDeployItem(string itemTpl, string zoneId, int plantTime, string conditionType, string pascalName, Func<MongoId> idFactory)
         {
             return new QuestCondition
             {
@@ -71,7 +72,7 @@ namespace QuestFilterMod.RandomQuests
                 ParentId = "",
                 PlantTime = plantTime,
                 VisibilityConditions = [],
-                ExtensionData = new Dictionary<string?, object?>
+                ExtensionData = new Dictionary<string, object>
                 {
                     ["target"] = new[] { itemTpl },
                     ["_item"] = itemTpl,
@@ -94,35 +95,79 @@ namespace QuestFilterMod.RandomQuests
                 VisibilityConditions = []
             };
         }
-        private QuestConditionCounterCondition ConditionKillEnemy(string target, string pascalName, Func<MongoId> idFactory)
+
+        public static QuestConditionCounterCondition ConditionKillEnemy(
+            string target,
+            string pascalName,
+            Func<MongoId> idFactory,
+            KillQuestConfig config,
+            string weaponId = null)
         {
+            DaytimeCounter daytime = null;
+
+            if (config?.TimeDay?.Enable == true)
+            {
+                int startHour, endHour;
+
+                if (config.TimeDay.Minimal[0] == 0 && config.TimeDay.Minimal[1] == 0)
+                {
+
+                    var start = new Random().Next(0, 24);
+                    var end = (start + config.TimeDay.Interval) % 24;
+                    startHour = start;
+                    endHour = end;
+                }
+                else
+                {
+                    startHour = config.TimeDay.Minimal[0];
+                    endHour = config.TimeDay.Minimal[1];
+                }
+
+                daytime = new DaytimeCounter { From = startHour, To = endHour };
+            }
+
             return new QuestConditionCounterCondition
             {
-                
                 ConditionType = "Kills",
                 CompareMethod = ">=",
-                Daytime = new() { From = 0, To = 0 },
+                Daytime = daytime,
                 Distance = new() { CompareMethod = ">=", Value = 0 },
                 DynamicLocale = false,
                 EnemyEquipmentExclusive = [],
                 EnemyEquipmentInclusive = [],
                 EnemyHealthEffects = [],
-                Weapon = [],
+                Weapon = string.IsNullOrEmpty(weaponId) ? [] : new() { weaponId },
                 WeaponCaliber = [],
                 WeaponModsExclusive = [],
                 WeaponModsInclusive = [],
                 Id = idFactory(),
                 ResetOnSessionEnd = false,
-                ExtensionData = new Dictionary<string?, object?>
+                ExtensionData = new Dictionary<string, object>
                 {
                     ["target"] = target,
-                    ["_pascalName"] = pascalName
+                    ["_pascalName"] = pascalName,
+                    ["_time"] = daytime,
+                    ["_weapons"] = weaponId
+
                 },
                 Value = 1
-              
             };
         }
-        private QuestConditionCounterCondition ConditionLocation(string pascalName, Func<MongoId> idFactory)
+
+        public class TimeOfDayRange
+        {
+            public int FromHour { get; set; }
+            public int ToHour { get; set; }
+
+            public TimeOfDayRange(int from, int to)
+            {
+                FromHour = from;
+                ToHour = to;
+            }
+            public override string ToString() => $"{FromHour:00}:00–{ToHour:00}:00";
+        }
+
+        public static QuestConditionCounterCondition ConditionLocation(string pascalName, Func<MongoId> idFactory)
         {
             return new QuestConditionCounterCondition
             {
@@ -130,7 +175,7 @@ namespace QuestFilterMod.RandomQuests
                 Id = idFactory(),
                 DynamicLocale = false,
                 ConditionType = "Location",
-                ExtensionData = new Dictionary<string?, object?>
+                ExtensionData = new Dictionary<string, object>
                 {
                     ["target"] = new[] { pascalName }
                 }
@@ -144,13 +189,13 @@ namespace QuestFilterMod.RandomQuests
                 Id = idFactory(),
                 DynamicLocale = false,
                 ConditionType = "ExitStatus",
-                ExtensionData = new Dictionary<string?, object?>
+                ExtensionData = new Dictionary<string, object>
                 {
                     ["status"] = new HashSet<string> { "Survived", "Transit" }
                 }
             };
         }
-        private QuestConditionCounterCondition ConditionVisitPlace(string target, string pascalName, Func<MongoId> idFactory)
+        public static QuestConditionCounterCondition ConditionVisitPlace(string target, string pascalName, Func<MongoId> idFactory)
         {
             return new QuestConditionCounterCondition
             {
@@ -158,7 +203,7 @@ namespace QuestFilterMod.RandomQuests
                 DynamicLocale = false,
                 Id = idFactory(),
                 Value = 1,
-                ExtensionData = new Dictionary<string?, object?>
+                ExtensionData = new Dictionary<string, object>
                 {
                     ["target"] = target,
                     ["_pascalName"] = pascalName

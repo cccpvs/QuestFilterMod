@@ -4,9 +4,9 @@ using SPTarkov.Server.Core.Models.Enums;
 
 namespace QuestFilterMod.RandomQuests
 {
-    public partial class RandomQuestGenerator
+    public partial class Generator
     {
-        private Quest? GenerateDeliveryQuest()
+        private Quest GenerateDeliveryQuest()
         {
             return GenerateDeployQuest(
                 questType: "Delivery",
@@ -14,8 +14,7 @@ namespace QuestFilterMod.RandomQuests
                 conditionType: "LeaveItemAtLocation"
             );
         }
-
-        private Quest? GenerateBeaconQuest()
+        private Quest GenerateBeaconQuest()
         {
             return GenerateDeployQuest(
                 questType: "Delivery",
@@ -23,12 +22,11 @@ namespace QuestFilterMod.RandomQuests
                 conditionType: "PlaceBeacon"
             );
         }
-
-        private Quest? GenerateDeployQuest(string questType,DeployQuestConfig config,string conditionType)
+        private Quest GenerateDeployQuest(string questType,DeployQuestConfig config,string conditionType)
         {
             if (!config.Locations.Any()) return null;
 
-            var allowed = LocationHelper.GetAllowedLocations(ConfigRandom).ToList();
+            var allowed = Location.GetAllowedLocations(ConfigRandom).ToList();
 
             var allPoints = new List<(LocationConfig Config, string Target)>();
 
@@ -88,31 +86,12 @@ namespace QuestFilterMod.RandomQuests
                     q.Location = loc.Id;
                     q.Type = QuestTypeEnum.Discover;
 
-                    if (!LocationHelper.TryGetPascalName(loc.Id, out var pascalName))
+                    if (!Location.TryGetPascalName(loc.Id, out var pascalName))
                         return;
 
-                    var itemId = idFactory();
-                    var idItems = itemId;
 
-                    GetOrCreateRewardList(q, "Started").Add(new Reward
-                    {
-                        Id = idFactory(),
-                        Type = RewardType.Item,
-                        Target = idItems,
-                        Value = 1,
-                        IsHidden = false,
-                        IsEncoded = false,
-                        Unknown = false,
-                        Items = new List<Item>
-                        {
-                            new()
-                            {
-                                Id = idItems,
-                                Template = itemTpl,
-                                Upd = new Upd { StackObjectsCount = 1 }
-                            }
-                        }
-                    });
+                    if (config.StartItem) 
+                        AddQuestStartedItemReward(q, itemTpl, 1, idFactory);
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
                     {
@@ -127,7 +106,6 @@ namespace QuestFilterMod.RandomQuests
 #endif
                 });
             }
-
             return null;
         }
     }

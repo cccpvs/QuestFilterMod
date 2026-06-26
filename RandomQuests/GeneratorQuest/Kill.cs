@@ -1,14 +1,23 @@
 ﻿using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 
+
+#if DEBUG
+/*
+ */
+
+#endif
+
+
 namespace QuestFilterMod.RandomQuests
 {
-    public partial class RandomQuestGenerator
+    public partial class Generator
     {
-        private Quest? GenerateKillQuest()
+        private Quest GenerateKillQuest()
         {
             var cfg = ConfigRandom.KillQuest;
-            var allowed = LocationHelper.GetAllowedLocations(ConfigRandom).ToList();
+            var allowed = Location.GetAllowedLocations(ConfigRandom).ToList();
+
 #if DEBUG
             _logger.Warning($"[QuestFilterMod][KillQuest] Starting generation...");
             _logger.Warning($"[QuestFilterMod][KillQuest] Allowed locations: {allowed.Count}, Targets: {string.Join(", ", cfg.Target)}");
@@ -23,9 +32,11 @@ namespace QuestFilterMod.RandomQuests
                     allPoints.Add((pascalName, locationId, target));
                 }
             }
+
 #if DEBUG
             _logger.Warning($"[QuestFilterMod][KillQuest] Total possible combinations: {allPoints.Count}");
 #endif
+
             if (!allPoints.Any())
                 return null;
 
@@ -34,9 +45,11 @@ namespace QuestFilterMod.RandomQuests
                 var key = new QuestKey(locationId, target, "__KILL__", "Kill");
                 var keyStr = key.ToString();
                 var wasUsed = _tracker.IsUsed(key);
+
 #if DEBUG
                 _logger.Warning($"[QuestFilterMod][KillQuest] Trying key: {keyStr} (used: {wasUsed})");
 #endif
+
                 if (!_tracker.TryUse(key))
                 {
 #if DEBUG
@@ -44,15 +57,46 @@ namespace QuestFilterMod.RandomQuests
 #endif
                     continue;
                 }
+
 #if DEBUG
                 _logger.Info($"[QuestFilterMod][KillQuest] ✅ Using key: {keyStr} (tracker count now: {_tracker})");
 #endif
+
                 var randomKill = _random.Next(cfg.MinKills, cfg.MaxKills + 1);
+
+                TimeOfDayRange timeOfDay = null;
+                if (cfg.TimeDay.Enable)
+                {
+                    if (cfg.TimeDay.Minimal[0] == 0 && cfg.TimeDay.Minimal[1] == 0)
+                    {
+                        var startHour = _random.Next(0, 23);
+                        var endHour = (startHour + cfg.TimeDay.Interval) % 24;
+                        timeOfDay = new TimeOfDayRange(startHour, endHour);
+                    }
+                    else
+                    {
+                        var startHour = cfg.TimeDay.Minimal[0];
+                        var endHour = cfg.TimeDay.Minimal[1];
+                        timeOfDay = new TimeOfDayRange(startHour, endHour);
+                    }
+                }
+
+                string weaponId = null;
+                if (cfg.Weapons.Enable && cfg.Weapons.Ids.Count > 0)
+                {
+                    weaponId = cfg.Weapons.Ids[_random.Next(cfg.Weapons.Ids.Count)];
+                }
 
                 var quest = GenerateBaseQuest("Kill", (q, idFactory) =>
                 {
                     q.Location = locationId;
                     q.Type = QuestTypeEnum.Elimination;
+
+
+                    if (cfg.Weapons.Started && !string.IsNullOrEmpty(weaponId))
+                    {
+                        AddQuestStartedItemReward(q, weaponId, 1, idFactory);
+                    }
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
                     {
@@ -69,9 +113,8 @@ namespace QuestFilterMod.RandomQuests
                             {
                                 Conditions = new List<QuestConditionCounterCondition>
                                 {
-                                    ConditionKillEnemy(target,pascalName, idFactory),
+                                    ConditionKillEnemy(target, pascalName, idFactory, cfg, weaponId),
                                     ConditionLocation(pascalName, idFactory)
-
                                 },
                                 Id = idFactory()
                             }
@@ -79,11 +122,16 @@ namespace QuestFilterMod.RandomQuests
                     };
                 });
 
-                if(Plugin.Config.Debug)
-                    _logger.Info($"[QuestFilterMod][KillQuest] ✅ Generated: {locationId} → {target} ({randomKill} kills)");
+                if (Plugin.Config.Debug)
+                {
+                    var timeStr = timeOfDay != null ? $" (time: {timeOfDay})" : "";
+                    var weaponStr = weaponId != null ? $" (weapon: {weaponId})" : "";
+                    _logger.Info($"[QuestFilterMod][KillQuest] ✅ Generated: {locationId} → {target} ({randomKill} kills){timeStr}{weaponStr}");
+                }
 
                 return quest;
             }
+
 #if DEBUG
             _logger.Warning($"[QuestFilterMod][KillQuest] All {allPoints.Count} combinations are already used — returning null");
 #endif

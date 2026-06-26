@@ -3,7 +3,7 @@ using SPTarkov.Server.Core.Models.Spt.Mod;
 
 namespace QuestFilterMod.RandomQuests
 {
-    public partial class RandomQuestGenerator
+    public partial class Generator
     {
         public void CreateAndRegisterQuest(Quest quest)
         {
@@ -33,7 +33,6 @@ namespace QuestFilterMod.RandomQuests
                     if (Plugin.Config.Debug)
                         _logger.Info($"[QuestFilterMod][QuestRegistration] ✅ Quest '{quest.Id}' has been successfully created and localized.");
 #endif
-
                 }
                 else
                 {

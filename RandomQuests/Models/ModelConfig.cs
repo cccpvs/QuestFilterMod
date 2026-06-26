@@ -47,7 +47,6 @@ namespace QuestFilterMod.RandomQuests.Models
     {
         [JsonPropertyName("Min")]
         public int Min { get; set; } = 10000;
-
         [JsonPropertyName("Max")]
         public int Max { get; set; } = 100000;
     }
@@ -95,6 +94,7 @@ namespace QuestFilterMod.RandomQuests.Models
     }
     public class DeployQuestBaseConfig
     {
+        public bool StartItem { get; set; } = true;
         public int PlantTime { get; set; } = 30000;
         public Dictionary<string, LocationConfig> Locations { get; set; } = new();
     }
@@ -107,7 +107,23 @@ namespace QuestFilterMod.RandomQuests.Models
         public int MinKills { get; set; } = 5;
         public int MaxKills { get; set; } = 15;
         public string[] Target { get; set; } = ["Any"];
+        public TimeOfDayConfig TimeDay { get; set; } = new();
+        public WeaponsConfig Weapons { get; set; } = new();
     }
+
+    public class TimeOfDayConfig
+    {
+        public bool Enable { get; set; } = false;
+        public int[] Minimal { get; set; } = [0, 0];
+        public int Interval { get; set; } = 4;    
+    }
+    public class WeaponsConfig
+    {
+        public bool Enable { get; set; } = false;
+        public List<string> Ids { get; set; } = new();
+        public bool Started { get; set; } = false;
+    }
+
     public class TransferQuestConfig
     {
         public List<string> ItemIds { get; set; } = new();

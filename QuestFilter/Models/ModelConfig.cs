@@ -39,15 +39,25 @@ public class GenerateRandomQuestsConfig
 
 public class QuestFilterLinkedQuest
 {
-    public bool Enable { get; set; } = false; // 🟢 Вкл/Выкл ветвящуюся цепочку
-    public int[] StartQuest { get; set; } = [1, 3];  // диапазон стартовых квестов
-    public int[] QuestFinish { get; set; } = [2, 4]; // диапазон новых после каждого
+    public bool Enable { get; set; } = false;
+    public int[] StartQuest { get; set; } = [1, 3];
+    public int[] QuestFinish { get; set; } = [2, 4];
 }
 
-public class QuestFilterConfig
+
+public class QuestFilterModifyBaseQuest
+{
+
+    public bool Enabled { get; set; } = false;
+    public string[] Type { get; set; } = Array.Empty<string>();
+    public int[] CountCond { get; set; } = [1, 3];
+}
+
+
+public class ModelConfig
 {
     public bool Enabled { get; set; } = true;
-    public string[]? TargetTraderIds { get; set; } = null;
+    public string[] TargetTraderIds { get; set; } = null;
     public bool Debug { get; set; } = true;
     public bool CleanDroppedItems { get; set; } = true;
     public List<string> QuestTypes { get; set; } = new() { "PickUp" };
@@ -58,5 +68,6 @@ public class QuestFilterConfig
     public List<string> RemoveFinishConditionTypes { get; set; } = new();
     public RandomQuestsConfig RandomQuests { get; set; } = new();
     public GenerateRandomQuestsConfig GenerateRandomQuests { get; set; } = new();
-    public QuestFilterLinkedQuest? LinkedQuest { get; set; } = null;
+    public QuestFilterLinkedQuest LinkedQuest { get; set; } = null;
+    public QuestFilterModifyBaseQuest ModifyBaseQuest { get; set; } = null;
 }

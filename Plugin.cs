@@ -1,4 +1,6 @@
-﻿using QuestFilterMod.QuestFilter;
+﻿using HarmonyLib;
+using QuestFilterMod.Patch;
+using QuestFilterMod.QuestFilter;
 using QuestFilterMod.QuestFilter.Models;
 using QuestFilterMod.RandomQuests;
 using QuestFilterMod.RepeatableQuestCleaner;
@@ -12,9 +14,9 @@ using SPTarkov.Server.Core.Services.Mod;
 using System.Reflection;
 using System.Text.Json;
 
-[assembly: AssemblyVersion("1.0.2.0")]
-[assembly: AssemblyFileVersion("1.0.2.0")]
-[assembly: AssemblyInformationalVersion("1.0.2")]
+[assembly: AssemblyVersion("1.0.3.0")]
+[assembly: AssemblyFileVersion("1.0.3.0")]
+[assembly: AssemblyInformationalVersion("1.0.3")]
 [assembly: AssemblyTitle("QuestFilterMod Mod SPT ~4.0.13")]
 [assembly: AssemblyProduct("QuestFilterMod")]
 
@@ -29,12 +31,12 @@ public class Plugin : IOnUpdate
     private readonly DatabaseServer databaseServer;
     private readonly ServerLocalisationService _localisationService;
     private readonly string ConfigPath;
-    public static QuestFilterConfig Config { get; private set; } = null!;
-    private RandomQuestGenerator _randomQuestGenerator = null!;
-    private QuestFilterService _questFilterService = null!;
+    public static ModelConfig Config { get; private set; } = null!;
+    private Generator _randomQuestGenerator = null!;
+    private FilterService _questFilterService = null!;
     private bool _applied = false;
     private readonly CustomQuestService _customQuestService;
-    private ClearRepetableQuest _temporaryQuestCleaner = null!;
+    private Clear _temporaryQuestCleaner = null!;
     private readonly SaveServer _saveServer;
 
     public Plugin(
@@ -56,7 +58,6 @@ public class Plugin : IOnUpdate
         ConfigPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Config.json");
         _logger.Info("[QuestFilterMod] QuestFilterMod Loaded...");
     }
-
 
     private bool _loggedWaitingTables = false;
     private bool _loggedWaitingQuests = false;
@@ -132,31 +133,31 @@ public class Plugin : IOnUpdate
 
             if (_randomQuestGenerator == null && _questFilterService == null)
             {
-                _randomQuestGenerator = new RandomQuestGenerator(
+                _randomQuestGenerator = new Generator(
                    _logger,
                    _databaseService,
                    databaseServer,
                    _customQuestService,
                    _saveServer);
 
-                _questFilterService = new QuestFilterService(
+                _questFilterService = new FilterService(
                     _logger,
                     _databaseService,
                     _randomQuestGenerator,
                     _customQuestService);
 
-                _temporaryQuestCleaner = new ClearRepetableQuest(_logger, _databaseService);
+                _temporaryQuestCleaner = new Clear(_logger, _databaseService);
             }
 
 
             if (Config.RemoveRepeatableQuests)
             {
                 var repeatableDb = tables.Templates.RepeatableQuests;
-
                 _temporaryQuestCleaner.SetQuestDatabase(repeatableDb);
 
-                if (Config.Debug)
-                    _logger.Success("[QuestFilterMod] ✅ All repeatable quest templates cleared.");
+                var harmony = new Harmony("questfiltermod.patch");
+                Patch.Patch.Setup(_temporaryQuestCleaner);
+                harmony.PatchAll();
             }
             var allQuestsSnapshot = quests.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
@@ -231,7 +232,7 @@ public class Plugin : IOnUpdate
         if (!File.Exists(ConfigPath))
         {
             _logger.Info("[QuestFilterMod] ❌ Config not found:" + ConfigPath);
-            Config = new QuestFilterConfig();
+            Config = new ModelConfig();
             return;
         }
 
@@ -239,7 +240,7 @@ public class Plugin : IOnUpdate
         {
             var json = File.ReadAllText(ConfigPath);
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            Config = JsonSerializer.Deserialize<QuestFilterConfig>(json, options) ?? new QuestFilterConfig();
+            Config = JsonSerializer.Deserialize<ModelConfig>(json, options) ?? new ModelConfig();
             //_logger.Warning($"------------------QuestFilterMod Starting 🚀-----------------");
             _logger.Warning($"-------------------------------------------------------------");
             _logger.Warning($"|{"",-15}{"QuestFilterMod Starting 🚀",-44}|");
@@ -259,7 +260,7 @@ public class Plugin : IOnUpdate
             if (Config.Debug)
                 _logger.Info($"[QuestFilterMod] Error loading Config: {ex.Message}");
 
-            Config = new QuestFilterConfig();
+            Config = new ModelConfig();
         }
     }
 
