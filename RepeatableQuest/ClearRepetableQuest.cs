@@ -64,8 +64,6 @@ Object reference not set to an instance of an object.
                 Samples = new List<SampleQuests>(),
                 Templates = new RepeatableTemplates()
             };
-
-            // 🔁 Убедимся, что Templates и все его поля НЕ null
             _questDatabase.Templates ??= new RepeatableTemplates();
             _questDatabase.Templates.Elimination ??= CreateQuestTemplate(QuestTypeEnum.Elimination);
             _questDatabase.Templates.Completion ??= CreateQuestTemplate(QuestTypeEnum.Completion);

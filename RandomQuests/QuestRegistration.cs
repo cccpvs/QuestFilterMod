@@ -33,7 +33,6 @@ namespace QuestFilterMod.RandomQuests
                     if (Plugin.Config.Debug)
                         _logger.Info($"[QuestFilterMod][QuestRegistration] ✅ Quest '{quest.Id}' has been successfully created and localized.");
 #endif
-
                 }
                 else
                 {

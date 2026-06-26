@@ -128,32 +128,8 @@ namespace QuestFilterMod.RandomQuests
                                 if (!_tracker.TryUse(key))
                                     continue;
 
-                                var itemStart = idFactory();
-                                var itemLink = itemStart;
-                                GetOrCreateRewardList(q, "Started").Add(new Reward
-                                {
-                                    Id = idFactory(),
-                                    Type = RewardType.Item,
-                                    Target = itemLink,
-                                    Value = 1,
-                                    IsEncoded = false,
-                                    IsHidden = false,
-                                    Unknown = ConfigRandom.RewardItems.Unknown,
-                                    Items = new List<Item>
-                                    {
-                                        new()
-                                        {
-                                            Id = itemLink,
-                                            Template = itemTpl,
-                                            Upd = new Upd { StackObjectsCount = 1 }
-                                        }
-                                    }
-
-                                });
-
+                                AddQuestStartedItemReward(q, itemTpl, 1, idFactory);
                                 conditions.Add(ConditionDeployItem(itemTpl, targetPoint, plantTime, deployConditionType, pascalName, idFactory));
-
-                                //_logger.Warning($"itemStart {itemStart} - itemTpl {itemTpl} - targetPoint {targetPoint} - plantTime {plantTime} - pascalName {pascalName}");
                             }
 
                             break;

@@ -57,7 +57,6 @@ public class Plugin : IOnUpdate
         _logger.Info("[QuestFilterMod] QuestFilterMod Loaded...");
     }
 
-
     private bool _loggedWaitingTables = false;
     private bool _loggedWaitingQuests = false;
     private bool _loggedWaitingLocations = false;

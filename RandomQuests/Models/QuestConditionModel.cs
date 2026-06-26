@@ -98,7 +98,6 @@ namespace QuestFilterMod.RandomQuests
         {
             return new QuestConditionCounterCondition
             {
-                
                 ConditionType = "Kills",
                 CompareMethod = ">=",
                 Daytime = new() { From = 0, To = 0 },

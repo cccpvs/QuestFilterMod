@@ -58,7 +58,6 @@ namespace QuestFilterMod.RandomQuests
             if (minPrice < 0) minPrice = 0;
             if (maxPrice < minPrice) maxPrice = minPrice;
 
-            // === Шаг 1: Выбираем родительские ID с учётом весов ===
             var weightedParents = ConfigRandom.RewardItems.Parents
                 .Where(p => p.Weight > 0 && !string.IsNullOrEmpty(p.Id))
                 .ToList();
@@ -267,6 +266,33 @@ namespace QuestFilterMod.RandomQuests
                     AvailableInGameEditions = new HashSet<string>()
                 });
             }
+        }
+        private void AddQuestStartedItemReward(Quest quest, string itemTpl, int count, Func<MongoId> idFactory)
+        {
+            var itemId = idFactory();
+            var idItems = itemId;
+
+            var item = new Item
+            {
+                Id = idItems,
+                Template = itemTpl,
+                Upd = new Upd { StackObjectsCount = count }
+            };
+
+            GetOrCreateRewardList(quest, "Started").Add(new Reward
+            {
+                Id = itemId,
+                Type = RewardType.Item,
+                Target = idItems,
+                Value = count,
+                FindInRaid = true,
+                IsEncoded = false,
+                IsHidden = false,
+                Unknown = false,
+                GameMode = new HashSet<string> { "regular", "pve" },
+                AvailableInGameEditions = new HashSet<string>(),
+                Items = new List<Item> { item }
+            });
         }
     }
 }

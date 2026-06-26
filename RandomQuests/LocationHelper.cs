@@ -92,7 +92,6 @@ namespace QuestFilterMod.RandomQuests
             {
                 string locationId = kvp.Key;
                 string pascalName = kvp.Value;
-
                 if (IsAllowed(locationId, config))
                 {
                     yield return (pascalName, locationId);

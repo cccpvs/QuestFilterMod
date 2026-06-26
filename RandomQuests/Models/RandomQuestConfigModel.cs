@@ -47,7 +47,6 @@ namespace QuestFilterMod.RandomQuests.Models
     {
         [JsonPropertyName("Min")]
         public int Min { get; set; } = 10000;
-
         [JsonPropertyName("Max")]
         public int Max { get; set; } = 100000;
     }

@@ -39,9 +39,9 @@ public class GenerateRandomQuestsConfig
 
 public class QuestFilterLinkedQuest
 {
-    public bool Enable { get; set; } = false; // 🟢 Вкл/Выкл ветвящуюся цепочку
-    public int[] StartQuest { get; set; } = [1, 3];  // диапазон стартовых квестов
-    public int[] QuestFinish { get; set; } = [2, 4]; // диапазон новых после каждого
+    public bool Enable { get; set; } = false;
+    public int[] StartQuest { get; set; } = [1, 3];
+    public int[] QuestFinish { get; set; } = [2, 4];
 }
 
 public class QuestFilterConfig

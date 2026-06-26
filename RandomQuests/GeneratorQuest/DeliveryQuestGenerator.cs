@@ -14,7 +14,6 @@ namespace QuestFilterMod.RandomQuests
                 conditionType: "LeaveItemAtLocation"
             );
         }
-
         private Quest? GenerateBeaconQuest()
         {
             return GenerateDeployQuest(
@@ -23,7 +22,6 @@ namespace QuestFilterMod.RandomQuests
                 conditionType: "PlaceBeacon"
             );
         }
-
         private Quest? GenerateDeployQuest(string questType,DeployQuestConfig config,string conditionType)
         {
             if (!config.Locations.Any()) return null;
@@ -91,28 +89,7 @@ namespace QuestFilterMod.RandomQuests
                     if (!LocationHelper.TryGetPascalName(loc.Id, out var pascalName))
                         return;
 
-                    var itemId = idFactory();
-                    var idItems = itemId;
-
-                    GetOrCreateRewardList(q, "Started").Add(new Reward
-                    {
-                        Id = idFactory(),
-                        Type = RewardType.Item,
-                        Target = idItems,
-                        Value = 1,
-                        IsHidden = false,
-                        IsEncoded = false,
-                        Unknown = false,
-                        Items = new List<Item>
-                        {
-                            new()
-                            {
-                                Id = idItems,
-                                Template = itemTpl,
-                                Upd = new Upd { StackObjectsCount = 1 }
-                            }
-                        }
-                    });
+                    AddQuestStartedItemReward(q, itemTpl, 1, idFactory);
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
                     {
@@ -127,7 +104,6 @@ namespace QuestFilterMod.RandomQuests
 #endif
                 });
             }
-
             return null;
         }
     }

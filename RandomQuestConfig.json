@@ -1120,7 +1120,7 @@
   },
   "ComboQuest": {
     "Type": [ "Exploration", "Delivery", "Beacon", "Kills", "Transfer" ],
-    "Conditions": [ 3, 5 ],
+    "Conditions": [ 2, 6 ],
     "Location": true
   },
   "RewardMoney": {

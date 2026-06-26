@@ -8,14 +8,14 @@
   "base_type_general": "Обычный квест",
 
   "condition_Elimination": "Убить {0} ({1})",
-  "condition_VisitPlace": "Посетить зону «{0}» ({1})",
+  "condition_VisitPlace": "Посетить зону: «{0}» ({1})",
   "condition_LeaveItemAtLocation": "Спрятать предмет «{1}» в зоне «{0}» ({2})",
   "condition_PlaceBeacon": "Пометить позицию «{0}» в зоне «{1}» ({2})",
   "condition_ExitStatus": "Выжить или Транзит",
   "condition_Location": "Выйти с локации: {0}",
   "condition_Exploration": "Посетить точку",
   "condition_Completion": "Выжить или Транзит",
-  "condition_FindItem": "Найти в рейде {0}",
+  "condition_FindItem": "Найти в рейде: {0}",
   "condition_default": "Выполнить условие: {0}",
 
   "quest_accept": "Квест принят: {0}",

@@ -56,9 +56,7 @@ namespace QuestFilterMod.QuestFilter
                         q_moved++;
                         if (Plugin.Config.Debug)
                             _logger.Info($"[QuestFilterMod][ModifyQuests] Quest '{q.Name}' ({q.Id}) → trader {selectedTraderId}");
-                    }
-                    
-                    
+                    }  
                 }
 
                 if (config.RemoveStartConditionsQuest && q.Conditions?.AvailableForStart != null && !config.LinkedQuest.Enable)
@@ -77,9 +75,8 @@ namespace QuestFilterMod.QuestFilter
                     {
                         var condition = q.Conditions.AvailableForFinish[i];
                         string? conditionType = condition.ConditionType;
-                        string? typeValue = condition.Type; // ← есть у внешних условий в JSON
+                        string? typeValue = condition.Type;
 
-                        // 🔍 Удаляем, если conditionType ИЛИ type есть в списке
                         bool shouldRemove =
                             (!string.IsNullOrEmpty(conditionType) && toRemove.Contains(conditionType)) ||
                             (!string.IsNullOrEmpty(typeValue) && toRemove.Contains(typeValue));
@@ -91,7 +88,6 @@ namespace QuestFilterMod.QuestFilter
                             continue;
                         }
 
-                        // 🔁 Обработка CounterCreator: чистим во вложенных (только по conditionType)
                         if (conditionType == "CounterCreator" && condition.Counter?.Conditions != null)
                         {
                             var beforeCount = condition.Counter.Conditions.Count;
@@ -99,7 +95,6 @@ namespace QuestFilterMod.QuestFilter
                             condition.Counter.Conditions.RemoveAll(inner =>
                             {
                                 string? innerType = inner.ConditionType;
-                                // У вложенных нет .Type — только conditionType
                                 bool shouldRemoveInner = !string.IsNullOrEmpty(innerType) && toRemove.Contains(innerType);
 
                                 if (shouldRemoveInner)
@@ -114,7 +109,6 @@ namespace QuestFilterMod.QuestFilter
                                 _logger.Info($"[DEBUG] Removed {beforeCount - afterCount} nested conditions from CounterCreator in quest '{q.Id}', remaining = {afterCount}");
                             }
 
-                            // ⚠️ Если CounterCreator стал пустым — удаляем и его
                             if (afterCount == 0)
                             {
                                 q.Conditions.AvailableForFinish.RemoveAt(i);

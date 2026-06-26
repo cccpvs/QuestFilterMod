@@ -22,7 +22,6 @@ namespace QuestFilterMod.QuestFilter
             var currentQuestIndex = startQuest;
             var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
 
-
             for (int i = 0; i < startQuest; i++)
             {
                 var parentQuest = selectedQuests[i];
@@ -92,7 +91,6 @@ namespace QuestFilterMod.QuestFilter
                                 ["target"] = parentId
                             }
                         };
-
                         quest.Conditions.AvailableForStart.Add(condition);
                     }
                 }

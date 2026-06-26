@@ -1,13 +1,11 @@
 ﻿using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
-using SPTarkov.Server.Core.Utils.Json;
 
 namespace QuestFilterMod.RandomQuests
 {
 
     public partial class RandomQuestGenerator
     {
-
         private Quest? GenerateTransferQuest()
         {
             var cfg = ConfigRandom.TransferQuest;
@@ -34,11 +32,10 @@ namespace QuestFilterMod.RandomQuests
 
                 var shuffledItemIds = itemIds.OrderBy(_ => _random.Next()).Take(pairCount).ToList();
 
-                // ✅ Теперь вызовы методов — читаемо и безопасно
                 var conditions = new List<QuestCondition>();
                 foreach (var itemId in shuffledItemIds)
                 {
-                    conditions.Add(ConditionFindItem(itemId, () => "", _random)); // временно Id = "", будет заменено позже
+                    conditions.Add(ConditionFindItem(itemId, () => "", _random));
                     conditions.Add(ConditionHandoverItem(itemId, _random.Next(cfg.ItemCount[0], cfg.ItemCount[1] + 1), () => "", _random));
                 }
 

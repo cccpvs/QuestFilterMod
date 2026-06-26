@@ -7,7 +7,6 @@ using System.Text.Json;
 */
 #endif
 
-
 namespace QuestFilterMod.RandomQuests
 {
     public partial class RandomQuestGenerator
@@ -112,7 +111,6 @@ namespace QuestFilterMod.RandomQuests
                 "quest_failed"
             };
 
-
             foreach (var key in eventKeys)
             {
                 // Получаем шаблон из локалей или fallback
@@ -166,9 +164,6 @@ namespace QuestFilterMod.RandomQuests
 #endif
                 }
             }
-
-
-
 
             foreach (var lang in _loadedLocales.Keys)
             {
@@ -229,9 +224,6 @@ namespace QuestFilterMod.RandomQuests
                             langTemplate = enVal;
                         }
 
-
-   
-
                         string[] nameValues = cond.ConditionType switch
                         {
                             "VisitPlace" => new[] { cond.Counter?.Conditions?[0].Target?.ToString() ?? "", cond.ExtensionData["_pascalName"]?.ToString() ?? "Unknown", "" },
@@ -282,13 +274,13 @@ namespace QuestFilterMod.RandomQuests
         }
 
         private void AddLocalizedQuestLocales(
-    string lang,
-    Quest quest,
-    string id,
-    string last6,
-    string baseTypeKey,
-    string baseTypeFallback,
-    Dictionary<string, Dictionary<string, string>> locales)
+                string lang,
+                Quest quest,
+                string id,
+                string last6,
+                string baseTypeKey,
+                string baseTypeFallback,
+                Dictionary<string, Dictionary<string, string>> locales)
         {
             // 🔹 Получаем название типа квеста (уже есть)
             string baseTypeName = baseTypeFallback;
@@ -554,7 +546,5 @@ namespace QuestFilterMod.RandomQuests
 
             return itemId; 
         }
-
     }
-
 }

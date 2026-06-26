@@ -36,7 +36,6 @@ namespace QuestFilterMod.RandomQuests
             {
                 return _usedKeys.Add(key);
             }
-
             public void Clear() => _usedKeys.Clear();
         }
 
@@ -125,9 +124,6 @@ namespace QuestFilterMod.RandomQuests
                 if (ConfigRandom.QuestGeneration.Types.Combo)
                     candidates.Add(("ComboQuest", GenerateComboQuest));
 
-
-
-
                 if (!candidates.Any())
                 {
                     if (Plugin.Config.Debug)
@@ -166,7 +162,6 @@ namespace QuestFilterMod.RandomQuests
                 return null;
             }
         }
-
         public void ResetTracker()
         {
             _tracker.Clear();

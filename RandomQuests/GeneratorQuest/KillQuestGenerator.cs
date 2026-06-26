@@ -71,7 +71,6 @@ namespace QuestFilterMod.RandomQuests
                                 {
                                     ConditionKillEnemy(target,pascalName, idFactory),
                                     ConditionLocation(pascalName, idFactory)
-
                                 },
                                 Id = idFactory()
                             }

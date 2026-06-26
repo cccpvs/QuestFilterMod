@@ -70,23 +70,18 @@ namespace QuestFilterMod.RandomQuests.Utils
                 case DateTime dt:
                     writer.WriteStringValue(dt.ToUniversalTime().ToString("O"));
                     break;
-
                 case Guid guid:
                     writer.WriteStringValue(guid.ToString());
                     break;
-
                 case Enum enumValue:
                     writer.WriteStringValue(enumValue.ToString());
                     break;
-
                 case IDictionary<string, object> dict:
                     WriteDictionary(writer, dict, options);
                     break;
-
                 case IEnumerable enumerable when !(value is string):
                     WriteArray(writer, enumerable, options);
                     break;
-
                 default:
                     JsonSerializer.Serialize(writer, value, value.GetType(), options);
                     break;

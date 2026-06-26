@@ -191,7 +191,6 @@ public partial class QuestFilterService
             var pascalName = kvp.Key;
             var normalized = pascalName.ToLowerInvariant();
 
-
             normalizedLocationKeyMap[pascalName] = normalized;
             normalizedLocationKeyMap[normalized] = normalized;
 
@@ -218,7 +217,6 @@ public partial class QuestFilterService
 
                 if (string.Equals(q.Location, "any", StringComparison.OrdinalIgnoreCase))
                     return "any";
-
 
                 return "unknown";
             })
@@ -335,8 +333,6 @@ public partial class QuestFilterService
 #endif
                     return loc.Key.ToLowerInvariant();
                 }
-
-                // ✅ Или по Base.Id (snake_case)
                 if (locObj.Base.Id == locationId)
                 {
                     _logger.Info($"[QuestFilterMod] ✅ Found by Id: '{loc.Key}'");
@@ -382,10 +378,8 @@ public partial class QuestFilterService
     {
         if (count <= 0) return;
 
-        // 🔁 Объявляем один раз — используется везде
         var alreadySelectedIds = selected.Select(s => s.Id).ToHashSet();
 
-        // 🔹 "any" — берём квесты ТОЛЬКО из группы "any"
         if (string.Equals(key, "any", StringComparison.OrdinalIgnoreCase))
         {
             if (!groups.TryGetValue("any", out var anyList) || anyList.Count == 0)

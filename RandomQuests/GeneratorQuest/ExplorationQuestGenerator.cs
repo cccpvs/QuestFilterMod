@@ -1,5 +1,4 @@
 ﻿using QuestFilterMod.RandomQuests.Models;
-using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 
