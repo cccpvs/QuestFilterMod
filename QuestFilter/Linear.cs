@@ -28,7 +28,7 @@ namespace QuestFilterMod.QuestFilter
                 var finishQuest = _random.Next(finishQuestMin, finishQuestMax + 1);
 
                 if (config.Debug)
-                    _logger.Info($"[QuestFilterMod] 🎲 Start quest #{i} ('{parentQuest.Name}') opens {finishQuest} quests");
+                    _logger.Info($"[QuestFilterMod][LinearQuest] 🎲 Start quest #{i} ('{parentQuest.Name}') opens {finishQuest} quests");
 
                 for (int j = 0; j < finishQuest && currentQuestIndex < selectedQuests.Count; j++)
                 {
@@ -38,7 +38,7 @@ namespace QuestFilterMod.QuestFilter
                     dependencyMap[childQuest.Id].Add(parentQuest.Id);
 
                     if (config.Debug)
-                        _logger.Info($"[QuestFilterMod] 🔗 Dependency: '{parentQuest.Name}' → '{childQuest.Name}'");
+                        _logger.Info($"[QuestFilterMod][LinearQuest] 🔗 Dependency: '{parentQuest.Name}' → '{childQuest.Name}'");
                 }
             }
 
@@ -48,7 +48,7 @@ namespace QuestFilterMod.QuestFilter
                 var finishQuest = _random.Next(finishQuestMin, finishQuestMax + 1); 
 
                 if (config.Debug)
-                    _logger.Info($"[QuestFilterMod] 🎲 Quest '{parentQuest.Name}' opens {finishQuest} quests");
+                    _logger.Info($"[QuestFilterMod][LinearQuest] 🎲 Quest '{parentQuest.Name}' opens {finishQuest} quests");
 
                 for (int j = 0; j < finishQuest && currentQuestIndex < selectedQuests.Count; j++)
                 {
@@ -58,7 +58,7 @@ namespace QuestFilterMod.QuestFilter
                     dependencyMap[childQuest.Id].Add(parentQuest.Id);
 
                     if (config.Debug)
-                        _logger.Info($"[QuestFilterMod] 🔗 Dependency: '{parentQuest.Name}' → '{childQuest.Name}'");
+                        _logger.Info($"[QuestFilterMod][LinearQuest] 🔗 Dependency: '{parentQuest.Name}' → '{childQuest.Name}'");
                 }
             }
 

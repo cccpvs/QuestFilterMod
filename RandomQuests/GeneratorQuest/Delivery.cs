@@ -1,4 +1,6 @@
-﻿using QuestFilterMod.RandomQuests.Models;
+﻿//Delivery.cs
+
+using QuestFilterMod.RandomQuests.Models;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 

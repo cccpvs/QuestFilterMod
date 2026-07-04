@@ -1,4 +1,6 @@
-﻿using QuestFilterMod.RandomQuests.Models;
+﻿// Condition.cs
+
+using QuestFilterMod.RandomQuests.Models;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Utils.Json;
@@ -8,6 +10,45 @@ namespace QuestFilterMod.RandomQuests
 {
     public partial class Generator
     {
+
+
+
+
+        public static QuestCondition CounterCreator(
+                Func<MongoId> idFactory,
+                string Type,
+                double Value,
+                bool OneSessionOnly,
+                bool OnlyFoundInRaid,
+                params QuestConditionCounterCondition[] subConditions)
+        {
+            var conditionsList = subConditions?.ToList()
+                              ?? new List<QuestConditionCounterCondition>();
+
+            return new QuestCondition
+            {
+                Id = idFactory(),
+                DynamicLocale = false,
+                Type = Type,
+                ConditionType = "CounterCreator",
+                Value = Value,
+                Counter = new QuestConditionCounter
+                {
+                    Id = idFactory(),
+                    Conditions = conditionsList
+                },
+                IsNecessary = false,
+                OneSessionOnly = OneSessionOnly,
+                CountInRaid = true,
+                OnlyFoundInRaid = OnlyFoundInRaid,
+                Index = 0,
+                VisibilityConditions = [],
+                CompleteInSeconds = 0,
+                GlobalQuestCounterId = ""
+            };
+        }
+
+
         public static QuestCondition ConditionFindItem(string itemId, Func<string> idFactory, Random random)
         {
             return new QuestCondition
@@ -95,7 +136,6 @@ namespace QuestFilterMod.RandomQuests
                 VisibilityConditions = []
             };
         }
-
         public static QuestConditionCounterCondition ConditionKillEnemy(
             string target,
             string pascalName,
@@ -153,7 +193,6 @@ namespace QuestFilterMod.RandomQuests
                 Value = 1
             };
         }
-
         public class TimeOfDayRange
         {
             public int FromHour { get; set; }
@@ -166,7 +205,6 @@ namespace QuestFilterMod.RandomQuests
             }
             public override string ToString() => $"{FromHour:00}:00–{ToHour:00}:00";
         }
-
         public static QuestConditionCounterCondition ConditionLocation(string pascalName, Func<MongoId> idFactory)
         {
             return new QuestConditionCounterCondition
@@ -191,7 +229,8 @@ namespace QuestFilterMod.RandomQuests
                 ConditionType = "ExitStatus",
                 ExtensionData = new Dictionary<string, object>
                 {
-                    ["status"] = new HashSet<string> { "Survived", "Transit" }
+                    ["status"] = new HashSet<string> { "Survived", "Transit" },
+
                 }
             };
         }

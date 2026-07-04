@@ -1,4 +1,6 @@
-﻿using QuestFilterMod.QuestFilter.Models;
+﻿// FilterService.cs
+
+using QuestFilterMod.QuestFilter.Models;
 using QuestFilterMod.RandomQuests;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
@@ -29,6 +31,19 @@ public partial class FilterService
     private bool _hasAppliedFilters = false;
     private readonly System.Random _random = new();
 
+    int q_deleted = 0;
+    int q_moved = 0;
+    int q_left = 0;
+    int q_random = 0;
+
+
+    int filter_reward = 0;
+    int filter_trader = 0;
+    int filter_AvailableForStart = 0;
+    int filter_RemoveFinish = 0;
+    int filter_ModifyBaseQuest = 0;
+
+
     public FilterService(
         ISptLogger<Plugin> logger,
         DatabaseService databaseService,
@@ -47,7 +62,7 @@ public partial class FilterService
         if (_hasAppliedFilters)
         {
             if (Plugin.Config.Debug)
-                _logger.Info("[QuestFilterMod][QuestFilterService] Filters have already been applied. We skip reprocessing.");
+                _logger.Info("[QuestFilterMod][FilterService] Filters have already been applied. We skip reprocessing.");
             return;
         }
         _hasAppliedFilters = true;
@@ -60,7 +75,7 @@ public partial class FilterService
         if (quests == null || quests.Count == 0)
         {
             if (Plugin.Config.Debug)
-                _logger.Info("[QuestFilterMod][QuestFilterService] There are no quests in the database.");
+                _logger.Info("[QuestFilterMod][FilterService] There are no quests in the database.");
             return;
         }
         var random = new Random();
@@ -71,23 +86,40 @@ public partial class FilterService
             .Where(q => !ShouldExcludeByProgressSource(q, Config))
             .ToList();
 
-        bool shouldGenerate = Config.GenerateRandomQuests.Enable && Config.GenerateRandomQuests.Count > 0;
+        
+        var OriginalQuestList = SelectQuests(allQuestList, Config, random);
 
-        if (allQuestList.Count == 0 && !shouldGenerate)
+
+       
+
+        if (Config.RemoveStandartQuests)
         {
-            if (Plugin.Config.Debug)
-                _logger.Info("[QuestFilterMod][QuestFilterService] There are no suitable quests by type and generation is disabled.");
+            var selectedIds = OriginalQuestList.Select(q => q.Id).ToHashSet();
+            var toRemoveIds = quests.Keys.Where(id => !selectedIds.Contains(id)).ToHashSet();
 
-            var emptySelected = new List<Quest>();
+            if (toRemoveIds.Count > 0)
+            {
+                foreach (var id in toRemoveIds)
+                    quests.Remove(id);
 
-            ModifyQuests(quests, emptySelected, Config, random);
-
-            if (Plugin.Config.Debug)
-                _logger.Info($"[QuestFilterMod][QuestFilterService] Done: {emptySelected.Count} quests left.");
-
-            return;
+                q_deleted = toRemoveIds.Count;
+                if (Plugin.Config.Debug)
+                    _logger.Info($"[QuestFilterMod][FilterService] Removed {q_deleted} quests from DB (not in selected list)");
+            }
         }
-        var selectedQuests = SelectQuests(allQuestList, Config, random);
+        else
+        {
+            // ✅ Для отладки — логируем, что удаление не производится
+            if (Plugin.Config.Debug)
+                _logger.Info($"[QuestFilterMod][FilterService] RemoveStandartQuests = false → all standard quests preserved");
+        }
+        //_logger.Warning($"OriginalQuestList={OriginalQuestList.Count}");
+
+        if (OriginalQuestList.Any())
+            ModifyQuests(OriginalQuestList, Config, random);
+
+
+        _logger.Warning($"OriginalQuestList={quests.Count}");
 
         if (Config.GenerateRandomQuests.Enable && Config.GenerateRandomQuests.Count > 0)
         {
@@ -104,7 +136,7 @@ public partial class FilterService
                 if (_randomQuestGenerator.HasExhaustedAllOptions)
                 {
                     if (Plugin.Config.Debug)
-                        _logger.Info("[QuestFilterMod][QuestFilterService] 🛑 Quest generator exhausted all options — stopping further attempts.");
+                        _logger.Info("[QuestFilterMod][FilterService] 🛑 Quest generator exhausted all options — stopping further attempts.");
                     break;
                 }
 
@@ -125,31 +157,47 @@ public partial class FilterService
                         var locationName = Location.TryGetPascalName(randomQuest.Location, out var pascalName)
                         ? pascalName.ToLowerInvariant()
                         : "unknown";
-                        _logger.Success($"[QuestFilterMod][QuestFilterService] Quest generated: '{randomQuest.Name}' (ID: {randomQuest.Id}, location: {locationName})");
+                        _logger.Success($"[QuestFilterMod][FilterService] Quest generated: '{randomQuest.Name}' (ID: {randomQuest.Id}, location: {locationName})");
 
                     }
                 }
             }
-            selectedQuests.AddRange(generatedQuests);
+            OriginalQuestList.AddRange(generatedQuests);
             q_random = generatedCount;
+#if DEBUG
             /*if (Plugin.Config.Debug)
-                _logger.Success($"[QuestFilterMod][QuestFilterService] Done: Generated {generatedCount} random quests.");*/
+                _logger.Success($"[QuestFilterMod][FilterService] Done: Generated {generatedCount} random quests.");*/
+#endif
         }
-
-
-        if (Config.LinkedQuest?.Enable == true)
+#if DEBUG
+        /*
+         * Проблемы с линейкой квестов.
+         * фильтры явно не работают
+         * квесты стандартые не удаляються
+         * случайных квестов нет в списке
+         * проверить рализацию линейки квеста.
+         * 
+         * 
+         * */
+#endif
+        if (Config.LinkedQuest.Enable == true)
         {
             var (startQuest, finishMin, finishMax) = ResolveRandomLinkedQuest(Config.LinkedQuest);
-            ApplyBranchingQuestChain(selectedQuests, quests, Config, startQuest, finishMin, finishMax);
+            ApplyBranchingQuestChain(OriginalQuestList, quests, Config, startQuest, finishMin, finishMax);
+            //_logger.Warning($"selectedQuests={selectedQuests.Count}, quests={quests.Count}");
         }
+        
+        q_left = OriginalQuestList.Count;
+#if DEBUG
+        _logger.Success($"Reward={filter_reward}, Traider={filter_trader}, RemoveFinish={filter_AvailableForStart}, RemoveFinish={filter_RemoveFinish}, Modify={filter_ModifyBaseQuest}");
+#endif
 
-        var standardQuests = selectedQuests.Where(q => !_randomQuestIds.Contains(q.Id)).ToList();
-        var randomQuests = selectedQuests.Where(q => _randomQuestIds.Contains(q.Id)).ToList();
-
-        ModifyQuests(quests, standardQuests, Config, random);
+        _logger.Warning($"|🗑️{"Deleted",-8}|➡️{"Moved",-8}|🎲{"Random",-8}|✅{"Left",-8}|");
+        _logger.Warning($"---------------------------------------------");
+        _logger.Warning($"|{q_deleted,-10}|{q_moved,-10}|{q_random,-10}|{q_left,-10}|");
 
         var tables = _databaseService.GetTables();
-        foreach (var quest in selectedQuests)
+        foreach (var quest in OriginalQuestList)
         {
             if (quest.Rewards == null)
                 quest.Rewards = new Dictionary<string, List<Reward>>();
@@ -165,11 +213,7 @@ public partial class FilterService
         }
     }
 
-    private bool ShouldExcludeByProgressSource(Quest quest, ModelConfig config)
-    {
-        if (!config.ExcludeArenaQuests) return false;
-        return string.Equals(quest.ProgressSource, "arena", StringComparison.OrdinalIgnoreCase);
-    }
+    
 
     private HashSet<QuestTypeEnum> GetAllowedTypes(ModelConfig config)
     {
@@ -237,13 +281,13 @@ public partial class FilterService
             if (Config.GenerateRandomQuests.Enable && Config.GenerateRandomQuests.Count > 0)
             {
                 if (Config.Debug)
-                    _logger.Info("[QuestFilterMod][QuestFilterService] Random quests only mode: standard quests are NOT added");
+                    _logger.Info("[QuestFilterMod][FilterService] Random quests + standard quests mode: both types will be included");
 
-                return new List<Quest>();
+                return new List<Quest>(allQuests);
             }
 
             if (Config.Debug)
-                _logger.Info($"[QuestFilterMod][QuestFilterService] 'All quests' mode: left {allQuests.Count} quests by type");
+                _logger.Info($"[QuestFilterMod][FilterService] 'All quests' mode: left {allQuests.Count} quests by type");
 
             return new List<Quest>(allQuests);
         }
@@ -268,12 +312,12 @@ public partial class FilterService
             selected.AddRange(extra);
 
             if (Config.Debug)
-                _logger.Info($"[QuestFilterMod][QuestFilterService] Added {extra.Count} quests to achieve total={Config.RandomQuests.Count}");
+                _logger.Info($"[QuestFilterMod][FilterService] Added {extra.Count} quests to achieve total={Config.RandomQuests.Count}");
         }
 
         if (Config.Debug)
         {
-            _logger.Info("[QuestFilterMod] 🔍 Sample location checks:");
+            _logger.Info("[QuestFilterMod][FilterService] 🔍 Sample location checks:");
             foreach (var q in allQuests.Take(5))
             {
                 var normalized = GetNormalizedLocationKey(q.Location, tables);
@@ -298,30 +342,30 @@ public partial class FilterService
 
         if (locationDict == null || locationDict.Count == 0)
         {
-            _logger.Error($"[QuestFilterMod] ❌ locationDict is null or empty!");
+            _logger.Error($"[QuestFilterMod][FilterService] ❌ locationDict is null or empty!");
             return null;
         }
 
         if (Location.TryGetPascalName(locationId, out var pascalName))
         {
-            _logger.Info($"[QuestFilterMod] ✅ Matched by TryGetPascalName: '{pascalName}'");
+            _logger.Info($"[QuestFilterMod][FilterService] ✅ Matched by TryGetPascalName: '{pascalName}'");
             return pascalName.ToLowerInvariant();
         }
 
         var mappedKey = tables.Locations.GetMappedKey(locationId);
 #if Debug
-        _logger.Info($"[QuestFilterMod] 🧪 GetMappedKey('{locationId}') = '{mappedKey}'");
+        _logger.Info($"[QuestFilterMod][FilterService] 🧪 GetMappedKey('{locationId}') = '{mappedKey}'");
 #endif
         if (!string.IsNullOrEmpty(mappedKey))
         {
             if (Location.TryGetPascalName(mappedKey, out var pascal2))
             {
-                _logger.Info($"[QuestFilterMod] ✅ Matched by GetMappedKey → Pascal: '{pascal2}'");
+                _logger.Info($"[QuestFilterMod][FilterService] ✅ Matched by GetMappedKey → Pascal: '{pascal2}'");
                 return pascal2.ToLowerInvariant();
             }
 
 #if Debug
-            _logger.Info($"[QuestFilterMod] 🧪 mappedKey is NOT PascalCase, trying to find via dictionary...");
+            _logger.Info($"[QuestFilterMod][FilterService] 🧪 mappedKey is NOT PascalCase, trying to find via dictionary...");
 #endif
             foreach (var loc in locationDict)
             {
@@ -331,13 +375,13 @@ public partial class FilterService
                 if (locObj.Base.IdField.ToString() == locationId)
                 {
 #if Debug
-                    _logger.Info($"[QuestFilterMod] ✅ Found by IdField: '{loc.Key}'");
+                    _logger.Info($"[QuestFilterMod][FilterService] ✅ Found by IdField: '{loc.Key}'");
 #endif
                     return loc.Key.ToLowerInvariant();
                 }
                 if (locObj.Base.Id == locationId)
                 {
-                    _logger.Info($"[QuestFilterMod] ✅ Found by Id: '{loc.Key}'");
+                    _logger.Info($"[QuestFilterMod][FilterService] ✅ Found by Id: '{loc.Key}'");
                     return loc.Key.ToLowerInvariant();
                 }
             }
@@ -355,18 +399,18 @@ public partial class FilterService
 
             if (locObj.Base.IdField.ToString() == locationId)
             {
-                _logger.Info($"[QuestFilterMod] ✅ Found by direct IdField lookup: '{loc.Key}'");
+                _logger.Info($"[QuestFilterMod][FilterService] ✅ Found by direct IdField lookup: '{loc.Key}'");
                 return loc.Key.ToLowerInvariant();
             }
 
             if (locObj.Base.Id == locationId)
             {
-                _logger.Info($"[QuestFilterMod] ✅ Found by direct Id lookup: '{loc.Key}'");
+                _logger.Info($"[QuestFilterMod][FilterService] ✅ Found by direct Id lookup: '{loc.Key}'");
                 return loc.Key.ToLowerInvariant();
             }
         }
 
-        _logger.Error($"[QuestFilterMod] ❌ Could not find location for '{locationId}'");
+        _logger.Error($"[QuestFilterMod][FilterService] ❌ Could not find location for '{locationId}'");
         return null;
     }
 
@@ -387,7 +431,7 @@ public partial class FilterService
             if (!groups.TryGetValue("any", out var anyList) || anyList.Count == 0)
             {
                 if (debug)
-                    _logger.Info("[QuestFilterMod][QuestFilterService] ❌ No quests with Location='any' in DB");
+                    _logger.Info("[QuestFilterMod][FilterService] ❌ No quests with Location='any' in DB");
                 return;
             }
 
@@ -396,7 +440,7 @@ public partial class FilterService
             if (availableQuests.Count == 0)
             {
                 if (debug)
-                    _logger.Info("[QuestFilterMod][QuestFilterService] ⚠️ All 'any' quests already selected");
+                    _logger.Info("[QuestFilterMod][FilterService] ⚠️ All 'any' quests already selected");
                 return;
             }
 
@@ -404,14 +448,14 @@ public partial class FilterService
             selected.AddRange(picked);
 
             if (debug)
-                _logger.Info($"[QuestFilterMod][QuestFilterService] 🌍 Picked {picked.Count} quests from group 'any' (Location='any')");
+                _logger.Info($"[QuestFilterMod][FilterService] 🌍 Picked {picked.Count} quests from group 'any' (Location='any')");
             return;
         }
 
         if (!groups.TryGetValue(key, out var list))
         {
             if (debug)
-                _logger.Info($"[QuestFilterMod][QuestFilterService] ❌ No group found for '{key}' (key not in groups)");
+                _logger.Info($"[QuestFilterMod][FilterService] ❌ No group found for '{key}' (key not in groups)");
             return;
         }
 
@@ -420,7 +464,7 @@ public partial class FilterService
         if (availableQuestsForLoc.Count == 0)
         {
             if (debug)
-                _logger.Info($"[QuestFilterMod][QuestFilterService] ⚠️ No available quests in group '{key}' (all already selected)");
+                _logger.Info($"[QuestFilterMod][FilterService] ⚠️ No available quests in group '{key}' (all already selected)");
             return;
         }
 
@@ -428,6 +472,6 @@ public partial class FilterService
         selected.AddRange(pickedQuests);
 
         if (debug)
-            _logger.Info($"[QuestFilterMod][QuestFilterService] 📦 {pickedQuests.Count} quests for '{key}'");
+            _logger.Info($"[QuestFilterMod][FilterService] 📦 {pickedQuests.Count} quests for '{key}'");
     }
 }

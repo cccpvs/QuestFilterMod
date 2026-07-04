@@ -2,11 +2,11 @@
   "Enabled": true,
   "TargetTraderIds": [],
   "ExcludeArenaQuests": true,
-  "Debug": true,
+  "Debug": false,
   "CleanDroppedItems": true,
   "QuestTypes": [ "Completion", "Discover", "Elimination", "Experience", "Exploration", "Loyalty", "Merchant", "Multi", "PickUp", "Skill", "Standing", "WeaponAssembly" ],
   "LinkedQuest": {
-    "Enable": true,
+    "Enable": false,
     "StartQuest": [ 2, 5 ],
     "QuestFinish": [ 1, 3 ]
   },
@@ -15,16 +15,16 @@
     "Type": [ "Exploration", "Delivery", "Beacon", "Kills", "Transfer" ],
     "CountCond": [ 1, 5 ]
   },
-  "RemoveStandartQuests": true,
-  "RemoveStartConditionsQuest": true,
+  "RemoveStandartQuests": false,
+  "RemoveStartConditionsQuest": false,
   "RemoveFinishConditionTypes": [],
-  "RemoveRepeatableQuests": true,
+  "RemoveRepeatableQuests": false,
   "GenerateRandomQuests": {
     "enable": false,
     "count": 10
   },
   "RandomQuests": {
-    "count": 100,
+    "count": 0,
     "location": {
       "any": 0,
       "Bigmap": 0,

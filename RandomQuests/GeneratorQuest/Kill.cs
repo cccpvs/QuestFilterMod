@@ -1,4 +1,6 @@
-﻿using SPTarkov.Server.Core.Models.Eft.Common.Tables;
+﻿//Kill.cs
+
+using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 
 
@@ -19,8 +21,8 @@ namespace QuestFilterMod.RandomQuests
             var allowed = Location.GetAllowedLocations(ConfigRandom).ToList();
 
 #if DEBUG
-            _logger.Warning($"[QuestFilterMod][KillQuest] Starting generation...");
-            _logger.Warning($"[QuestFilterMod][KillQuest] Allowed locations: {allowed.Count}, Targets: {string.Join(", ", cfg.Target)}");
+            _logger.Warning($"[QuestFilterMod][Kill] Starting generation...");
+            _logger.Warning($"[QuestFilterMod][Kill] Allowed locations: {allowed.Count}, Targets: {string.Join(", ", cfg.Target)}");
 #endif
 
             var allPoints = new List<(string PascalName, string LocationId, string Target)>();
@@ -34,7 +36,7 @@ namespace QuestFilterMod.RandomQuests
             }
 
 #if DEBUG
-            _logger.Warning($"[QuestFilterMod][KillQuest] Total possible combinations: {allPoints.Count}");
+            _logger.Warning($"[QuestFilterMod][Kill] Total possible combinations: {allPoints.Count}");
 #endif
 
             if (!allPoints.Any())
@@ -47,19 +49,19 @@ namespace QuestFilterMod.RandomQuests
                 var wasUsed = _tracker.IsUsed(key);
 
 #if DEBUG
-                _logger.Warning($"[QuestFilterMod][KillQuest] Trying key: {keyStr} (used: {wasUsed})");
+                _logger.Warning($"[QuestFilterMod][Kill] Trying key: {keyStr} (used: {wasUsed})");
 #endif
 
                 if (!_tracker.TryUse(key))
                 {
 #if DEBUG
-                    _logger.Info($"[QuestFilterMod][KillQuest] Key {keyStr} already used — skipping");
+                    _logger.Info($"[QuestFilterMod][Kill] Key {keyStr} already used — skipping");
 #endif
                     continue;
                 }
 
 #if DEBUG
-                _logger.Info($"[QuestFilterMod][KillQuest] ✅ Using key: {keyStr} (tracker count now: {_tracker})");
+                _logger.Info($"[QuestFilterMod][Kill] ✅ Using key: {keyStr} (tracker count now: {_tracker})");
 #endif
 
                 var randomKill = _random.Next(cfg.MinKills, cfg.MaxKills + 1);
@@ -100,25 +102,13 @@ namespace QuestFilterMod.RandomQuests
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
                     {
-                        new()
-                        {
-                            Id = idFactory(),
-                            ConditionType = "CounterCreator",
-                            DynamicLocale = false,
-                            Value = randomKill,
-                            ParentId = "",
-                            Type = "Elimination",
-                            VisibilityConditions = [],
-                            Counter = new QuestConditionCounter()
-                            {
-                                Conditions = new List<QuestConditionCounterCondition>
-                                {
-                                    ConditionKillEnemy(target, pascalName, idFactory, cfg, weaponId),
-                                    ConditionLocation(pascalName, idFactory)
-                                },
-                                Id = idFactory()
-                            }
-                        }
+                        CounterCreator(
+                        idFactory,
+                        "Elimination",
+                        randomKill,
+                        false, false,
+                        ConditionKillEnemy(target, pascalName, idFactory, cfg, weaponId),
+                        ConditionLocation(pascalName, idFactory))
                     };
                 });
 
@@ -126,14 +116,16 @@ namespace QuestFilterMod.RandomQuests
                 {
                     var timeStr = timeOfDay != null ? $" (time: {timeOfDay})" : "";
                     var weaponStr = weaponId != null ? $" (weapon: {weaponId})" : "";
-                    _logger.Info($"[QuestFilterMod][KillQuest] ✅ Generated: {locationId} → {target} ({randomKill} kills){timeStr}{weaponStr}");
+#if DEBUG
+                    _logger.Info($"[QuestFilterMod][Kill] ✅ Generated: {locationId} → {target} ({randomKill} kills){timeStr}{weaponStr}");
+#endif
                 }
 
                 return quest;
             }
 
 #if DEBUG
-            _logger.Warning($"[QuestFilterMod][KillQuest] All {allPoints.Count} combinations are already used — returning null");
+            _logger.Warning($"[QuestFilterMod][Kill] All {allPoints.Count} combinations are already used — returning null");
 #endif
             return null;
         }

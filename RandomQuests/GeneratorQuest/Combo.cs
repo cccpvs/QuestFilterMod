@@ -1,4 +1,6 @@
-﻿using QuestFilterMod.RandomQuests.Models;
+﻿//Combo.cs
+
+using QuestFilterMod.RandomQuests.Models;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 
 #if DEBUG
@@ -63,26 +65,17 @@ namespace QuestFilterMod.RandomQuests
 
                             var target = targets[_random.Next(targets.Count)];
 
-                            conditions.Add(new QuestCondition
-                            {
-                                Id = idFactory(),
-                                DynamicLocale = false,
-                                Type = "Exploration",
-                                ConditionType = "CounterCreator",
-                                Value = 1,
-                                Counter = new QuestConditionCounter
-                                {
-                                    Id = idFactory(),
-                                    Conditions = new List<QuestConditionCounterCondition>
-                                    {
-                                        ConditionVisitPlace(target, pascalName, idFactory)
-                                    }
-                                },
-                                IsNecessary = false,
-                                OneSessionOnly = true
-                            });
+                            conditions.Add(CounterCreator(
+                                idFactory,
+                                "Exploration",
+                                1,
+                                false,false,
+                                ConditionVisitPlace(target, pascalName, idFactory)
+                                ));
+
 
                             break;
+
                         case "Kills":
                             var killConfig = ConfigRandom.KillQuest;
                             var killLocId = cfg.Location ? locId! : GetRandomAllowedLocationId();
@@ -103,26 +96,16 @@ namespace QuestFilterMod.RandomQuests
                                 AddQuestStartedItemReward(q, weaponId, 1, idFactory);
                             }
 
-                            conditions.Add(new QuestCondition
-                            {
-                                Id = idFactory(),
-                                Type = "Elimination",
-                                ConditionType = "CounterCreator",
-                                Value = randomKill,
-                                DynamicLocale = false,
-                                Counter = new QuestConditionCounter
-                                {
-                                    Id = idFactory(),
-                                    Conditions = new List<QuestConditionCounterCondition>
-                                    {
-                                        ConditionKillEnemy(botType, pascalName, idFactory, killConfig, weaponId),
-                                        ConditionLocation(pascalName, idFactory)
-                                    },
-                                },
-                                IsNecessary = false,
-                                OneSessionOnly = true
-                            });
+                            conditions.Add(CounterCreator(
+                                idFactory,
+                                "Elimination",
+                                randomKill,
+                                false, false,
+                                ConditionKillEnemy(botType, pascalName, idFactory, killConfig, weaponId),
+                                ConditionLocation(pascalName, idFactory)
+                                ));
                             break;
+
                         case "Delivery":
                         case "Beacon":
                             var isBeacon = type == "Beacon";
@@ -145,6 +128,7 @@ namespace QuestFilterMod.RandomQuests
                             }
 
                             break;
+
                         case "Transfer":
                             var transferConfig = ConfigRandom.TransferQuest;
                             if (!transferConfig.ItemIds.Any()) break;

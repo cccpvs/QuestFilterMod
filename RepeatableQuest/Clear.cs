@@ -1,16 +1,16 @@
-﻿using SPTarkov.Server.Core.Models.Common;
+﻿//Clear.cs
+
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
-using SPTarkov.Server.Core.Models.Enums;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Services;
+using SPTarkov.Server.Core.Models.Enums;
+using SPTarkov.Server.Core.Models.Common;
 
 namespace QuestFilterMod.RepeatableQuestCleaner
 {
 
 #if DEBUG
     /*
-     Логика устарела. Будет удалена по возможности.
-    Проверка причины ошибки. Временно перешли на патч сервера - клиента.
     */
 #endif
 
@@ -30,10 +30,13 @@ namespace QuestFilterMod.RepeatableQuestCleaner
         public void SetQuestDatabase(RepeatableQuestDatabase database)
         {
             _questDatabase = database ?? throw new ArgumentNullException(nameof(database));
+#if DEBUG
             EnsureInitializedDatabase();
-            ClearAllTemplates();
-        }
 
+            ClearAllTemplates();
+#endif
+        }
+#if DEBUG
         public RepeatableQuestDatabase EnsureInitializedDatabase()
         {
             _questDatabase ??= new RepeatableQuestDatabase
@@ -41,14 +44,18 @@ namespace QuestFilterMod.RepeatableQuestCleaner
                 Samples = new List<SampleQuests>(),
                 Templates = new RepeatableTemplates()
             };
+
             _questDatabase.Templates ??= new RepeatableTemplates();
             _questDatabase.Templates.Elimination ??= CreateQuestTemplate(QuestTypeEnum.Elimination);
             _questDatabase.Templates.Completion ??= CreateQuestTemplate(QuestTypeEnum.Completion);
             _questDatabase.Templates.Exploration ??= CreateQuestTemplate(QuestTypeEnum.Exploration);
             _questDatabase.Templates.Pickup ??= CreateQuestTemplate(QuestTypeEnum.PickUp);
 
+
             return _questDatabase;
         }
+#endif
+#if DEBUG
         public RepeatableQuestDatabase GetQuestDatabase() => _questDatabase;
         public void ClearAllQuests()
         {
@@ -60,7 +67,8 @@ namespace QuestFilterMod.RepeatableQuestCleaner
             if (count > 0 && Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][ClearRepetableQuest] Removed {count} quests from Samples.");
         }
-
+#endif
+#if DEBUG
         public void ClearAllTemplates()
         {
             _questDatabase ??= new RepeatableQuestDatabase();
@@ -76,6 +84,8 @@ namespace QuestFilterMod.RepeatableQuestCleaner
             if (Plugin.Config.Debug)
                 _logger.Info("[QuestFilterMod][ClearRepetableQuest] Replaced all repeatable quest templates.");
         }
+#endif
+#if DEBUG
         private static RepeatableQuest CreateQuestTemplate(QuestTypeEnum type)
         {
             return new RepeatableQuest
@@ -104,5 +114,6 @@ namespace QuestFilterMod.RepeatableQuestCleaner
                 SptRepatableGroupName = null
             };
         }
+#endif
     }
 }

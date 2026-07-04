@@ -1,4 +1,6 @@
-﻿using SPTarkov.Server.Core.Models.Eft.Common.Tables;
+﻿//Registration.cs
+
+using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Spt.Mod;
 
 namespace QuestFilterMod.RandomQuests
@@ -31,7 +33,7 @@ namespace QuestFilterMod.RandomQuests
                 {
 #if DEBUG
                     if (Plugin.Config.Debug)
-                        _logger.Info($"[QuestFilterMod][QuestRegistration] ✅ Quest '{quest.Id}' has been successfully created and localized.");
+                        _logger.Info($"[QuestFilterMod][Registration] ✅ Quest '{quest.Id}' has been successfully created and localized.");
 #endif
                 }
                 else
@@ -39,14 +41,14 @@ namespace QuestFilterMod.RandomQuests
                     foreach (string error in result.Errors)
                     {
                         if (Plugin.Config.Debug)
-                            _logger.Error($"[QuestFilterMod][QuestRegistration] ❌ Error creating quest: {error}");
+                            _logger.Error($"[QuestFilterMod][Registration] ❌ Error creating quest: {error}");
                     }
                 }
             }
             catch (Exception ex)
             {
                 if (Plugin.Config.Debug)
-                    _logger.Error($"[QuestFilterMod][QuestRegistration] 🔥 Exception when registering a quest: {ex}");
+                    _logger.Error($"[QuestFilterMod][Registration] 🔥 Exception when registering a quest: {ex}");
             }
         }
         private void EnsureRewards(Quest quest)

@@ -1,4 +1,6 @@
-﻿using QuestFilterMod.RandomQuests.Models;
+﻿//Location.cs
+
+using QuestFilterMod.RandomQuests.Models;
 using SPTarkov.Server.Core.Models.Eft.Common;
 
 namespace QuestFilterMod.RandomQuests

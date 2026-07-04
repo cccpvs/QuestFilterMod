@@ -1,4 +1,6 @@
-﻿using SPTarkov.Server.Core.Models.Eft.Common.Tables;
+﻿//Transfer.cs
+
+using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 
 namespace QuestFilterMod.RandomQuests
@@ -12,7 +14,7 @@ namespace QuestFilterMod.RandomQuests
 
             if (cfg == null || cfg.ItemIds.Count == 0 || cfg.Condition == null || cfg.Condition.Length < 2)
             {
-                _logger.Debug("[RandomQuestGenerator][TransferQuestGenerator] cfg is null, empty or invalid Condition");
+                _logger.Debug("[RandomQuestGenerator][Transfer] cfg is null, empty or invalid Condition");
                 return null;
             }
 
@@ -22,7 +24,7 @@ namespace QuestFilterMod.RandomQuests
             var itemIds = cfg.ItemIds.Where(i => !string.IsNullOrEmpty(i)).ToList();
             if (!itemIds.Any())
             {
-                _logger.Debug("[RandomQuestGenerator][TransferQuestGenerator] ItemIds is empty");
+                _logger.Debug("[RandomQuestGenerator][Transfer] ItemIds is empty");
                 return null;
             }
 
@@ -59,7 +61,7 @@ namespace QuestFilterMod.RandomQuests
                 });
             }
 
-            _logger.Debug("[RandomQuestGenerator][TransferQuestGenerator] Failed to generate TransferQuest after 20 attempts");
+            _logger.Debug("[RandomQuestGenerator][Transfer] Failed to generate TransferQuest after 20 attempts");
             return null;
         }
     }

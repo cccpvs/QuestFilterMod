@@ -1,5 +1,9 @@
-﻿using SPTarkov.Server.Core.Models.Eft.Common.Tables;
+﻿//Locales.cs
+
+
+using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
+using System.Diagnostics.Metrics;
 using System.Text.Json;
 
 #if DEBUG
@@ -13,6 +17,7 @@ namespace QuestFilterMod.RandomQuests
     {
         private static readonly Dictionary<string, Dictionary<string, string>> _loadedLocales = new();
         private static bool _localesLoaded = false;
+
         public void FillQuestLocales(Quest quest, Dictionary<string, Dictionary<string, string>> locales)
         {
             if (quest == null) return;
@@ -20,7 +25,8 @@ namespace QuestFilterMod.RandomQuests
             string id = quest.Id.ToString();
             LoadLocales();
 #if DEBUG
-            _logger.Warning($"[QuestFilterMod][LocalesQuest] Filling locales for quest ID: {id}, Type: {quest.Type}");
+            if(Plugin.Config.Debug)
+                _logger.Warning($"[QuestFilterMod][Locales] Filling locales for quest ID: {id}, Type: {quest.Type}");
 #endif
 
             void Add(string key, string fallbackTemplate = "")
@@ -61,11 +67,11 @@ namespace QuestFilterMod.RandomQuests
             }
             else
             {
-                // Стандартный fallback для других типов
                 baseTypeKey = quest.Type switch
                 {
                     QuestTypeEnum.PickUp => "base_type_pickup",
                     QuestTypeEnum.Elimination => "base_type_elimination",
+                    QuestTypeEnum.Multi => "base_type_multi",
                     QuestTypeEnum.Discover => "base_type_discover",
                     QuestTypeEnum.Completion => "base_type_completion",
                     _ => "base_type_general"
@@ -111,24 +117,20 @@ namespace QuestFilterMod.RandomQuests
 
             foreach (var key in eventKeys)
             {
-                // Получаем шаблон из локалей или fallback
                 string template = key;
 
-                // Пробуем текущий язык
                 foreach (var lang in _loadedLocales.Keys)
                 {
                     if (!locales.ContainsKey(lang)) locales[lang] = new();
 
                     string currentTemplate = key;
 
-                    // Шаг 1: взять из языка
                     if (_loadedLocales.TryGetValue(lang, out var dictLang) &&
                         dictLang.TryGetValue(key, out var val) &&
                         !string.IsNullOrEmpty(val))
                     {
                         currentTemplate = val;
                     }
-                    // Шаг 2: если не нашли в текущем языке — пробуем en
                     else if (lang != "en" && _loadedLocales.TryGetValue("en", out var dictEn) &&
                              dictEn.TryGetValue(key, out var enVal) &&
                              !string.IsNullOrEmpty(enVal))
@@ -136,7 +138,6 @@ namespace QuestFilterMod.RandomQuests
                         currentTemplate = enVal;
                     }
 
-                    // 🔥 Шаг 3: подставить ID квеста в {0}
                     string baseTypeName = baseTypeFallback;
                     if (_loadedLocales.TryGetValue(lang, out var dictLang2) &&
                         dictLang2.TryGetValue(baseTypeKey, out var baseTypeVal) &&
@@ -154,11 +155,10 @@ namespace QuestFilterMod.RandomQuests
                     string questIdentifier = $"{baseTypeName} #{last6}";
                     string formatted = currentTemplate.Replace("{0}", questIdentifier);
 
-                    // 🔥 Сохраняем под тем же ключом — сервер будет читать это!
                     locales[lang][key] = formatted;
 
 #if DEBUG
-                    //_logger.Error($"[QuestFilterMod][LocalesQuest] [FINAL] Overrode '{key}' [{lang}] → '{formatted}'");
+                    //_logger.Warning($"[QuestFilterMod][Locales] [FINAL] Overrode '{key}' [{lang}] → '{formatted}'");
 #endif
                 }
             }
@@ -177,26 +177,25 @@ namespace QuestFilterMod.RandomQuests
                 foreach (var cond in conditions.Where(c => c?.Id != null))
                 {
 #if DEBUG
-                    _logger.Warning($"[QuestFilterMod][LocalesQuest] CondType: {cond.ConditionType}, Id: {cond.Id}, Target: {cond.Target}, ZoneId: {cond.ZoneId}");
+                    //_logger.Warning($"[QuestFilterMod][Locales] CondType: {cond.ConditionType}, Id: {cond.Id}, Target: {cond.Target}, ZoneId: {cond.ZoneId}");
 #endif
                     string condKey = cond.Id.ToString();
 
                     string conditionTypeKey = cond.ConditionType switch
                     {
-                        "VisitPlace" or
-                        _ when cond.ConditionType == "CounterCreator" && cond.Type == "Exploration"
-                            => "condition_VisitPlace",
+                        
                         "LeaveItemAtLocation" => "condition_LeaveItemAtLocation",
                         "PlaceBeacon" => "condition_PlaceBeacon",
                         "ExitStatus" => "condition_ExitStatus",
-                        "Location" => "condition_Location",
-                        "Kills" or "CounterCreator" => cond.Type switch
+                        "FindItem" => "condition_FindItem",
+                        "HandoverItem" => "condition_HandoverItem",
+                        "CounterCreator" => cond.Type switch
                         {
+                            "Exploration" => "condition_VisitPlace",
                             "Elimination" => "condition_Elimination",
                             "Completion" => "condition_Completion",
                             _ => "condition_default"
                         },
-                        "FindItem" => "condition_FindItem",
                         _ => "condition_default"
                     };
 
@@ -204,7 +203,6 @@ namespace QuestFilterMod.RandomQuests
                     {
                         string langTemplate = conditionTypeKey;
 
-                        // 🔹 1. Попытка: взять из текущего языка
                         bool foundInCurrentLang = false;
                         if (_loadedLocales.TryGetValue(lang, out var dictLang) &&
                             dictLang.TryGetValue(conditionTypeKey, out var condVal) &&
@@ -224,26 +222,54 @@ namespace QuestFilterMod.RandomQuests
 
                         string[] nameValues = cond.ConditionType switch
                         {
-                            "VisitPlace" => new[] { cond.Counter?.Conditions?[0].Target?.ToString() ?? "", cond.ExtensionData["_pascalName"]?.ToString() ?? "Unknown", "" },
-                            "CounterCreator" when cond.Type == "Exploration" => new[] { cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString() ?? "", cond.Counter?.Conditions?[0]?.ExtensionData?["_pascalName"]?.ToString() ?? "Unknown", "" },
-                            "LeaveItemAtLocation" => new[] { cond.ZoneId?.ToString() ?? "", GetItemName(cond.ExtensionData?["_item"]?.ToString() ?? "", lang), cond.ExtensionData["_pascalName"]?.ToString() ?? "Unknown" },
-                            "PlaceBeacon" => new[] { GetItemName(cond.ExtensionData?["_item"]?.ToString() ?? "", lang), cond.ZoneId?.ToString() ?? "", cond.ExtensionData["_pascalName"]?.ToString() ?? "Unknown" },
-                            "ExitStatus" => new[] { "", "", "" },
-                            "Location" => new[] { locationName, "", "" },
-                            "Kills" or "CounterCreator" => cond.Type switch
-                            {
-                                "Elimination" => new[]
-                                {
-                                   cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString() ?? "",
-                                    cond.Counter?.Conditions?[0]?.ExtensionData?["_pascalName"]?.ToString() ?? "",
-                                    ""
-                                },
-                                "Completion" => new[] { "", "", "" },
-                                _ => new[] { "", "", "" }
+
+                            "LeaveItemAtLocation" => new[] {
+                                cond.ZoneId.ToString() ?? "",
+                                GetItemName(cond.ExtensionData.TryGetValue("_item", out var item) == true ? item.ToString() : "", lang),
+                                cond.ExtensionData.TryGetValue("_pascalName", out var pascalNameTry) == true ? pascalNameTry.ToString() : "Unknown"
+                            },
+                            "PlaceBeacon" => new[] {
+                                GetItemName(cond.ExtensionData.TryGetValue("_item", out var item) == true ? item.ToString() : "", lang),
+                                cond.ZoneId.ToString() ?? "",
+                                cond.ExtensionData.TryGetValue("_pascalName", out var pascalNameTry) == true ? pascalNameTry.ToString() : "Unknown",
                             },
                             "FindItem" => new[]
                             {
-                                GetItemName(cond.ExtensionData?["_item"]?.ToString() ?? "", lang), "", ""
+                                GetItemName(cond.ExtensionData.TryGetValue("_item", out var item) == true ? item.ToString() : "", lang),
+                            },
+                            "HandoverItem" => new[]
+                            {
+                                GetItemName(cond.ExtensionData.TryGetValue("_item", out var item) == true ? item.ToString() : "", lang),
+                            },
+
+                            "CounterCreator" => cond.Type switch
+                            {
+
+
+                                "Exploration" => new[] {
+                                    cond.Counter.Conditions[0].ExtensionData.TryGetValue("target", out var targetGet) == true ? targetGet.ToString() : "",
+                                    cond.Counter.Conditions[0].ExtensionData.TryGetValue("_pascalName", out var pascalNameTry) == true ? pascalNameTry.ToString() : "",
+                                    "" },
+                                "Elimination" => new[]
+                                {
+                                   cond.Counter.Conditions[0].ExtensionData.TryGetValue("target", out var targetGet) == true ? targetGet.ToString() : "",
+                                   cond.Counter.Conditions[0].ExtensionData.TryGetValue("_pascalName", out var pascalNameTry) == true ? pascalNameTry.ToString() : "",
+                                    ""
+                                },
+                                "Completion" => new[] {
+                                    locationName,
+                                    cond.Counter?.Conditions?[0]?.ExtensionData?.TryGetValue("status", out var statusObj) == true
+                                        ? statusObj switch
+                                        {
+                                            string s => s,
+                                            System.Collections.IEnumerable list => string.Join(", ", list.Cast<object>().Select(o => o?.ToString() ?? "")),
+                                            _ => "Unknown"
+                                        }
+                                        : "Unknown",
+                                    ""
+                                },
+
+                                _ => new[] { "", "", "" }
                             },
                             _ => new[] { "", "", "" }
                         };
@@ -257,14 +283,14 @@ namespace QuestFilterMod.RandomQuests
                             }
                             catch (Exception ex)
                             {
-                                _logger.Warning($"[QuestFilterMod][LocalesQuest] Failed to format locale [{lang}] key={condKey}, template={langTemplate}, values={string.Join(", ", nameValues)}: {ex.Message}");
+                                _logger.Warning($"[QuestFilterMod][Locales] Failed to format locale [{lang}] key={condKey}, template={langTemplate}, values={string.Join(", ", nameValues)}: {ex.Message}");
                             }
                         }
 
                         if (!locales.ContainsKey(lang)) locales[lang] = new();
                         locales[lang][condKey] = langTemplate;
 #if DEBUG
-                        //_logger.Error($"[QuestFilterMod][LocalesQuest] Locale added [lang={lang}] key=\"{condKey}\" → \"{langTemplate}\"");
+                        //_logger.Warning($"[QuestFilterMod][Locales] Locale added [lang={lang}] key=\"{condKey}\" → \"{langTemplate}\"");
 #endif
                     }
                 }
@@ -277,7 +303,8 @@ namespace QuestFilterMod.RandomQuests
                 string last6,
                 string baseTypeKey,
                 string baseTypeFallback,
-                Dictionary<string, Dictionary<string, string>> locales)
+                Dictionary<string, Dictionary<string, string>> locales
+                )
         {
             List<string> extraConditions = new();
             string baseTypeName = baseTypeFallback;
@@ -297,11 +324,13 @@ namespace QuestFilterMod.RandomQuests
 
             string locationName = Location.IsAllowed(quest.Location, ConfigRandom)
                 ? Location.GetPascalName(quest.Location)
-                : "Unknown";
+                : "Any";
 
             List<string> itemNames = new();
             string mainTargetName = null;
             string mainZone = null;
+
+            baseTypeName = $"{baseTypeName} #{last6}";
 
             if (quest.Conditions?.AvailableForFinish is var conditions && conditions != null)
             {
@@ -314,7 +343,7 @@ namespace QuestFilterMod.RandomQuests
                     else if (cond?.ConditionType == "HandoverItem") handoverItemCond = cond;
                 }
 
-                string itemId = findItemCond?.ExtensionData?["_item"]?.ToString() ?? "";
+                string itemId = findItemCond?.ExtensionData?.TryGetValue("_item", out var itemObj) == true ? itemObj?.ToString() ?? "" : "";
                 if (!string.IsNullOrEmpty(itemId))
                 {
                     string itemName = GetItemName(itemId, lang);
@@ -325,9 +354,11 @@ namespace QuestFilterMod.RandomQuests
                 {
                     switch (cond.ConditionType)
                     {
+                        //case "FindItem":
+                        //case "HandoverItem":
                         case "LeaveItemAtLocation":
                             {
-                                string itemId2 = cond.ExtensionData?["_item"]?.ToString();
+                                string itemId2 = cond.ExtensionData?.TryGetValue("_item", out var itemObjTry) == true ? itemObjTry?.ToString() ?? "" : "";
                                 if (!string.IsNullOrEmpty(itemId2))
                                 {
                                     string itemName = GetItemName(itemId2, lang);
@@ -336,8 +367,7 @@ namespace QuestFilterMod.RandomQuests
                                 }
                                 break;
                             }
-
-                        case "VisitPlace":
+                        //case "VisitPlace":
                         case "CounterCreator" when cond.Type == "Exploration":
                             {
                                 if (string.IsNullOrEmpty(mainZone))
@@ -345,18 +375,20 @@ namespace QuestFilterMod.RandomQuests
                                 break;
                             }
 
-                        case "Kills" or "CounterCreator":
-                            if (cond.Type == "Elimination")
+                        case "CounterCreator" when cond.Type == "Elimination":
                             {
-                                string targetRaw = cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString();
+                                string targetRaw = cond.Counter.Conditions?[0].ExtensionData.TryGetValue("target", out var targetObj) == true ? targetObj?.ToString() ?? "" : "";
                                 mainTargetName = GetTargetNameFromRaw(targetRaw ?? "");
+                                string timeText = null;
+                                string weaponName = null;
 
-                                if (cond.Counter?.Conditions?[0]?.ExtensionData?.TryGetValue("_time", out var timeObj) == true)
+
+                                if (cond.Counter.Conditions[0].ExtensionData.TryGetValue("_time", out var timeObj) == true)
                                 {
-                                    if (timeObj is DaytimeCounter daytime && daytime.From.HasValue && daytime.To.HasValue)
+                                    var daytime = timeObj as DaytimeCounter;
+                                    if (daytime != null && daytime.From.HasValue && daytime.To.HasValue)
                                     {
                                         string timeKey = $"time_{daytime.From}_{daytime.To}";
-                                        string timeText = null;
 
                                         if (_loadedLocales.TryGetValue(lang, out dictLang) &&
                                             dictLang.TryGetValue(timeKey, out var timeVal) &&
@@ -369,18 +401,68 @@ namespace QuestFilterMod.RandomQuests
                                             timeText = $"{daytime.From.Value:00}:00–{daytime.To.Value:00}:00";
                                         }
 
-                                        extraConditions.Add(timeText);
                                     }
                                 }
 
-                                if (cond.Counter?.Conditions?[0]?.ExtensionData?.TryGetValue("_weapons", out var weaponObj) == true &&
-                                    weaponObj?.ToString() is { Length: > 0 } weaponId)
+                                if (cond.Counter.Conditions[0].ExtensionData.TryGetValue("_weapons", out var weaponObj) == true)
                                 {
-                                    string weaponName = GetItemName(weaponId, lang); 
-                                    extraConditions.Add(weaponName);
+                                    string weaponId = weaponObj?.ToString() ?? "";
+                                    if (!string.IsNullOrEmpty(weaponId))
+                                    {
+                                        weaponName = GetItemName(weaponId, lang);
+                                    }
                                 }
+
+                                if (timeText != null || weaponName != null) {
+                                    extraConditions.Add($"{timeText} - { weaponName}");
+                                }
+
+                                break;
                             }
-                            break;
+
+                        case "CounterCreator" when cond.Type == "Completion":
+                            {
+                                if (string.IsNullOrEmpty(mainZone))
+                                    mainZone = locationName;
+                                break;
+                            }
+
+                            /*case "Kills" or "CounterCreator":
+                                if (cond.Type == "Elimination")
+                                {
+                                    string targetRaw = cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString();
+                                    mainTargetName = GetTargetNameFromRaw(targetRaw ?? "");
+
+                                    if (cond.Counter?.Conditions?[0]?.ExtensionData?.TryGetValue("_time", out var timeObj) == true)
+                                    {
+                                        if (timeObj is DaytimeCounter daytime && daytime.From.HasValue && daytime.To.HasValue)
+                                        {
+                                            string timeKey = $"time_{daytime.From}_{daytime.To}";
+                                            string timeText = null;
+
+                                            if (_loadedLocales.TryGetValue(lang, out dictLang) &&
+                                                dictLang.TryGetValue(timeKey, out var timeVal) &&
+                                                !string.IsNullOrEmpty(timeVal))
+                                            {
+                                                timeText = timeVal;
+                                            }
+                                            else
+                                            {
+                                                timeText = $"{daytime.From.Value:00}:00–{daytime.To.Value:00}:00";
+                                            }
+
+                                            extraConditions.Add(timeText);
+                                        }
+                                    }
+
+                                    if (cond.Counter?.Conditions?[0]?.ExtensionData?.TryGetValue("_weapons", out var weaponObj) == true &&
+                                        weaponObj?.ToString() is { Length: > 0 } weaponId)
+                                    {
+                                        string weaponName = GetItemName(weaponId, lang); 
+                                        extraConditions.Add(weaponName);
+                                    }
+                                }
+                                break;*/
                     }
                 }
             }
@@ -389,7 +471,6 @@ namespace QuestFilterMod.RandomQuests
 
             if (itemNames.Any() || extraConditions.Any())
             {
-                // Собираем всё вместе
                 var allDetails = new List<string>();
                 if (itemNames.Any()) allDetails.AddRange(itemNames);
                 if (extraConditions.Any()) allDetails.AddRange(extraConditions);
@@ -397,24 +478,24 @@ namespace QuestFilterMod.RandomQuests
                 string detailsStr = string.Join("\n* ", allDetails);
 
                 if (!string.IsNullOrEmpty(mainZone))
-                    descTemplate = $"{baseTypeName} #{last6}\n* {mainZone}\n* {detailsStr}";
+                    descTemplate = $"{baseTypeName}\n* {mainZone}\n* {detailsStr}";
                 else
-                    descTemplate = $"{baseTypeName} #{last6}\n* {detailsStr}";
+                    descTemplate = $"{baseTypeName}\n* {detailsStr}";
             }
             else if (!string.IsNullOrEmpty(mainTargetName))
             {
                 if (!string.IsNullOrEmpty(mainZone))
-                    descTemplate = $"{baseTypeName} #{last6}\n* {mainZone}\n* {mainTargetName}";
+                    descTemplate = $"{baseTypeName}\n* {mainZone}\n* {mainTargetName}";
                 else
-                    descTemplate = $"{baseTypeName} #{last6}\n* {mainTargetName}";
+                    descTemplate = $"{baseTypeName}\n* {mainTargetName}";
             }
             else if (!string.IsNullOrEmpty(locationName))
             {
-                descTemplate = $"{baseTypeName} #{last6}\n* {locationName}";
+                descTemplate = $"{baseTypeName}\n* {locationName}";
             }
             else
             {
-                descTemplate = $"{baseTypeName} #{last6}";
+                descTemplate = $"{baseTypeName}";
             }
 
             if (quest.ExtensionData?.TryGetValue("description", out var descObj) == true &&
@@ -428,7 +509,7 @@ namespace QuestFilterMod.RandomQuests
                 if (!locales.ContainsKey(lang)) locales[lang] = new();
                 locales[lang][key] = value;
 #if DEBUG
-                //_logger.Error($"[QuestFilterMod][LocalesQuest] Locale added [lang={lang}] key=\"{key}\" → \"{value}\"");
+                //_logger.Warning($"[QuestFilterMod][Locales] Locale added [lang={lang}] key=\"{key}\" → \"{value}\"");
 #endif
             }
 
@@ -505,16 +586,18 @@ namespace QuestFilterMod.RandomQuests
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"[QuestFilterMod][LocalesQuest] Failed to load locale file {path}: {ex.Message}");
+                    _logger.Error($"[QuestFilterMod][Locales] Failed to load locale file {path}: {ex.Message}");
                     _loadedLocales[lang] = new Dictionary<string, string>(); 
                 }
             }
             if(Plugin.Config.Debug)
-                _logger.Warning($"[QuestFilterMod][LocalesQuest] Loaded locale languages: {string.Join(", ", loadedLangs)}");
-
+#if DEBUG
+                _logger.Warning($"[QuestFilterMod][Locales] Loaded locale languages: {string.Join(", ", loadedLangs)}");
+#endif
             if (missingLangs.Count > 0)
 #if DEBUG
-                _logger.Error($"[QuestFilterMod][LocalesQuest] Missing locale files for languages: {string.Join(", ", missingLangs)}");
+                if (Plugin.Config.Debug)
+                    _logger.Warning($"[QuestFilterMod][Locales] Missing locale files for languages: {string.Join(", ", missingLangs)}");
 #endif
 
             _localesLoaded = true;

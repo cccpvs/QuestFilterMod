@@ -1,4 +1,6 @@
-﻿using QuestFilterMod.RandomQuests.Models;
+﻿//Exploration.cs
+
+using QuestFilterMod.RandomQuests.Models;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 
@@ -32,47 +34,31 @@ namespace QuestFilterMod.RandomQuests
 
                 return GenerateBaseQuest("Exploration", (q, idFactory) =>
                 {
-                    q.Location = loc.Id;
-                    q.Type = QuestTypeEnum.Discover;
+                q.Location = loc.Id;
+                q.Type = QuestTypeEnum.Discover;
 
-                    if (!Location.TryGetPascalName(loc.Id, out var pascalName))
-                        return;
+                if (!Location.TryGetPascalName(loc.Id, out var pascalName))
+                    return;
 
-                    q.Conditions ??= new QuestConditionTypes();
-
-                    q.Conditions.AvailableForFinish = new List<QuestCondition>
-                    {
-
-                        new()
-                        {
-                            Id = idFactory(),
-                            DynamicLocale = false,
-                            ConditionType = "CounterCreator",
-                            CompleteInSeconds = 0,
-                            GlobalQuestCounterId = "",
-                            IsNecessary = false,
-                            IsResetOnConditionFailed = false,
-                            OneSessionOnly = true,
-                            VisibilityConditions = [],
-                            Index = 0,
-                            Type = "Exploration",
-                            Value = 1,
-                            Counter = new QuestConditionCounter()
-                                {
-                                    Conditions = new List<QuestConditionCounterCondition>
-                                    {
-                                        ConditionVisitPlace(target, pascalName, idFactory),
-                                        ConditionSurvivedExit(idFactory),
-                                        ConditionLocation(pascalName, idFactory),
-                                    },
-                                    Id = idFactory(),
-                            }
-                        }
-                    };
+                q.Conditions ??= new QuestConditionTypes();
 
 
-
-
+                q.Conditions.AvailableForFinish = new List<QuestCondition>
+                {
+                    CounterCreator(
+                        idFactory,
+                        "Exploration",
+                        1,
+                        true, false,
+                        ConditionVisitPlace(target, pascalName, idFactory)),
+                    CounterCreator(
+                        idFactory,
+                        "Completion",
+                        1,
+                        true, false,
+                        ConditionSurvivedExit(idFactory),
+                        ConditionLocation(pascalName, idFactory))
+                };
                 });
             }
 

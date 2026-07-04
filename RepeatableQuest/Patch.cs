@@ -1,4 +1,6 @@
-﻿using HarmonyLib;
+﻿//Patch.cs
+
+using HarmonyLib;
 using SPTarkov.Server.Core.Controllers;
 using QuestFilterMod.RepeatableQuestCleaner;
 

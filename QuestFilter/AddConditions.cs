@@ -37,9 +37,9 @@ namespace QuestFilterMod.QuestFilter
             }
             catch (Exception ex)
             {
-                _logger.Error($"[FilterService] ❌ ERROR in GenerateRandomFinishCondition:");
-                _logger.Error($"Message: {ex.Message}");
-                _logger.Error($"Stack: {ex.StackTrace}");
+                _logger.Error($"[QuestFilterMod][AddConditions] ❌ ERROR in GenerateRandomFinishCondition:");
+                _logger.Error($"[QuestFilterMod][AddConditions] Message: {ex.Message}");
+                _logger.Error($"[QuestFilterMod][AddConditions] Stack: {ex.StackTrace}");
                 return null;
             }
         }
@@ -54,7 +54,7 @@ namespace QuestFilterMod.QuestFilter
                     Location.Initialize(locations);
 #if DEBUG
                     if (Plugin.Config.Debug)
-                        _logger.Warning($"[FilterService] ✅ Location initialized: {Location.IdToPascalName.Count} IDs");
+                        _logger.Warning($"[QuestFilterMod][AddConditions] ✅ Location initialized: {Location.IdToPascalName.Count} IDs");
 #endif
                 }
             }
@@ -62,15 +62,14 @@ namespace QuestFilterMod.QuestFilter
             var allowed = Location.GetAllowedLocations(ConfigRandom).ToList();
             if (!allowed.Any())
             {
-                _logger.Error("[FilterService] No allowed locations found.");
+#if DEBUG
+                _logger.Error("[QuestFilterMod][AddConditions] No allowed locations found.");
+#endif
                 return null;
             }
 
             var randomLoc = allowed.OrderBy(_ => random.Next()).First();
             var pascalName = randomLoc.PascalName;
-
-            if (!Plugin.Config.ModifyBaseQuest.Enabled)
-                return null;
 
             var comboConfig = Plugin.Config.ModifyBaseQuest;
             if (comboConfig?.Type == null || comboConfig.Type.Length == 0)
@@ -85,24 +84,14 @@ namespace QuestFilterMod.QuestFilter
                     if (!targets.Any()) return null;
 
                     var target = targets[random.Next(targets.Count)];
-                    return new QuestCondition
-                    {
-                        Id = idFactory(),
-                        Type = "Exploration",
-                        ConditionType = "CounterCreator",
-                        Value = 1,
-                        DynamicLocale = false,
-                        Counter = new QuestConditionCounter
-                        {
-                            Id = idFactory(),
-                            Conditions = new List<QuestConditionCounterCondition>
-                            {
-                                Generator.ConditionVisitPlace(target, pascalName, idFactory)
-                            }
-                        },
-                        IsNecessary = false,
-                        OneSessionOnly = true
-                    };
+
+                    return Generator.CounterCreator(
+                        idFactory,
+                        "Exploration",
+                        1,
+                        true, false,
+                        Generator.ConditionVisitPlace(target, pascalName, idFactory)
+                    );
 
                 case "Kills":
                     var killConfig = ConfigRandom.KillQuest;
@@ -114,26 +103,15 @@ namespace QuestFilterMod.QuestFilter
                         weaponId = killConfig.Weapons.Ids[_random.Next(killConfig.Weapons.Ids.Count)];
                     }
 
-                    return new QuestCondition
-                    {
-                        Id = idFactory(),
-                        Type = "Elimination",
-                        ConditionType = "CounterCreator",
-                        Value = randomKill,
-                        DynamicLocale = false,
-                        Counter = new QuestConditionCounter
-                        {
-                            Id = idFactory(),
-                            Conditions = new List<QuestConditionCounterCondition>
-                            {
-                                Generator.ConditionKillEnemy(botType, pascalName, idFactory, killConfig, weaponId),
-                                Generator.ConditionLocation(pascalName, idFactory)
-                            }
-                        },
-                        IsNecessary = false,
-                        OneSessionOnly = true
-                    };
-
+                    return Generator.CounterCreator(
+                        idFactory,
+                        "Elimination",
+                        randomKill,
+                        true, false,
+                        Generator.ConditionKillEnemy(botType, pascalName, idFactory, killConfig, weaponId),
+                        Generator.ConditionLocation(pascalName, idFactory)
+                    );
+                     
                 case "Delivery":
                 case "Beacon":
                     var isBeacon = type == "Beacon";
@@ -162,7 +140,6 @@ namespace QuestFilterMod.QuestFilter
                     var count = transferConfig.ItemCount.Length > 1
                         ? random.Next(transferConfig.ItemCount[0], transferConfig.ItemCount[1] + 1)
                         : transferConfig.ItemCount[0];
-
 
                     return Generator.ConditionHandoverItem(itemId, count, () => idFactory().ToString(), _random);
 

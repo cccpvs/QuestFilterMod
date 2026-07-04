@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿//ModelConfig.cs
+
+using System.Text.Json.Serialization;
 
 namespace QuestFilterMod.RandomQuests.Models
 {

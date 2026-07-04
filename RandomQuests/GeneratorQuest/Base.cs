@@ -1,4 +1,6 @@
-﻿using SPTarkov.Server.Core.Models.Common;
+﻿//Base.cs
+
+using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 
@@ -70,20 +72,20 @@ namespace QuestFilterMod.RandomQuests
 #if DEBUG
             if (Plugin.Config.Debug)
             {
-                _logger.Info($"[QuestFilterMod][GenerateBaseQuest] 🧾 AFTER build(): TraderId = {quest.TraderId}");
+                _logger.Info($"[QuestFilterMod][Base] 🧾 AFTER build(): TraderId = {quest.TraderId}");
             }
 #endif
             if (string.IsNullOrEmpty(quest.Location))
             {
                 if (Plugin.Config.Debug)
-                    _logger.Info($"[QuestFilterMod][QuestGenerationBase] ❌ Quest {quest.Id} doesn't have Location");
+                    _logger.Info($"[QuestFilterMod][Base] ❌ Quest {quest.Id} doesn't have Location");
                 return null;
             }
 
             AddRewards(quest);
             CreateAndRegisterQuest(quest);
             if (Plugin.Config.Debug)
-                _logger.Info($"[QuestFilterMod][QuestGenerationBase] ✅ Quest '{quest.Id}' ({type}) created");
+                _logger.Info($"[QuestFilterMod][Base] ✅ Quest '{quest.Id}' ({type}) created");
 
 #if DEBUG
             var json = System.Text.Json.JsonSerializer.Serialize(quest, new System.Text.Json.JsonSerializerOptions
@@ -92,7 +94,7 @@ namespace QuestFilterMod.RandomQuests
                 WriteIndented = true
             });
 
-            //_logger.Info($"[QuestFilterMod][QuestGenerationBase] 📜 Quest '{quest.Id}' ({type}) generated:\n{json}");
+            //_logger.Info($"[QuestFilterMod][Base] 📜 Quest '{quest.Id}' ({type}) generated:\n{json}");
 #endif
 
             return quest;

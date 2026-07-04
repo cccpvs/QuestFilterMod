@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using QuestFilterMod.Patch;
 using QuestFilterMod.QuestFilter;
 using QuestFilterMod.QuestFilter.Models;
 using QuestFilterMod.RandomQuests;
@@ -31,9 +30,9 @@ public class Plugin : IOnUpdate
     private readonly DatabaseServer databaseServer;
     private readonly ServerLocalisationService _localisationService;
     private readonly string ConfigPath;
-    public static ModelConfig Config { get; private set; } = null!;
-    private Generator _randomQuestGenerator = null!;
-    private FilterService _questFilterService = null!;
+    public static ModelConfig Config { get; private set; } = null;
+    private Generator _randomQuestGenerator = null;
+    private FilterService _questFilterService = null;
     private bool _applied = false;
     private readonly CustomQuestService _customQuestService;
     private Clear _temporaryQuestCleaner = null!;
@@ -164,18 +163,16 @@ public class Plugin : IOnUpdate
             _questFilterService.ApplyFilters(Config);
 
             _applied = true;
-         
-            _logger.Warning($"-------------------------------------------------------------");
-            _logger.Warning($"|{"",-15}{"QuestFilterMod Loaded 🚀",-44}|");
-            _logger.Warning($"-------------------------------------------------------------");
+
+            _logger.Warning($"---------------------------------------------");
+            _logger.Warning($"|{"",-15}{"QuestFilterMod Loaded 🚀",-15}|");
+            _logger.Warning($"---------------------------------------------");
         }
         catch (Exception ex)
         {
             if (Config.Debug)
                 _logger.Error($"[QuestFilterMod] Error inOnUpdate: {ex.Message}\n{ex.StackTrace}");
         }
-
-
         return true;
     }
 
@@ -241,10 +238,9 @@ public class Plugin : IOnUpdate
             var json = File.ReadAllText(ConfigPath);
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             Config = JsonSerializer.Deserialize<ModelConfig>(json, options) ?? new ModelConfig();
-            //_logger.Warning($"------------------QuestFilterMod Starting 🚀-----------------");
-            _logger.Warning($"-------------------------------------------------------------");
-            _logger.Warning($"|{"",-15}{"QuestFilterMod Starting 🚀",-44}|");
-            _logger.Warning($"-------------------------------------------------------------");
+            _logger.Warning($"---------------------------------------------");
+            _logger.Warning($"|{"",-15}{"QuestFilterMod Starting 🚀 Wait...",-15}|");
+            _logger.Warning($"---------------------------------------------");
 
             if (Config.Debug)
             {

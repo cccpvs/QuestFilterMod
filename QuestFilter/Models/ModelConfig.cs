@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿//ModelConfig.cs
+
+using System.Text.Json.Serialization;
 
 namespace QuestFilterMod.QuestFilter.Models;
 
@@ -47,9 +49,8 @@ public class QuestFilterLinkedQuest
 
 public class QuestFilterModifyBaseQuest
 {
-
     public bool Enabled { get; set; } = false;
-    public string[] Type { get; set; } = Array.Empty<string>();
+    public string[] Type { get; set; } = null;
     public int[] CountCond { get; set; } = [1, 3];
 }
 

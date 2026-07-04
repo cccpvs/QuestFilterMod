@@ -1,4 +1,6 @@
-﻿using QuestFilterMod.RandomQuests.Models;
+﻿//Generator.cs
+
+using QuestFilterMod.RandomQuests.Models;
 using QuestFilterMod.RandomQuests.Utils;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Logging;
@@ -62,17 +64,17 @@ namespace QuestFilterMod.RandomQuests
             );
 
             if (Plugin.Config.Debug)
-                _logger.LogWithColor($"[QuestFilterMod][RandomQuestGenerator] I'm looking for a config: {configPath}", LogTextColor.Magenta);
+                _logger.LogWithColor($"[QuestFilterMod][Generator] I'm looking for a config: {configPath}", LogTextColor.Magenta);
 
             if (!File.Exists(configPath))
             {
                 if (Plugin.Config.Debug)
-                    _logger.Error($"[QuestFilterMod][RandomQuestGenerator]❌ Config file not found: {configPath}");
-                throw new FileNotFoundException("[QuestFilterMod][RandomQuestGenerator] Quest configuration not found", configPath);
+                    _logger.Error($"[QuestFilterMod][Generator]❌ Config file not found: {configPath}");
+                throw new FileNotFoundException("[QuestFilterMod][Generator] Quest configuration not found", configPath);
             }
 
             ConfigRandom = JsonHelper.LoadFromJson<QuestConfig>(configPath)
-                ?? throw new InvalidOperationException("[QuestFilterMod][RandomQuestGenerator] Failed to load quest configuration.");
+                ?? throw new InvalidOperationException("[QuestFilterMod][Generator] Failed to load quest configuration.");
             _saveServer = saveServer;
         }
 
@@ -102,24 +104,7 @@ namespace QuestFilterMod.RandomQuests
 
                 if (ConfigRandom.QuestGeneration.Types.Transfer)
                 {
-#if DEBUG
-
-                    _logger.Warning("[RandomQuestGenerator] ❗️ Adding Transfer generator...");
-#endif
-                    try
-                    {
-                        candidates.Add(("Transfer", GenerateTransferQuest));
-#if DEBUG
-                        _logger.Warning("[RandomQuestGenerator] ✅ Transfer generator added (SUCCESS)");
-#endif
-                    }
-                    catch (Exception ex)
-                    {
-#if DEBUG
-                        _logger.Error($"[RandomQuestGenerator] ❌ EXCEPTION when adding Transfer generator: {ex}");
-                        _logger.Error($"[RandomQuestGenerator] StackTrace: {ex.StackTrace}");
-#endif
-                    }
+                    candidates.Add(("Transfer", GenerateTransferQuest));
                 }
                 if (ConfigRandom.QuestGeneration.Types.Combo)
                     candidates.Add(("ComboQuest", GenerateComboQuest));
@@ -127,7 +112,7 @@ namespace QuestFilterMod.RandomQuests
                 if (!candidates.Any())
                 {
                     if (Plugin.Config.Debug)
-                        _logger.Error("[QuestFilterMod][RandomQuestGenerator] ❌ There are no available quest types to generate.");
+                        _logger.Error("[QuestFilterMod][Generator] ❌ There are no available quest types to generate.");
                     return null;
                 }
 
@@ -141,7 +126,7 @@ namespace QuestFilterMod.RandomQuests
                         if (quest != null)
                         {
                             if (Plugin.Config.Debug)
-                                _logger.Info($"[QuestFilterMod][RandomQuestGenerator] ✅ Quest generated successfully on attempt #{attempt + 1}: {type}");
+                                _logger.Info($"[QuestFilterMod][Generator] ✅ Quest generated successfully on attempt #{attempt + 1}: {type}");
 
                             _hasExhaustedAllOptions = false;
                             return quest;
@@ -150,7 +135,7 @@ namespace QuestFilterMod.RandomQuests
                 }
 
                 if (Plugin.Config.Debug)
-                    _logger.Warning($"[QuestFilterMod][RandomQuestGenerator] Could not generate a quest in {maxAttempts} attempts.");
+                    _logger.Warning($"[QuestFilterMod][Generator] Could not generate a quest in {maxAttempts} attempts.");
 
                 _hasExhaustedAllOptions = true;
                 return null;
@@ -158,7 +143,7 @@ namespace QuestFilterMod.RandomQuests
             catch (Exception e)
             {
                 if (Plugin.Config.Debug)
-                    _logger.Error($"[QuestFilterMod][RandomQuestGenerator] Error when generating quest: {e.Message}\n{e.StackTrace}");
+                    _logger.Error($"[QuestFilterMod][Generator] Error when generating quest: {e.Message}\n{e.StackTrace}");
                 return null;
             }
         }
@@ -166,7 +151,6 @@ namespace QuestFilterMod.RandomQuests
         {
             _tracker.Clear();
         }
-
     }
 
     public static class ListExtensions

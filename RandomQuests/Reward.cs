@@ -1,4 +1,6 @@
-﻿using SPTarkov.Server.Core.Models.Common;
+﻿//Reward.cs
+
+using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
 
@@ -48,7 +50,7 @@ namespace QuestFilterMod.RandomQuests
             if (prices == null || !prices.Any() || !itemsPool.Any())
             {
                 if (Plugin.Config.Debug)
-                    _logger.Error("[QuestFilterMod][RewardSystem] ❌ Не удалось загрузить данные из базы.");
+                    _logger.Error("[QuestFilterMod][Reward] ❌ Failed to load data from the database.");
                 return;
             }
 
@@ -65,7 +67,7 @@ namespace QuestFilterMod.RandomQuests
             if (!weightedParents.Any())
             {
                 if (Plugin.Config.Debug)
-                    _logger.Error("[QuestFilterMod][RewardSystem] ❌ Нет активных родителей с весом > 0.");
+                    _logger.Error("[QuestFilterMod][Reward] ❌ No active weight parents > 0.");
                 return;
             }
 
@@ -98,13 +100,13 @@ namespace QuestFilterMod.RandomQuests
             {
 #if DEBUG
                 if (Plugin.Config.Debug)
-                    _logger.Error("[QuestFilterMod][RewardSystem] ❌ Нет подходящих предметов по цене и категориям.");
+                    _logger.Error("[QuestFilterMod][Reward] ❌ There are no matching items by price or category.");
 #endif
                 return;
             }
 #if DEBUG
             if (Plugin.Config.Debug)
-                _logger.Info($"[QuestFilterMod][RewardSystem] Найдено {nonEmptyParents.Count} категорий с подходящими предметами.");
+                _logger.Info($"[QuestFilterMod][Reward] Found {nonEmptyParents.Count} categories with matching items.");
 #endif
 
             int count = _random.Next(ConfigRandom.RewardItems.Count.Min, ConfigRandom.RewardItems.Count.Max + 1);
@@ -145,7 +147,7 @@ namespace QuestFilterMod.RandomQuests
             var allowedTpls = ConfigRandom.DeliveryQuest.ItemPlant;
             if (!allowedTpls.Any())
             {
-                _logger?.Info("[QuestFilterMod][RewardSystem] 📌 The ItemPlant list is empty!");
+                _logger?.Info("[QuestFilterMod][Reward] 📌 The ItemPlant list is empty!");
                 return null;
             }
 
@@ -162,17 +164,17 @@ namespace QuestFilterMod.RandomQuests
 
             if (missingTpls.Any())
             {
-                _logger?.Info($"[QuestFilterMod][RewardSystem] ⚠️ Not in the TPL database (from the config): {string.Join(", ", missingTpls)}");
+                _logger?.Info($"[QuestFilterMod][Reward] ⚠️ Not in the TPL database (from the config): {string.Join(", ", missingTpls)}");
             }
 
             if (!candidates.Any())
             {
-                _logger?.Info($"[QuestFilterMod][RewardSystem] ❌ No items found from {allowedTpls.Count} TPL.");
+                _logger?.Info($"[QuestFilterMod][Reward] ❌ No items found from {allowedTpls.Count} TPL.");
                 return null;
             }
 
             if (Plugin.Config.Debug)
-                _logger?.Debug($"[QuestFilterMod][RewardSystem] ✔️ Found {candidates.Count} items from {allowedTpls.Count} TPL.");
+                _logger?.Debug($"[QuestFilterMod][Reward] ✔️ Found {candidates.Count} items from {allowedTpls.Count} TPL.");
 
             return new MongoId(candidates[_random.Next(candidates.Count)]);
         }
@@ -241,7 +243,7 @@ namespace QuestFilterMod.RandomQuests
 
             if (ConfigRandom.RewardSkills.Skill == null || !ConfigRandom.RewardSkills.Skill.Any())
             {
-                _logger.Error("[QuestFilterMod][Skill] ❌ Skill list is empty or null!");
+                _logger.Error("[QuestFilterMod][Reward] ❌ Skill list is empty or null!");
                 return;
             }
 
