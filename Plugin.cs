@@ -163,10 +163,9 @@ public class Plugin : IOnUpdate
             _questFilterService.ApplyFilters(Config);
 
             _applied = true;
-
-            _logger.Warning($"---------------------------------------------");
-            _logger.Warning($"|{"",-15}{"QuestFilterMod Loaded 🚀",-15}|");
-            _logger.Warning($"---------------------------------------------");
+            _logger.Warning($"-------------------------------------------------------------------------");
+            _logger.Warning($"{"QuestFilterMod Loaded 🚀. Good Game.",-43}");
+            _logger.Warning($"-------------------------------------------------------------------------");
         }
         catch (Exception ex)
         {
@@ -238,9 +237,9 @@ public class Plugin : IOnUpdate
             var json = File.ReadAllText(ConfigPath);
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             Config = JsonSerializer.Deserialize<ModelConfig>(json, options) ?? new ModelConfig();
-            _logger.Warning($"---------------------------------------------");
-            _logger.Warning($"|{"",-15}{"QuestFilterMod Starting 🚀 Wait...",-15}|");
-            _logger.Warning($"---------------------------------------------");
+            _logger.Warning($"-------------------------------------------------------------------------");
+            _logger.Warning($"{"QuestFilterMod Starting 🚀 Wait...",-43}");
+            _logger.Warning($"-------------------------------------------------------------------------");
 
             if (Config.Debug)
             {

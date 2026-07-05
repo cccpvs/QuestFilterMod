@@ -17,7 +17,7 @@ namespace QuestFilterMod.QuestFilter
                 if (!quest.Rewards.ContainsKey(status))
                 {
                     quest.Rewards[status] = new List<Reward>();
-                    filter_reward++;
+                    filter_Reward++;
                     if (Plugin.Config.Debug)
                         _logger.Info($"[QuestFilterMod][Modify] ⚠️ Reward status restored: '{status}' for quest '{quest.Id}'");
                 }
@@ -29,8 +29,7 @@ namespace QuestFilterMod.QuestFilter
             {
                 string selectedTraderId = config.TargetTraderIds[random.Next(config.TargetTraderIds.Length)];
                 quest.TraderId = selectedTraderId;
-                q_moved++;
-                filter_trader++;
+                filter_Trader++;
                 if (Plugin.Config.Debug)
                     _logger.Info($"[QuestFilterMod][Modify] Quest '{quest.Name}' ({quest.Id}) → trader {selectedTraderId}");
             }
@@ -40,7 +39,7 @@ namespace QuestFilterMod.QuestFilter
             if (config.RemoveStartConditionsQuest && quest.Conditions?.AvailableForStart != null && !config.LinkedQuest.Enable)
             {
                 quest.Conditions.AvailableForStart.Clear();
-                filter_AvailableForStart++;
+                filter_DelStart++;
                 if (Plugin.Config.Debug)
                     _logger.Info($"[QuestFilterMod][Modify] Start conditions removed for quest '{quest.Name}'");
             }
@@ -48,7 +47,7 @@ namespace QuestFilterMod.QuestFilter
         private void RemoveFinishConditions(Quest quest, List<string> typesToRemove)
         {
             if (quest.Conditions?.AvailableForFinish == null || !typesToRemove.Any()) return;
-            filter_RemoveFinish++;
+            filter_DelFinish++;
             var toRemove = new HashSet<string>(typesToRemove, StringComparer.OrdinalIgnoreCase);
             for (int i = quest.Conditions.AvailableForFinish.Count - 1; i >= 0; i--)
             {
@@ -97,6 +96,7 @@ namespace QuestFilterMod.QuestFilter
         {
             if (!config.ModifyBaseQuest?.Enabled ?? true) return;
 
+
             var countCond = config.ModifyBaseQuest?.CountCond;
             int min = countCond?.Length > 0 ? countCond[0] : 1;
             int max = countCond?.Length > 1 ? countCond[1] : min;
@@ -126,7 +126,7 @@ namespace QuestFilterMod.QuestFilter
             _randomQuestGenerator.FillQuestLocales(quest, locales);
             AddConditionLocales(locales);
 
-            filter_ModifyBaseQuest++;
+            filter_Modify++;
             if (Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][Modify] ✅ Added {count} random finish conditions to '{quest.Name}' ({quest.Id})");
         }

@@ -31,17 +31,15 @@ public partial class FilterService
     private bool _hasAppliedFilters = false;
     private readonly System.Random _random = new();
 
-    int q_deleted = 0;
-    int q_moved = 0;
-    int q_left = 0;
-    int q_random = 0;
-
-
-    int filter_reward = 0;
-    int filter_trader = 0;
-    int filter_AvailableForStart = 0;
-    int filter_RemoveFinish = 0;
-    int filter_ModifyBaseQuest = 0;
+    int filter_Deleted = 0;
+    int filter_Filter = 0;
+    int filter_Random = 0;
+    int filter_Reward = 0;
+    int filter_Trader = 0;
+    int filter_DelStart = 0;
+    int filter_DelFinish = 0;
+    int filter_Modify = 0;
+    int filter_Linked = 0;
 
 
     public FilterService(
@@ -86,11 +84,8 @@ public partial class FilterService
             .Where(q => !ShouldExcludeByProgressSource(q, Config))
             .ToList();
 
-        
+
         var OriginalQuestList = SelectQuests(allQuestList, Config, random);
-
-
-       
 
         if (Config.RemoveStandartQuests)
         {
@@ -102,28 +97,34 @@ public partial class FilterService
                 foreach (var id in toRemoveIds)
                     quests.Remove(id);
 
-                q_deleted = toRemoveIds.Count;
+                filter_Deleted = toRemoveIds.Count;
                 if (Plugin.Config.Debug)
-                    _logger.Info($"[QuestFilterMod][FilterService] Removed {q_deleted} quests from DB (not in selected list)");
+                    _logger.Info($"[QuestFilterMod][FilterService] Removed {filter_Deleted} quests from DB (not in selected list)");
             }
         }
         else
         {
-            // ✅ Для отладки — логируем, что удаление не производится
+
             if (Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][FilterService] RemoveStandartQuests = false → all standard quests preserved");
         }
-        //_logger.Warning($"OriginalQuestList={OriginalQuestList.Count}");
+
+
+        if (Config.ModifyBaseQuest.Enabled == true && OriginalQuestList.Count>0)
+        {
+            _logger.Warning($"Modification of basic quests [{OriginalQuestList.Count}]. Wait...");
+            _logger.Warning($"-------------------------------------------------------------------------");
+        }
+
 
         if (OriginalQuestList.Any())
             ModifyQuests(OriginalQuestList, Config, random);
 
-
-        _logger.Warning($"OriginalQuestList={quests.Count}");
-
         if (Config.GenerateRandomQuests.Enable && Config.GenerateRandomQuests.Count > 0)
         {
 
+            _logger.Warning($"Generating Random Quest [{Config.GenerateRandomQuests.Count}]. Wait...");
+            _logger.Warning($"-------------------------------------------------------------------------");
             _randomQuestGenerator.ResetTracker();
 
             var generatedCount = 0;
@@ -161,9 +162,10 @@ public partial class FilterService
 
                     }
                 }
+
             }
             OriginalQuestList.AddRange(generatedQuests);
-            q_random = generatedCount;
+            filter_Random = generatedCount;
 #if DEBUG
             /*if (Plugin.Config.Debug)
                 _logger.Success($"[QuestFilterMod][FilterService] Done: Generated {generatedCount} random quests.");*/
@@ -180,21 +182,27 @@ public partial class FilterService
          * 
          * */
 #endif
+
+
+
+
         if (Config.LinkedQuest.Enable == true)
         {
+            _logger.Warning($"Linked Quest [{OriginalQuestList.Count}]. Wait...");
+            _logger.Warning($"-------------------------------------------------------------------------");
             var (startQuest, finishMin, finishMax) = ResolveRandomLinkedQuest(Config.LinkedQuest);
             ApplyBranchingQuestChain(OriginalQuestList, quests, Config, startQuest, finishMin, finishMax);
             //_logger.Warning($"selectedQuests={selectedQuests.Count}, quests={quests.Count}");
         }
-        
-        q_left = OriginalQuestList.Count;
+
+        filter_Filter = OriginalQuestList.Count;
 #if DEBUG
-        _logger.Success($"Reward={filter_reward}, Traider={filter_trader}, RemoveFinish={filter_AvailableForStart}, RemoveFinish={filter_RemoveFinish}, Modify={filter_ModifyBaseQuest}");
+        //_logger.Success($"Reward={filter_Reward}, Traider={filter_Trader}, AvailableForStart={filter_DelStart}, RemoveFinish={filter_DelFinish}, Modify={filter_Modify}");
 #endif
 
-        _logger.Warning($"|🗑️{"Deleted",-8}|➡️{"Moved",-8}|🎲{"Random",-8}|✅{"Left",-8}|");
-        _logger.Warning($"---------------------------------------------");
-        _logger.Warning($"|{q_deleted,-10}|{q_moved,-10}|{q_random,-10}|{q_left,-10}|");
+        _logger.Warning($"{"AllBase",-7}|{"Deleted",-7}|{"Traider",-7}|{"delStar",-7}|{"delFins",-7}|{"Modify",-7}|{"Linked",-7}|{"Random",-7}|{"Filter",-7}");
+        _logger.Warning($"-------------------------------------------------------------------------");
+        _logger.Warning($"{quests.Count,-7}|{filter_Deleted,-7}|{filter_Trader,-7}|{filter_DelStart,-7}|{filter_DelFinish,-7}|{filter_Modify,-7}|{filter_Linked,-7}|{filter_Random,-7}|{filter_Filter,-7}");
 
         var tables = _databaseService.GetTables();
         foreach (var quest in OriginalQuestList)

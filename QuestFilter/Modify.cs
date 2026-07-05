@@ -35,7 +35,7 @@ namespace QuestFilterMod.QuestFilter
                     _logger.Info($"[QuestFilterMod][Modify] Skip modification: quest '{q.Name}' is random-generated.");
                 }
             }
-
+#if DEBUG
             if (Plugin.Config.Debug)
             {
                 var locationStats = new Dictionary<string, int>();
@@ -47,12 +47,15 @@ namespace QuestFilterMod.QuestFilter
                     locationStats[locKey] = locationStats.GetValueOrDefault(locKey, 0) + 1;
                 }
 
-                foreach (var kvp in locationStats)
-#if DEBUG
+                foreach (var kvp in locationStats) {
+
                     if (Plugin.Config.Debug)
                         _logger.Info($"[QuestFilterMod][Modify]  • {kvp.Key}: {kvp.Value} quests");
-#endif
+
+                }
+
             }
+#endif
         }
     }
 }

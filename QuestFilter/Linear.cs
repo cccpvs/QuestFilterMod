@@ -92,9 +92,11 @@ namespace QuestFilterMod.QuestFilter
                             }
                         };
                         quest.Conditions.AvailableForStart.Add(condition);
+                        filter_Linked++;
                     }
                 }
             }
+           
         }
 
         private (int startQuest, int finishMin, int finishMax) ResolveRandomLinkedQuest(QuestFilterLinkedQuest config)
