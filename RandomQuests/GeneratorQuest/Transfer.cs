@@ -37,8 +37,8 @@ namespace QuestFilterMod.RandomQuests
                 var conditions = new List<QuestCondition>();
                 foreach (var itemId in shuffledItemIds)
                 {
-                    conditions.Add(ConditionFindItem(itemId, () => "", _random));
-                    conditions.Add(ConditionHandoverItem(itemId, _random.Next(cfg.ItemCount[0], cfg.ItemCount[1] + 1), () => "", _random));
+                    conditions.Add(ConditionFindItem(itemId, 0,() => "", _random));
+                    conditions.Add(ConditionHandoverItem(itemId, _random.Next(cfg.ItemCount[0], cfg.ItemCount[1] + 1), 0, () => "", _random));
                 }
 
                 var key = new QuestKey(string.Join("_", shuffledItemIds), "__TRANSFER__", "PickUp");

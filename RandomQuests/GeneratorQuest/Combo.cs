@@ -68,7 +68,7 @@ namespace QuestFilterMod.RandomQuests
                             conditions.Add(CounterCreator(
                                 idFactory,
                                 "Exploration",
-                                1,
+                                1, i,
                                 false,false,
                                 ConditionVisitPlace(target, pascalName, idFactory)
                                 ));
@@ -99,7 +99,7 @@ namespace QuestFilterMod.RandomQuests
                             conditions.Add(CounterCreator(
                                 idFactory,
                                 "Elimination",
-                                randomKill,
+                                randomKill, i,
                                 false, false,
                                 ConditionKillEnemy(botType, pascalName, idFactory, killConfig, weaponId),
                                 ConditionLocation(pascalName, idFactory)
@@ -124,7 +124,7 @@ namespace QuestFilterMod.RandomQuests
                                     continue;
 
                                 AddQuestStartedItemReward(q, itemTpl, 1, idFactory);
-                                conditions.Add(ConditionDeployItem(itemTpl, targetPoint, plantTime, deployConditionType, pascalName, idFactory));
+                                conditions.Add(ConditionDeployItem(itemTpl, targetPoint, plantTime, i, deployConditionType, pascalName, idFactory));
                             }
 
                             break;
@@ -138,7 +138,7 @@ namespace QuestFilterMod.RandomQuests
                                 ? _random.Next(transferConfig.ItemCount[0], transferConfig.ItemCount[1] + 1)
                                 : transferConfig.ItemCount[0];
 
-                            conditions.Add(ConditionHandoverItem(itemId, count, () => idFactory().ToString(), _random));
+                            conditions.Add(ConditionHandoverItem(itemId, count, i, () => idFactory().ToString(), _random));
                             break;
                     }
                 }

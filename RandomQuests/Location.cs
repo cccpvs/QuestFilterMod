@@ -1,7 +1,7 @@
 ﻿//Location.cs
 
 using QuestFilterMod.RandomQuests.Models;
-using SPTarkov.Server.Core.Models.Eft.Common;
+using System.Collections.Frozen;
 
 namespace QuestFilterMod.RandomQuests
 {
@@ -31,6 +31,29 @@ namespace QuestFilterMod.RandomQuests
         */
 #endif
 
+
+        private static readonly FrozenDictionary<string, string> _pascalToJson = new Dictionary<string, string>
+        {
+            { "Bigmap", "bigmap" },
+            { "Develop", "develop" },
+            { "Factory4Day", "factory4_day" },
+            { "Factory4Night", "factory4_night" },
+            { "Interchange", "Interchange" },
+            { "Laboratory", "Laboratory" },
+            { "Lighthouse", "Lighthouse" },
+            { "RezervBase", "RezervBase" },
+            { "Shoreline", "Shoreline" },
+            { "TarkovStreets", "TarkovStreets" },
+            { "Labyrinth", "Labyrinth" },
+            { "Woods", "Woods" },
+            { "Sandbox", "Sandbox" },
+            { "SandboxHigh", "Sandbox_high" }
+}.ToFrozenDictionary();
+
+        private static FrozenDictionary<string, string> PascalToInverse => _pascalToJson.ToFrozenDictionary(kv => kv.Value, kv => kv.Key);
+
+
+
         public static readonly Dictionary<string, string> IdToPascalName = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
@@ -41,7 +64,6 @@ namespace QuestFilterMod.RandomQuests
         public static void Initialize(Dictionary<string, SPTarkov.Server.Core.Models.Eft.Common.Location> locations)
         {
             IdToPascalName.Clear();
-
             foreach (var kvp in locations)
             {
                 string pascalName = kvp.Key;                    
@@ -81,8 +103,23 @@ namespace QuestFilterMod.RandomQuests
             if (!TryGetPascalName(locationId, out var pascalName))
                 return false;
 
-            // 🔑 Используем PascalName напрямую
             return config.QuestGeneration.AllowedLocations.GetValueOrDefault(pascalName, false);
+        }
+
+        /// <summary>
+        /// Получить JSON-ключ по Pascal-имени (например: "Factory4Day" → "factory4_day")
+        /// </summary>
+        public static string GetJsonKey(string pascalName)
+        {
+            return _pascalToJson.GetValueOrDefault(pascalName);
+        }
+
+        /// <summary>
+        /// Получить Pascal-имя по JSON-ключу (например: "factory4_day" → "Factory4Day")
+        /// </summary>
+        public static string GetPascalNameFromJsonKey(string jsonKey)
+        {
+            return PascalToInverse.GetValueOrDefault(jsonKey);
         }
 
         /// <summary>

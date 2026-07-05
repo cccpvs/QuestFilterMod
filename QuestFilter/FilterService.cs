@@ -171,20 +171,6 @@ public partial class FilterService
                 _logger.Success($"[QuestFilterMod][FilterService] Done: Generated {generatedCount} random quests.");*/
 #endif
         }
-#if DEBUG
-        /*
-         * Проблемы с линейкой квестов.
-         * фильтры явно не работают
-         * квесты стандартые не удаляються
-         * случайных квестов нет в списке
-         * проверить рализацию линейки квеста.
-         * 
-         * 
-         * */
-#endif
-
-
-
 
         if (Config.LinkedQuest.Enable == true)
         {

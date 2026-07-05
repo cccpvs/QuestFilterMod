@@ -53,19 +53,20 @@ namespace QuestFilterMod.RandomQuests
             if (!validItems.Any())
             {
 #if DEBUG
-                _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] No valid items in ItemPlant or special items — skipping.");
+                if (Plugin.Config.Debug)
+                    _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] No valid items in ItemPlant or special items — skipping.");
 #endif
                 return null;
             }
             var randomItemTpl = validItems.OrderBy(_ => _random.Next()).First();
 
-#if DEBUG
+
             if (string.IsNullOrEmpty(randomItemTpl))
             {
-                _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] No valid items to deploy — skipping.");
+                if (Plugin.Config.Debug)
+                    _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] No valid items to deploy — skipping.");
                 return null;
             }
-#endif
 
             foreach (var (loc, targetPoint) in allPoints.OrderBy(_ => _random.Next()))
             {
@@ -74,13 +75,15 @@ namespace QuestFilterMod.RandomQuests
                 var key = new QuestKey(loc.Id, targetPoint, "", questType);
 
 #if DEBUG
-                _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] Attempting to use QuestKey: {key}");
+                if(Plugin.Config.Debug)
+                    _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] Attempting to use QuestKey: {key}");
 #endif
 
                 if (!_tracker.TryUse(key)) continue;
 
 #if DEBUG
-                _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] QuestKey: {loc.Id}, {targetPoint}, {itemTpl}, \"{questType}\"");
+                if (Plugin.Config.Debug)
+                    _logger?.Info($"[QuestFilterMod][{questType}QuestGenerator] QuestKey: {loc.Id}, {targetPoint}, {itemTpl}, \"{questType}\"");
 #endif
 
                 return GenerateBaseQuest(questType, (q, idFactory) =>
@@ -97,13 +100,13 @@ namespace QuestFilterMod.RandomQuests
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>
                     {
-                        ConditionDeployItem(itemTpl, targetPoint, config.PlantTime, conditionType,pascalName, idFactory)
+                        ConditionDeployItem(itemTpl, targetPoint, config.PlantTime, 0, conditionType,pascalName, idFactory)
                     };
 
 #if DEBUG
                     q.Conditions.AvailableForStart = new List<QuestCondition>
                     {
-                        ConditionRequiredLevel(1, idFactory)
+                        ConditionRequiredLevel(1, 0, idFactory)
                     };
 #endif
                 });

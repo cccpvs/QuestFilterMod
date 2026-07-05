@@ -21,8 +21,11 @@ namespace QuestFilterMod.RandomQuests
             var allowed = Location.GetAllowedLocations(ConfigRandom).ToList();
 
 #if DEBUG
-            _logger.Warning($"[QuestFilterMod][Kill] Starting generation...");
-            _logger.Warning($"[QuestFilterMod][Kill] Allowed locations: {allowed.Count}, Targets: {string.Join(", ", cfg.Target)}");
+            if (Plugin.Config.Debug) {
+                _logger.Warning($"[QuestFilterMod][Kill] Starting generation...");
+                _logger.Warning($"[QuestFilterMod][Kill] Allowed locations: {allowed.Count}, Targets: {string.Join(", ", cfg.Target)}");
+
+            }
 #endif
 
             var allPoints = new List<(string PascalName, string LocationId, string Target)>();
@@ -36,7 +39,8 @@ namespace QuestFilterMod.RandomQuests
             }
 
 #if DEBUG
-            _logger.Warning($"[QuestFilterMod][Kill] Total possible combinations: {allPoints.Count}");
+            if (Plugin.Config.Debug)
+                _logger.Warning($"[QuestFilterMod][Kill] Total possible combinations: {allPoints.Count}");
 #endif
 
             if (!allPoints.Any())
@@ -49,19 +53,22 @@ namespace QuestFilterMod.RandomQuests
                 var wasUsed = _tracker.IsUsed(key);
 
 #if DEBUG
-                _logger.Warning($"[QuestFilterMod][Kill] Trying key: {keyStr} (used: {wasUsed})");
+                if (Plugin.Config.Debug)
+                    _logger.Warning($"[QuestFilterMod][Kill] Trying key: {keyStr} (used: {wasUsed})");
 #endif
 
                 if (!_tracker.TryUse(key))
                 {
 #if DEBUG
-                    _logger.Info($"[QuestFilterMod][Kill] Key {keyStr} already used — skipping");
+                    if (Plugin.Config.Debug)
+                        _logger.Info($"[QuestFilterMod][Kill] Key {keyStr} already used — skipping");
 #endif
                     continue;
                 }
 
 #if DEBUG
-                _logger.Info($"[QuestFilterMod][Kill] ✅ Using key: {keyStr} (tracker count now: {_tracker})");
+                if (Plugin.Config.Debug)
+                    _logger.Info($"[QuestFilterMod][Kill] ✅ Using key: {keyStr} (tracker count now: {_tracker})");
 #endif
 
                 var randomKill = _random.Next(cfg.MinKills, cfg.MaxKills + 1);
@@ -105,7 +112,7 @@ namespace QuestFilterMod.RandomQuests
                         CounterCreator(
                         idFactory,
                         "Elimination",
-                        randomKill,
+                        randomKill, 0,
                         false, false,
                         ConditionKillEnemy(target, pascalName, idFactory, cfg, weaponId),
                         ConditionLocation(pascalName, idFactory))
@@ -117,7 +124,8 @@ namespace QuestFilterMod.RandomQuests
                     var timeStr = timeOfDay != null ? $" (time: {timeOfDay})" : "";
                     var weaponStr = weaponId != null ? $" (weapon: {weaponId})" : "";
 #if DEBUG
-                    _logger.Info($"[QuestFilterMod][Kill] ✅ Generated: {locationId} → {target} ({randomKill} kills){timeStr}{weaponStr}");
+                    if (Plugin.Config.Debug)
+                        _logger.Info($"[QuestFilterMod][Kill] ✅ Generated: {locationId} → {target} ({randomKill} kills){timeStr}{weaponStr}");
 #endif
                 }
 
@@ -125,7 +133,8 @@ namespace QuestFilterMod.RandomQuests
             }
 
 #if DEBUG
-            _logger.Warning($"[QuestFilterMod][Kill] All {allPoints.Count} combinations are already used — returning null");
+            if (Plugin.Config.Debug)
+                _logger.Warning($"[QuestFilterMod][Kill] All {allPoints.Count} combinations are already used — returning null");
 #endif
             return null;
         }

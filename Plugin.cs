@@ -109,6 +109,8 @@ public class Plugin : IOnUpdate
             }
 
 #if DEBUG
+            
+            
             if (Config.Debug)
             {
                 var locationDict = locations.GetDictionary(); 

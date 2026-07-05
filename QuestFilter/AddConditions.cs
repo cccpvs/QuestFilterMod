@@ -88,7 +88,7 @@ namespace QuestFilterMod.QuestFilter
                     return Generator.CounterCreator(
                         idFactory,
                         "Exploration",
-                        1,
+                        1,0,
                         true, false,
                         Generator.ConditionVisitPlace(target, pascalName, idFactory)
                     );
@@ -106,7 +106,7 @@ namespace QuestFilterMod.QuestFilter
                     return Generator.CounterCreator(
                         idFactory,
                         "Elimination",
-                        randomKill,
+                        randomKill,0,
                         true, false,
                         Generator.ConditionKillEnemy(botType, pascalName, idFactory, killConfig, weaponId),
                         Generator.ConditionLocation(pascalName, idFactory)
@@ -130,7 +130,7 @@ namespace QuestFilterMod.QuestFilter
                     if (string.IsNullOrEmpty(itemTpl)) return null;
 
 
-                    return Generator.ConditionDeployItem(itemTpl, targetPoint, deployConfig.PlantTime, isBeacon ? "PlaceBeacon" : "LeaveItemAtLocation", pascalName, idFactory);
+                    return Generator.ConditionDeployItem(itemTpl, targetPoint, deployConfig.PlantTime, 0, isBeacon ? "PlaceBeacon" : "LeaveItemAtLocation", pascalName, idFactory);
 
                 case "Transfer":
                     var transferConfig = ConfigRandom.TransferQuest;
@@ -141,7 +141,7 @@ namespace QuestFilterMod.QuestFilter
                         ? random.Next(transferConfig.ItemCount[0], transferConfig.ItemCount[1] + 1)
                         : transferConfig.ItemCount[0];
 
-                    return Generator.ConditionHandoverItem(itemId, count, () => idFactory().ToString(), _random);
+                    return Generator.ConditionHandoverItem(itemId, count, 0, () => idFactory().ToString(), _random);
 
                 default:
                     return null;

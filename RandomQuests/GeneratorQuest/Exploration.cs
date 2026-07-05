@@ -3,6 +3,8 @@
 using QuestFilterMod.RandomQuests.Models;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace QuestFilterMod.RandomQuests
 {
@@ -39,7 +41,6 @@ namespace QuestFilterMod.RandomQuests
 
                 if (!Location.TryGetPascalName(loc.Id, out var pascalName))
                     return;
-
                 q.Conditions ??= new QuestConditionTypes();
 
 
@@ -48,14 +49,14 @@ namespace QuestFilterMod.RandomQuests
                     CounterCreator(
                         idFactory,
                         "Exploration",
-                        1,
-                        true, false,
+                        1,0,
+                        false, false,
                         ConditionVisitPlace(target, pascalName, idFactory)),
                     CounterCreator(
                         idFactory,
                         "Completion",
-                        1,
-                        true, false,
+                        1,1,
+                        false, false,
                         ConditionSurvivedExit(idFactory),
                         ConditionLocation(pascalName, idFactory))
                 };

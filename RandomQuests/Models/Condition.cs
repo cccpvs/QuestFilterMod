@@ -18,6 +18,7 @@ namespace QuestFilterMod.RandomQuests
                 Func<MongoId> idFactory,
                 string Type,
                 double Value,
+                int Index,
                 bool OneSessionOnly,
                 bool OnlyFoundInRaid,
                 params QuestConditionCounterCondition[] subConditions)
@@ -39,17 +40,20 @@ namespace QuestFilterMod.RandomQuests
                 },
                 IsNecessary = false,
                 OneSessionOnly = OneSessionOnly,
-                CountInRaid = true,
+                CountInRaid = false,
                 OnlyFoundInRaid = OnlyFoundInRaid,
-                Index = 0,
+                Index = Index,
                 VisibilityConditions = [],
                 CompleteInSeconds = 0,
-                GlobalQuestCounterId = ""
+                GlobalQuestCounterId = "",
+                DoNotResetIfCounterCompleted = false,
+                IsResetOnConditionFailed = false,
+                ParentId = ""
             };
         }
 
 
-        public static QuestCondition ConditionFindItem(string itemId, Func<string> idFactory, Random random)
+        public static QuestCondition ConditionFindItem(string itemId, int Index, Func<string> idFactory, Random random)
         {
             return new QuestCondition
             {
@@ -62,7 +66,7 @@ namespace QuestFilterMod.RandomQuests
                 GlobalQuestCounterId = "",
                 IsEncoded = false,
                 MaxDurability = 100,
-                Index = 0, 
+                Index = Index, 
                 MinDurability = 0,
                 OneSessionOnly = true,
                 OnlyFoundInRaid = true,
@@ -71,7 +75,7 @@ namespace QuestFilterMod.RandomQuests
                 ExtensionData = new Dictionary<string, object> { ["_item"] = itemId }
             };
         }
-        public static QuestCondition ConditionHandoverItem(string itemId, int count, Func<string> idFactory, Random random)
+        public static QuestCondition ConditionHandoverItem(string itemId, int count, int Index, Func<string> idFactory, Random random)
         {
             return new QuestCondition
             {
@@ -84,7 +88,7 @@ namespace QuestFilterMod.RandomQuests
                 GlobalQuestCounterId = "",
                 IsEncoded = false,
                 MaxDurability = 100,
-                Index = 0,
+                Index = Index,
                 MinDurability = 0,
                 OneSessionOnly = true,
                 OnlyFoundInRaid = true,
@@ -93,7 +97,7 @@ namespace QuestFilterMod.RandomQuests
                 ExtensionData = new Dictionary<string, object> { ["_item"] = itemId }
             };
         }
-        public static QuestCondition ConditionDeployItem(string itemTpl, string zoneId, int plantTime, string conditionType, string pascalName, Func<MongoId> idFactory)
+        public static QuestCondition ConditionDeployItem(string itemTpl, string zoneId, int plantTime, int Index, string conditionType, string pascalName, Func<MongoId> idFactory)
         {
             return new QuestCondition
             {
@@ -105,7 +109,7 @@ namespace QuestFilterMod.RandomQuests
                 OnlyFoundInRaid = false,
                 OneSessionOnly = false,
                 Value = 1,
-                Index = 1,
+                Index = Index,
                 ZoneId = zoneId,
                 DynamicLocale = false,
                 MaxDurability = 100,
@@ -121,7 +125,7 @@ namespace QuestFilterMod.RandomQuests
                 }
             };
         }
-        private QuestCondition ConditionRequiredLevel(int minLevel, Func<MongoId> idFactory)
+        private QuestCondition ConditionRequiredLevel(int minLevel, int Index,Func<MongoId> idFactory)
         {
             return new QuestCondition
             {
@@ -130,7 +134,7 @@ namespace QuestFilterMod.RandomQuests
                 ConditionType = "Level",
                 DynamicLocale = false,
                 GlobalQuestCounterId = "",
-                Index = 0,
+                Index = Index,
                 ParentId = "",
                 Value = minLevel,
                 VisibilityConditions = []
@@ -207,6 +211,7 @@ namespace QuestFilterMod.RandomQuests
         }
         public static QuestConditionCounterCondition ConditionLocation(string pascalName, Func<MongoId> idFactory)
         {
+            var pascalNameQuest = Location.GetJsonKey(pascalName);
             return new QuestConditionCounterCondition
             {
 
@@ -215,8 +220,8 @@ namespace QuestFilterMod.RandomQuests
                 ConditionType = "Location",
                 ExtensionData = new Dictionary<string, object>
                 {
-                    ["target"] = new[] { pascalName }
-                }
+                    ["target"] = new[] { pascalNameQuest }
+                } 
                 
             };
         }
@@ -227,10 +232,10 @@ namespace QuestFilterMod.RandomQuests
                 Id = idFactory(),
                 DynamicLocale = false,
                 ConditionType = "ExitStatus",
+                Status = new List<string> { "Survived", "Transit"},
                 ExtensionData = new Dictionary<string, object>
                 {
-                    ["status"] = new HashSet<string> { "Survived", "Transit" },
-
+                    ["_status"] = new HashSet<string> { "Survived", "Transit" }
                 }
             };
         }

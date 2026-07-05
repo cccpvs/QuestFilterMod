@@ -259,7 +259,7 @@ namespace QuestFilterMod.RandomQuests
                                 },
                                 "Completion" => new[] {
                                     locationName,
-                                    cond.Counter?.Conditions?[0]?.ExtensionData?.TryGetValue("status", out var statusObj) == true
+                                    cond.Counter?.Conditions?[0]?.ExtensionData?.TryGetValue("_status", out var statusObj) == true
                                         ? statusObj switch
                                         {
                                             string s => s,
