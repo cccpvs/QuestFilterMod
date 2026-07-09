@@ -15,6 +15,12 @@ namespace QuestFilterMod.QuestFilter
 {
     public partial class FilterService
     {
+        /// <summary>
+        /// Retrieves a list of allowed exploration targets (zone IDs) for a given location, based on config.
+        /// Filters out empty or null targets.
+        /// </summary>
+        /// <param name="locId">Raw location ID (e.g., "55f2a33d4bdc2d8f068b4567").</param>
+        /// <returns>List of valid target zone strings (e.g., ["factory_1", "factory_2"]), or empty list if none found.</returns>
 
         private List<string> GetExplorationTargets(string locId)
         {
@@ -28,6 +34,15 @@ namespace QuestFilterMod.QuestFilter
             }
             return new();
         }
+        
+        /// <summary>
+        /// Generates a random finish condition of configurable type: Exploration, Elimination (Kills), 
+        /// Delivery/Beacon (item placement), or Transfer (item handover), based on active config.
+        /// Also initializes location data if needed.
+        /// </summary>
+        /// <param name="random">Random instance for selection.</param>
+        /// <param name="idFactory">Function to generate a unique quest condition ID.</param>
+        /// <returns>A populated QuestCondition, or null if generation is skipped (e.g., no allowed locations, invalid config).</returns>
 
         private QuestCondition GenerateRandomFinishCondition(Random random, Func<MongoId> idFactory)
         {
@@ -147,6 +162,12 @@ namespace QuestFilterMod.QuestFilter
                     return null;
             }
         }
+
+        /// <summary>
+        /// Registers localized strings for quest conditions into the global locale system via a transformer.
+        /// Ensures condition descriptions (e.g., "Visit Place", "Place Beacon") appear correctly in UI.
+        /// </summary>
+        /// <param name="locales">Dictionary of language → (locale key → translated text) for condition entries.</param>
 
         private void AddConditionLocales(Dictionary<string, Dictionary<string, string>> locales)
         {

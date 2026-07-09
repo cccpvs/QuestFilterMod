@@ -1,16 +1,8 @@
 ﻿//Locales.cs
 
-
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
-using System.Diagnostics.Metrics;
 using System.Text.Json;
-
-#if DEBUG
-/*
- * 1. Убрать дублирование в окончании квеста сообщения номера. Проверить форматирование текста.
-*/
-#endif
 
 namespace QuestFilterMod.RandomQuests
 {
@@ -19,6 +11,13 @@ namespace QuestFilterMod.RandomQuests
         private static readonly Dictionary<string, Dictionary<string, string>> _loadedLocales = new();
         private static bool _localesLoaded = false;
 
+
+        /// <summary>
+        /// Populates the provided locale dictionary with translated strings for the given quest.
+        /// Handles quest type, conditions, events, and descriptions with fallback to English.
+        /// </summary>
+        /// <param name="quest">The quest object to generate localized content for.</param>
+        /// <param name="locales">Output dictionary mapping language codes to locale key-value pairs.</param>
         public void FillQuestLocales(Quest quest, Dictionary<string, Dictionary<string, string>> locales)
         {
             if (quest == null) return;
@@ -297,6 +296,18 @@ namespace QuestFilterMod.RandomQuests
                 }
             }
         }
+
+        /// <summary>
+        /// Generates and adds quest-specific localized entries (e.g., {id} name, {id} description, {id} accept) for a given language.
+        /// Consolidates condition details (items, zones, time windows, etc.) into human-readable descriptions.
+        /// </summary>
+        /// <param name="lang">Target language code (e.g., "en", "ru").</param>
+        /// <param name="quest">The quest being localized.</param>
+        /// <param name="id">Full quest ID.</param>
+        /// <param name="last6">Last 6 characters of quest ID (padded/trimmed).</param>
+        /// <param name="baseTypeKey">Locale key for the base quest type (e.g., "base_type_elimination").</param>
+        /// <param name="baseTypeFallback">Fallback English name for the quest type.</param>
+        /// <param name="locales">Output dictionary to populate with localized text.</param>
         private void AddLocalizedQuestLocales(
                 string lang,
                 Quest quest,
@@ -355,8 +366,8 @@ namespace QuestFilterMod.RandomQuests
                 {
                     switch (cond.ConditionType)
                     {
-                        //case "FindItem":
-                        //case "HandoverItem":
+                        case "FindItem":
+                        case "HandoverItem":
                         case "LeaveItemAtLocation":
                             {
                                 string itemId2 = cond.ExtensionData?.TryGetValue("_item", out var itemObjTry) == true ? itemObjTry?.ToString() ?? "" : "";
@@ -368,7 +379,6 @@ namespace QuestFilterMod.RandomQuests
                                 }
                                 break;
                             }
-                        //case "VisitPlace":
                         case "CounterCreator" when cond.Type == "Exploration":
                             {
                                 if (string.IsNullOrEmpty(mainZone))
@@ -427,43 +437,6 @@ namespace QuestFilterMod.RandomQuests
                                     mainZone = locationName;
                                 break;
                             }
-
-                            /*case "Kills" or "CounterCreator":
-                                if (cond.Type == "Elimination")
-                                {
-                                    string targetRaw = cond.Counter?.Conditions?[0]?.ExtensionData?["target"]?.ToString();
-                                    mainTargetName = GetTargetNameFromRaw(targetRaw ?? "");
-
-                                    if (cond.Counter?.Conditions?[0]?.ExtensionData?.TryGetValue("_time", out var timeObj) == true)
-                                    {
-                                        if (timeObj is DaytimeCounter daytime && daytime.From.HasValue && daytime.To.HasValue)
-                                        {
-                                            string timeKey = $"time_{daytime.From}_{daytime.To}";
-                                            string timeText = null;
-
-                                            if (_loadedLocales.TryGetValue(lang, out dictLang) &&
-                                                dictLang.TryGetValue(timeKey, out var timeVal) &&
-                                                !string.IsNullOrEmpty(timeVal))
-                                            {
-                                                timeText = timeVal;
-                                            }
-                                            else
-                                            {
-                                                timeText = $"{daytime.From.Value:00}:00–{daytime.To.Value:00}:00";
-                                            }
-
-                                            extraConditions.Add(timeText);
-                                        }
-                                    }
-
-                                    if (cond.Counter?.Conditions?[0]?.ExtensionData?.TryGetValue("_weapons", out var weaponObj) == true &&
-                                        weaponObj?.ToString() is { Length: > 0 } weaponId)
-                                    {
-                                        string weaponName = GetItemName(weaponId, lang); 
-                                        extraConditions.Add(weaponName);
-                                    }
-                                }
-                                break;*/
                     }
                 }
             }
@@ -510,7 +483,7 @@ namespace QuestFilterMod.RandomQuests
                 if (!locales.ContainsKey(lang)) locales[lang] = new();
                 locales[lang][key] = value;
 #if DEBUG
-                //_logger.Warning($"[QuestFilterMod][Locales] Locale added [lang={lang}] key=\"{key}\" → \"{value}\"");
+                _logger.Warning($"[QuestFilterMod][Locales] Localequest_complete added [lang={lang}] key=\"{key}\" → \"{value}\"");
 #endif
             }
 
@@ -538,12 +511,17 @@ namespace QuestFilterMod.RandomQuests
                     eventValue = enVal;
                 }
 
-                string questIdentifier = $"{baseTypeName} #{last6}"; 
+                string questIdentifier = $"{baseTypeName}"; 
                 eventValue = eventValue.Replace("{0}", questIdentifier);
 
                 AddLoc($"{id} {evt}", eventValue);
             }
         }
+
+        /// <summary>
+        /// Loads JSON locale files from disk for all supported languages on first invocation.
+        /// Caches loaded dictionaries and logs missing/unreadable files.
+        /// </summary>
         private void LoadLocales()
         {
             if (_localesLoaded) return;
@@ -591,18 +569,24 @@ namespace QuestFilterMod.RandomQuests
                     _loadedLocales[lang] = new Dictionary<string, string>(); 
                 }
             }
-            if(Plugin.Config.Debug)
 #if DEBUG
-                _logger.Warning($"[QuestFilterMod][Locales] Loaded locale languages: {string.Join(", ", loadedLangs)}");
+            if (Plugin.Config.Debug)
+
+                //_logger.Warning($"[QuestFilterMod][Locales] Loaded locale languages: {string.Join(", ", loadedLangs)}");
 #endif
             if (missingLangs.Count > 0)
 #if DEBUG
                 if (Plugin.Config.Debug)
-                    _logger.Warning($"[QuestFilterMod][Locales] Missing locale files for languages: {string.Join(", ", missingLangs)}");
+                    //_logger.Warning($"[QuestFilterMod][Locales] Missing locale files for languages: {string.Join(", ", missingLangs)}");
 #endif
 
             _localesLoaded = true;
         }
+        /// <summary>
+        /// Normalizes and translates raw target types (e.g., "savage", "USEC", "BEAR") into localized display names.
+        /// </summary>
+        /// <param name="targetRaw">Raw target identifier string from quest condition.</param>
+        /// <returns>Human-readable target name (e.g., "Scav", "USEC").</returns>
         private string GetTargetNameFromRaw(string targetRaw)
         {
             if (string.IsNullOrEmpty(targetRaw)) return "target";
@@ -619,6 +603,13 @@ namespace QuestFilterMod.RandomQuests
                 _ => "target"
             };
         }
+        /// <summary>
+        /// Retrieves the localized name of an item by its ID across all available languages.
+        /// Prioritizes requested language, falls back to English, then any other loaded language.
+        /// </summary>
+        /// <param name="itemId">The item's unique identifier (e.g., "544900f54bdc2d6f028b456f").</param>
+        /// <param name="lang">Preferred language code.</param>
+        /// <returns>The localized item name, or the raw ID if not found.</returns>
         private string GetItemName(string itemId, string lang = "en")
         {
             if (string.IsNullOrEmpty(itemId)) return "unknown item";

@@ -13,9 +13,6 @@ using QuestFilterMod.RandomQuests.Models;
 
 namespace QuestFilterMod.QuestFilter;
 
-#if DEBUG
-/***/
-#endif
 
 public partial class FilterService
 {
@@ -53,6 +50,12 @@ public partial class FilterService
         _randomQuestGenerator = randomQuestGenerator;
         _customQuestService = customQuestService;
     }
+
+    /// <summary>
+    /// Applies configured filters to the quest pool: removes standard quests, selects random quests by location, generates new random quests, and applies modifications.
+    /// Ensures filters are applied only once per session.
+    /// </summary>
+    /// <param name="Config">Configuration object controlling filtering behavior (enabled, quest types, locations, random generation, linked quests, etc.).</param>
 
     public void ApplyFilters(ModelConfig Config)
     {
@@ -207,7 +210,12 @@ public partial class FilterService
         }
     }
 
-    
+
+    /// <summary>
+    /// Returns the set of quest types that are allowed based on configuration, parsed and validated as QuestTypeEnum.
+    /// </summary>
+    /// <param name="config">Configuration containing list of allowed quest type names.</param>
+    /// <returns>HashSet of valid QuestTypeEnum values.</returns>
 
     private HashSet<QuestTypeEnum> GetAllowedTypes(ModelConfig config)
     {
@@ -217,6 +225,15 @@ public partial class FilterService
             .Select(t => t.GetValueOrDefault())
             .ToHashSet();
     }
+
+    /// <summary>
+    /// Selects a subset of quests according to location-based and global count constraints.
+    /// Groups quests by normalized location (including special "any"), applies per-location quotas, and fills remaining slots randomly if needed.
+    /// </summary>
+    /// <param name="allQuests">List of all eligible quests (filtered by type and progress source).</param>
+    /// <param name="Config">Configuration object specifying quest selection rules (count, location quotas).</param>
+    /// <param name="random">Random instance used for shuffling.</param>
+    /// <returns>List of selected quests, including base and optionally random quests.</returns>
 
     private List<Quest> SelectQuests(List<Quest> allQuests, ModelConfig Config, Random random)
     {
@@ -321,6 +338,14 @@ public partial class FilterService
 
         return selected;
     }
+    
+    /// <summary>
+    /// Normalizes a raw location ID (e.g., "factory_day", "55f2a33d4bdc2d8f068b4567") into its canonical PascalCase lowercase key (e.g., "factory_day").
+    /// Handles aliases, mapped keys, and direct lookups against location database.
+    /// </summary>
+    /// <param name="locationId">Raw location identifier from quest.</param>
+    /// <param name="tables">Database tables containing location metadata.</param>
+    /// <returns>Normalized location key (lowercase Pascal name), or null if not found.</returns>
 
     private string GetNormalizedLocationKey(string locationId, SPTarkov.Server.Core.Models.Spt.Server.DatabaseTables tables)
     {
@@ -407,6 +432,16 @@ public partial class FilterService
         _logger.Error($"[QuestFilterMod][FilterService] ❌ Could not find location for '{locationId}'");
         return null;
     }
+
+    /// <summary>
+    /// Adds up to `count` quests from a specific location group (or "any") to the selected list, avoiding duplicates.
+    /// </summary>
+    /// <param name="groups">Dictionary mapping normalized location keys to lists of quests.</param>
+    /// <param name="key">Location group key (e.g., "factory_day", "any").</param>
+    /// <param name="count">Maximum number of quests to pick.</param>
+    /// <param name="selected">Output list to append selected quests to.</param>
+    /// <param name="random">Random instance used for selection shuffling.</param>
+    /// <param name="debug">If true, emits debug logs.</param>
 
     private void AddFromGroup(
             Dictionary<string, List<Quest>> groups,

@@ -7,6 +7,11 @@ namespace QuestFilterMod.RandomQuests
 {
     public partial class Generator
     {
+
+        /// <summary>
+        /// Registers a generated quest in the game's quest database, including its localized descriptions.
+        /// Handles rewards initialization, fail conditions, and error logging.
+        /// </summary>
         public void CreateAndRegisterQuest(Quest quest)
         {
 
@@ -51,6 +56,13 @@ namespace QuestFilterMod.RandomQuests
                     _logger.Error($"[QuestFilterMod][Registration] 🔥 Exception when registering a quest: {ex}");
             }
         }
+        
+        /// <summary>
+        /// Ensures that the quest has reward entries for all required statuses: "Started", "Success", and "Fail".
+        /// Initializes empty lists if missing.
+        /// </summary>
+        /// <param name="quest">Quest to inspect and augment.</param>
+
         private void EnsureRewards(Quest quest)
         {
             if (quest.Rewards == null)
@@ -62,6 +74,12 @@ namespace QuestFilterMod.RandomQuests
                     quest.Rewards[status] = new List<Reward>();
             }
         }
+
+        /// <summary>
+        /// Ensures that the quest has a non-null Fail conditions list.
+        /// Initializes an empty list if Fail conditions are missing.
+        /// </summary>
+        /// <param name="quest">Quest to inspect and augment.</param>
         private void EnsureFailConditions(Quest quest)
         {
             if (quest.Conditions?.Fail == null)

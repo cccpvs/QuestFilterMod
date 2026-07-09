@@ -6,7 +6,12 @@ namespace QuestFilterMod.QuestFilter
 {
     public partial class FilterService
     {
-        
+        // <summary>
+        /// Ensures that a quest has reward entries for "Started", "Success", and "Fail" statuses.
+        /// Initializes empty reward lists if missing.
+        /// </summary>
+        /// <param name="quest">Quest to inspect and augment.</param>
+
         private void EnsureRewardStatuses(Quest quest)
         {
             if (quest.Rewards == null)
@@ -23,6 +28,15 @@ namespace QuestFilterMod.QuestFilter
                 }
             }
         }
+
+        /// <summary>
+        /// Overrides the quest’s assigned trader with a random one from the configured list.
+        /// Does nothing if no trader IDs are specified in config.
+        /// </summary>
+        /// <param name="quest">Quest to modify.</param>
+        /// <param name="config">Configuration containing allowed trader IDs.</param>
+        /// <param name="random">Random instance for selection.</param>
+
         private void ModifyQuestTrader(Quest quest, ModelConfig config, Random random)
         {
             if (config.TargetTraderIds?.Length > 0)
@@ -34,6 +48,12 @@ namespace QuestFilterMod.QuestFilter
                     _logger.Info($"[QuestFilterMod][Modify] Quest '{quest.Name}' ({quest.Id}) → trader {selectedTraderId}");
             }
         }
+
+        /// <summary>
+        /// Removes all start conditions (AvailableForStart) from the quest, if enabled in config and not part of a linked chain.
+        /// </summary>
+        /// <param name="quest">Quest to modify.</param>
+        /// <param name="config">Configuration flag for removal.</param>
         private void RemoveStartConditions(Quest quest, ModelConfig config)
         {
             if (config.RemoveStartConditionsQuest && quest.Conditions?.AvailableForStart != null && !config.LinkedQuest.Enable)
@@ -44,6 +64,14 @@ namespace QuestFilterMod.QuestFilter
                     _logger.Info($"[QuestFilterMod][Modify] Start conditions removed for quest '{quest.Name}'");
             }
         }
+
+        /// <summary>
+        /// Removes finish conditions (AvailableForFinish) matching specified types (e.g., "FindItem", "LeaveItemAtLocation").
+        /// Also handles nested conditions inside CounterCreator (removes inner conditions, then deletes empty CounterCreator).
+        /// </summary>
+        /// <param name="quest">Quest to modify.</param>
+        /// <param name="typesToRemove">List of condition types or nested condition types to remove (case-insensitive).</param>
+
         private void RemoveFinishConditions(Quest quest, List<string> typesToRemove)
         {
             if (quest.Conditions?.AvailableForFinish == null || !typesToRemove.Any()) return;
@@ -92,6 +120,16 @@ namespace QuestFilterMod.QuestFilter
                 }
             }
         }
+
+        /// <summary>
+        /// Adds a random number of new finish conditions to the quest (min–max count from config).
+        /// Each condition is randomly generated (Exploration, Elimination, Delivery, Transfer, or Beacon).
+        /// After modification, re-loads and registers localized descriptions for the quest.
+        /// </summary>
+        /// <param name="quest">Quest to modify.</param>
+        /// <param name="config">Configuration specifying number of conditions to add.</param>
+        /// <param name="random">Random instance for condition selection and generation.</param>
+
         private void AddRandomFinishConditions(Quest quest, ModelConfig config, Random random)
         {
             if (!config.ModifyBaseQuest?.Enabled ?? true) return;
@@ -130,6 +168,14 @@ namespace QuestFilterMod.QuestFilter
             if (Plugin.Config.Debug)
                 _logger.Info($"[QuestFilterMod][Modify] ✅ Added {count} random finish conditions to '{quest.Name}' ({quest.Id})");
         }
+        /// <summary>
+        /// Checks whether a quest should be excluded based on its ProgressSource (e.g., "arena").
+        /// Used to filter out arena-specific quests when config.ExcludeArenaQuests is enabled.
+        /// </summary>
+        /// <param name="quest">Quest to evaluate.</param>
+        /// <param name="config">Configuration flag for exclusion.</param>
+        /// <returns>True if the quest should be excluded; otherwise false.</returns>
+
         private bool ShouldExcludeByProgressSource(Quest quest, ModelConfig config)
         {
             if (!config.ExcludeArenaQuests) return false;

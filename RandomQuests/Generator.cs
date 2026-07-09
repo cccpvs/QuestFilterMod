@@ -13,6 +13,11 @@ using System.Reflection;
 
 namespace QuestFilterMod.RandomQuests
 {
+
+    /// <summary>
+    /// Core class for generating randomized quests based on configuration and available database content.
+    /// Handles quest type selection, uniqueness tracking, retry logic, and fallback handling.
+    /// </summary>
     public partial class Generator
     {
         private readonly ISptLogger<Plugin> _logger;
@@ -20,27 +25,61 @@ namespace QuestFilterMod.RandomQuests
         private readonly DatabaseServer databaseServer;
         private readonly Random _random = new();
         public readonly QuestConfig ConfigRandom;
+        /// <summary>
+        /// Tracks used quest configurations to prevent duplicates (e.g., same location + target + item).
+        /// Used during a single generation session to ensure variety.
+        /// </summary>
         private readonly UniqueQuestTracker _tracker = new();
         private readonly CustomQuestService _customQuestService;
         private bool _hasExhaustedAllOptions = false;
         private readonly SaveServer _saveServer;
 
+        /// <summary>
+        /// Indicates whether all possible quest variants have been exhausted and no new quests can be generated.
+        /// Set to true after repeated failed attempts.
+        /// </summary>
         public bool HasExhaustedAllOptions => _hasExhaustedAllOptions;
+
+        /// <summary>
+        /// Represents a unique quest signature used for deduplication: (location, target, item, type).
+        /// </summary>
+        /// <param name="LocationId">Location ID string.</param>
+        /// <param name="TargetPoint">Target zone or point in location.</param>
+        /// <param name="ItemTpl">Item template ID (optional; used for delivery/beacon quests).</param>
+        /// <param name="QuestType">Quest type (e.g., "Exploration", "Delivery").</param>
         public record QuestKey(string LocationId, string TargetPoint, string ItemTpl = "", string QuestType = "");
 
+        /// <summary>
+        /// Tracks used quest keys and ensures uniqueness via set semantics.
+        /// </summary>
         public class UniqueQuestTracker
         {
             private readonly HashSet<QuestKey> _usedKeys = new();
 
+            /// <summary>Checks if a given quest key has been used already.</summary>
+            /// <param name="key">Quest key to check.</param>
             public bool IsUsed(QuestKey key) => _usedKeys.Contains(key);
 
+            /// <summary>Attempts to mark a quest key as used. Returns false if already present.</summary>
+            /// <param name="key">Quest key to record.</param>
             public bool TryUse(QuestKey key)
             {
                 return _usedKeys.Add(key);
             }
+
+            /// <summary>Clears all tracked keys (used before new generation session).</summary>
             public void Clear() => _usedKeys.Clear();
         }
 
+        /// <summary>
+        /// Initializes the quest generator by loading configuration from JSON and preparing dependencies.
+        /// Throws if config file is missing or invalid.
+        /// </summary>
+        /// <param name="logger">Logger instance for mod-specific logging.</param>
+        /// <param name="databaseService">Database service to access locations and quests.</param>
+        /// <param name="databaseServer">Database server instance (required).</param>
+        /// <param name="customQuestService">Service for custom quests (unused in this file).</param>
+        /// <param name="saveServer">Save server instance for persistence.</param>
         public Generator(
                 ISptLogger<Plugin> logger,
                 DatabaseService databaseService,
@@ -78,6 +117,12 @@ namespace QuestFilterMod.RandomQuests
             _saveServer = saveServer;
         }
 
+        /// <summary>
+        /// Generates a single quest by randomly selecting from configured quest types and retrying with fallbacks.
+        /// Stops after maxAttempts or when exhausted options are detected.
+        /// </summary>
+        /// <param name="maxAttempts">Maximum number of attempts across all quest types before giving up.</param>
+        /// <returns>A generated Quest, or null if all attempts failed or options exhausted.</returns>
         public Quest GenerateSingleQuest(int maxAttempts = 10)
         {
             try
@@ -147,14 +192,27 @@ namespace QuestFilterMod.RandomQuests
                 return null;
             }
         }
+        /// <summary>
+        /// Resets the unique quest tracker, allowing reuse of quest patterns in subsequent generation cycles.
+        /// </summary>
         public void ResetTracker()
         {
             _tracker.Clear();
         }
     }
 
+    /// <summary>
+    /// RandomExtensions for list operations used throughout quest generation.
+    /// </summary>
     public static class ListExtensions
     {
+        /// <summary>
+        /// Returns a random item from a list using uniform distribution.
+        /// Returns default(T) if list is null or empty.
+        /// </summary>
+        /// <param name="list">Source list.</param>
+        /// <param name="random">Random instance for shuffling.</param>
+        /// <typeparam name="T">Item type.</typeparam>
         public static T RandomItem<T>(this IReadOnlyList<T> list, Random random)
         {
             if (list == null || list.Count == 0)
@@ -162,6 +220,14 @@ namespace QuestFilterMod.RandomQuests
             return list[random.Next(list.Count)];
         }
 
+        /// <summary>
+        /// Returns a weighted-random item from a list based on custom weights.
+        /// Useful for prioritizing rarer quest variants.
+        /// </summary>
+        /// <param name="list">Source list.</param>
+        /// <param name="random">Random instance.</param>
+        /// <param name="weightSelector">Function mapping item to its non-negative weight.</param>
+        /// <typeparam name="T">Item type.</typeparam>
         public static T WeightedRandomItem<T>(this IList<T> list, Random random, Func<T, int> weightSelector)
         {
             int totalWeight = list.Sum(weightSelector);

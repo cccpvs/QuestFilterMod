@@ -10,9 +10,18 @@ namespace QuestFilterMod.RandomQuests
 {
     public partial class Generator
     {
-
-
-
+        /// <summary>
+        /// Constructs a CounterCreator condition wrapper with a list of sub-conditions.
+        /// Used to group multiple conditions (e.g., location + kills) under one CounterCreator type.
+        /// </summary>
+        /// <param name="idFactory">Function generating unique IDs for main condition and nested counter.</param>
+        /// <param name="Type">Underlying condition type (e.g., "Exploration", "Elimination").</param>
+        /// <param name="Value">Target count (e.g., number of kills or visits).</param>
+        /// <param name="Index">Order index of the condition.</param>
+        /// <param name="OneSessionOnly">If true, condition resets between raids.</param>
+        /// <param name="OnlyFoundInRaid">If true, condition can only be completed in raid.</param>
+        /// <param name="subConditions">Inner conditions to be grouped.</param>
+        /// <returns>Configured QuestCondition with CounterCreator wrapper.</returns>
 
         public static QuestCondition CounterCreator(
                 Func<MongoId> idFactory,
@@ -52,6 +61,15 @@ namespace QuestFilterMod.RandomQuests
             };
         }
 
+        /// <summary>
+        /// Creates a FindItem condition to locate a specific item in raid.
+        /// Marks condition as dynamic for in-raid locale updates.
+        /// </summary>
+        /// <param name="itemId">Item template ID to find.</param>
+        /// <param name="Index">Condition index.</param>
+        /// <param name="idFactory">Function generating unique ID.</param>
+        /// <param name="random">Unused (kept for API consistency).</param>
+        /// <returns>QuestCondition with FindItem type and extension metadata.</returns>
 
         public static QuestCondition ConditionFindItem(string itemId, int Index, Func<string> idFactory, Random random)
         {
@@ -75,6 +93,18 @@ namespace QuestFilterMod.RandomQuests
                 ExtensionData = new Dictionary<string, object> { ["_item"] = itemId }
             };
         }
+
+        /// <summary>
+        /// Creates a HandoverItem condition to deliver a specific item (counted).
+        /// Includes item metadata in ExtensionData for localization.
+        /// </summary>
+        /// <param name="itemId">Item template ID to hand over.</param>
+        /// <param name="count">Required number of items.</param>
+        /// <param name="Index">Condition index.</param>
+        /// <param name="idFactory">Function generating unique ID.</param>
+        /// <param name="random">Unused (kept for API consistency).</param>
+        /// <returns>QuestCondition with HandoverItem type and item metadata.</returns>
+
         public static QuestCondition ConditionHandoverItem(string itemId, int count, int Index, Func<string> idFactory, Random random)
         {
             return new QuestCondition
@@ -97,6 +127,20 @@ namespace QuestFilterMod.RandomQuests
                 ExtensionData = new Dictionary<string, object> { ["_item"] = itemId }
             };
         }
+        
+        /// <summary>
+        /// Creates a condition to deploy/plant an item at a specific zone (Delivery or Beacon).
+        /// Sets extension data including target item and zone Pascal name.
+        /// </summary>
+        /// <param name="itemTpl">Item template ID to deploy.</param>
+        /// <param name="zoneId">Zone/area identifier where item must be placed.</param>
+        /// <param name="plantTime">Time limit for planting (seconds).</param>
+        /// <param name="Index">Condition index.</param>
+        /// <param name="conditionType">Either "LeaveItemAtLocation" or "PlaceBeacon".</param>
+        /// <param name="pascalName">PascalCase location name (for localization).</param>
+        /// <param name="idFactory">Function generating unique ID.</param>
+        /// <returns>QuestCondition with deployment-specific config.</returns>
+
         public static QuestCondition ConditionDeployItem(string itemTpl, string zoneId, int plantTime, int Index, string conditionType, string pascalName, Func<MongoId> idFactory)
         {
             return new QuestCondition
@@ -125,6 +169,16 @@ namespace QuestFilterMod.RandomQuests
                 }
             };
         }
+
+        /// <summary>
+        /// (Private) Creates a Level-based requirement condition (e.g., "minLevel >= X").
+        /// Used for start conditions or internal checks.
+        /// </summary>
+        /// <param name="minLevel">Minimum required level.</param>
+        /// <param name="Index">Condition index.</param>
+        /// <param name="idFactory">Function generating unique ID.</param>
+        /// <returns>QuestCondition with Level type.</returns>
+
         private QuestCondition ConditionRequiredLevel(int minLevel, int Index,Func<MongoId> idFactory)
         {
             return new QuestCondition
@@ -140,6 +194,17 @@ namespace QuestFilterMod.RandomQuests
                 VisibilityConditions = []
             };
         }
+
+        /// <summary>
+        /// Creates a KillEnemy condition for elimination quests.
+        /// Optionally includes time window and weapon restrictions.
+        /// </summary>
+        /// <param name="target">Target type (e.g., "Usec", "Bear", "Savage").</param>
+        /// <param name="pascalName">Location name (for locale display).</param>
+        /// <param name="idFactory">Function generating unique ID.</param>
+        /// <param name="config">Kill quest config with time/weapon settings.</param>
+        /// <param name="weaponId">Optional weapon ID to restrict kills.</param>
+        /// <returns>QuestConditionCounterCondition with kill criteria and metadata.</returns>
         public static QuestConditionCounterCondition ConditionKillEnemy(
             string target,
             string pascalName,
@@ -197,6 +262,11 @@ namespace QuestFilterMod.RandomQuests
                 Value = 1
             };
         }
+
+        /// <summary>
+        /// Represents a time-of-day range (e.g., 06:00–12:00) for daytime conditions.
+        /// Used internally to serialize time constraints in quest conditions.
+        /// </summary>
         public class TimeOfDayRange
         {
             public int FromHour { get; set; }
@@ -209,6 +279,14 @@ namespace QuestFilterMod.RandomQuests
             }
             public override string ToString() => $"{FromHour:00}:00–{ToHour:00}:00";
         }
+
+        /// <summary>
+        /// Creates a Location condition requiring presence in a specific location.
+        /// Maps Pascal name to internal JSON key.
+        /// </summary>
+        /// <param name="pascalName">Location’s PascalCase name.</param>
+        /// <param name="idFactory">Function generating unique ID.</param>
+        /// <returns>QuestConditionCounterCondition with location requirement.</returns>
         public static QuestConditionCounterCondition ConditionLocation(string pascalName, Func<MongoId> idFactory)
         {
             var pascalNameQuest = Location.GetJsonKey(pascalName);
@@ -225,6 +303,14 @@ namespace QuestFilterMod.RandomQuests
                 
             };
         }
+
+        /// <summary>
+        /// (Private) Creates an ExitStatus condition requiring player to survive or transit.
+        /// Used for completion tracking.
+        /// </summary>
+        /// <param name="idFactory">Function generating unique ID.</param>
+        /// <returns>QuestConditionCounterCondition with status filter.</returns>
+
         private QuestConditionCounterCondition ConditionSurvivedExit(Func<MongoId> idFactory)
         {
             return new QuestConditionCounterCondition
@@ -239,6 +325,15 @@ namespace QuestFilterMod.RandomQuests
                 }
             };
         }
+
+        /// <summary>
+        /// Creates a VisitPlace condition requiring entering a specific zone/point in raid.
+        /// Stores target zone ID and Pascal name for locale and tracking.
+        /// </summary>
+        /// <param name="target">Zone/point ID to visit.</param>
+        /// <param name="pascalName">Location’s PascalCase name.</param>
+        /// <param name="idFactory">Function generating unique ID.</param>
+        /// <returns>QuestConditionCounterCondition with visit requirement.</returns>
         public static QuestConditionCounterCondition ConditionVisitPlace(string target, string pascalName, Func<MongoId> idFactory)
         {
             return new QuestConditionCounterCondition

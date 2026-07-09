@@ -8,16 +8,32 @@ namespace QuestFilterMod.RandomQuests.Utils
 {
     public static class JsonHelper
     {
+       
+
         private static readonly JsonSerializerOptions Options = new()
         {
             WriteIndented = true,
             PropertyNameCaseInsensitive = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
+
+        /// <summary>
+        /// Provides utility methods for loading and serializing JSON with custom formatting and type handling.
+        /// Supports complex nested objects, dictionaries, collections, and enums.
+        /// </summary>
         static JsonHelper()
         {
             Options.Converters.Add(new ObjectConverter());
         }
+
+        /// <summary>
+        /// Loads and deserializes a JSON file into a strongly-typed object.
+        /// Throws FileNotFoundError if the file does not exist.
+        /// </summary>
+        /// <param name="filePath">Path to the JSON file.</param>
+        /// <typeparam name="T">Target type to deserialize to.</typeparam>
+        /// <returns>Instance of type T populated from JSON data.</returns>
+        /// <exception cref="FileNotFoundException">Thrown if the file does not exist.</exception>
         public static T LoadFromJson<T>(string filePath)
         {
             if (!File.Exists(filePath))
@@ -29,6 +45,13 @@ namespace QuestFilterMod.RandomQuests.Utils
             return JsonSerializer.Deserialize<T>(json, Options);
         }
 
+
+        // <summary>
+        /// Serializes an object to a formatted JSON string using custom options (indented, null-ignored).
+        /// Falls back to error message on serialization failure.
+        /// </summary>
+        /// <param name="obj">Object to serialize.</param>
+        /// <returns>Formatted JSON string, or "[JSON ERROR] {message}" on failure.</returns>
         public static string ToJson(object obj)
         {
             try
@@ -42,6 +65,11 @@ namespace QuestFilterMod.RandomQuests.Utils
         }
     }
 
+    /// <summary>
+    /// Custom JSON converter handling arbitrary objects (e.g., IDictionary, IEnumerable, DateTime, Enum).
+    /// Used to ensure correct serialization of complex and mixed-type objects in configuration.
+    /// Deserialization is intentionally disabled.
+    /// </summary>
     public class ObjectConverter : JsonConverter<object>
     {
         public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

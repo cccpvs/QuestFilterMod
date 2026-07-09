@@ -10,6 +10,15 @@ namespace QuestFilterMod.QuestFilter
 {
     public partial class FilterService
     {
+        /// <summary>
+        /// (Expected) Builds and applies a branching quest chain by linking start → finish quests via intermediate conditions.
+        /// </summary>
+        /// <param name="originalQuestList">Current list of selected quests (modified in-place).</param>
+        /// <param name="questDatabase">Full quest dictionary.</param>
+        /// <param name="Config">Filter configuration.</param>
+        /// <param name="startQuest">Starting quest of the chain.</param>
+        /// <param name="finishMin">Minimum number of finish quests to generate.</param>
+        /// <param name="finishMax">Maximum number of finish quests to generate.</param>
         private void ApplyBranchingQuestChain(
         List<Quest> selectedQuests,
         Dictionary<MongoId, Quest> quests,
@@ -98,6 +107,13 @@ namespace QuestFilterMod.QuestFilter
             }
            
         }
+
+        /// <summary>
+        /// (Expected) Generates and configures a random linked quest chain (start → mid → end).
+        /// Returns identifiers and bounds for finish quests.
+        /// </summary>
+        /// <param name="Config">Linked quest config (enabled, chain length, constraints).</param>
+        /// <returns>Tuple of (startQuestId, minFinishQuests, maxFinishQuests).</returns>
 
         private (int startQuest, int finishMin, int finishMax) ResolveRandomLinkedQuest(QuestFilterLinkedQuest config)
         {
