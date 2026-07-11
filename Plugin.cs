@@ -13,9 +13,9 @@ using SPTarkov.Server.Core.Services.Mod;
 using System.Reflection;
 using System.Text.Json;
 
-[assembly: AssemblyVersion("1.0.3.0")]
-[assembly: AssemblyFileVersion("1.0.3.0")]
-[assembly: AssemblyInformationalVersion("1.0.3")]
+[assembly: AssemblyVersion("1.0.4.0")]
+[assembly: AssemblyFileVersion("1.0.4.0")]
+[assembly: AssemblyInformationalVersion("1.0.4")]
 [assembly: AssemblyTitle("QuestFilterMod Mod SPT ~4.0.13")]
 [assembly: AssemblyProduct("QuestFilterMod")]
 
@@ -165,9 +165,9 @@ public class Plugin : IOnUpdate
             _questFilterService.ApplyFilters(Config);
 
             _applied = true;
-            _logger.Warning($"-------------------------------------------------------------------------");
+            _logger.Warning($"-----------------------------------------------------------------------------");
             _logger.Warning($"{"QuestFilterMod Loaded 🚀. Good Game.",-43}");
-            _logger.Warning($"-------------------------------------------------------------------------");
+            _logger.Warning($"-----------------------------------------------------------------------------");
         }
         catch (Exception ex)
         {
@@ -239,9 +239,9 @@ public class Plugin : IOnUpdate
             var json = File.ReadAllText(ConfigPath);
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             Config = JsonSerializer.Deserialize<ModelConfig>(json, options) ?? new ModelConfig();
-            _logger.Warning($"-------------------------------------------------------------------------");
+            _logger.Warning($"-----------------------------------------------------------------------------");
             _logger.Warning($"{"QuestFilterMod Starting 🚀 Wait...",-43}");
-            _logger.Warning($"-------------------------------------------------------------------------");
+            _logger.Warning($"-----------------------------------------------------------------------------");
 
             if (Config.Debug)
             {

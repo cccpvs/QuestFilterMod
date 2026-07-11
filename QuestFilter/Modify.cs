@@ -14,7 +14,21 @@ using SPTarkov.Server.Core.Models.Eft.Common.Tables;
  * 
  * Не создавать или не менять условия квеста по текущему списку.
  * Подход реализация план.
- * 
+ *
+ *
+ *= Конфигурация пропуска фильтра
+ *"SkipQuest": {
+    "Traider": [],
+    "Types": []
+  },
+ *
+ *  1. SkipQuest - Раздел настроек пропуска квеста и фильтра
+ *  2. Traider - Список торговцев которые будут пропущены из фильтра
+ *  3. Types - Тип квеста пропущеный из фильтра.
+ *  
+ *  Задача. Пропуск работает когда фильтр проходит все квесты пропускает квесты, не трагая из базовые настройки.
+ *
+ *
  * */
 #endif
 
@@ -44,6 +58,7 @@ namespace QuestFilterMod.QuestFilter
 
             foreach (var q in OriginalQuestList)
             {
+
                 if (!_randomQuestIds.Contains(q.Id))
                 {
                     EnsureRewardStatuses(q);

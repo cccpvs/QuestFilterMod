@@ -181,6 +181,62 @@ namespace QuestFilterMod.QuestFilter
             if (!config.ExcludeArenaQuests) return false;
             return string.Equals(quest.ProgressSource, "arena", StringComparison.OrdinalIgnoreCase);
         }
+
+
+        /// <summary>
+        /// Determines whether a quest should be skipped during filtering and modification (i.e., left untouched).
+        /// A quest is skipped if it matches any of the following criteria:
+        /// - Its trader ID is listed in <see cref="SkipQuestConfig.Traider"/>.
+        /// - Its quest type (enum) is listed in <see cref="SkipQuestConfig.Types"/>.
+        /// 
+        /// Note: This check is independent of random quest handling — random-generated quests are skipped separately via <see cref="_randomQuestIds"/>.
+        /// </summary>
+        /// <param name="quest">The quest to evaluate for skipping.</param>
+        /// <param name="config">The current filter configuration.</param>
+        /// <returns>
+        /// <c>true</c> if the quest should be skipped (i.e., no modifications applied);
+        /// <c>false</c> otherwise (i.e., normal modification proceeds unless it's a random quest).
+        /// </returns>
+        /// <example>
+        /// Example configuration in config JSON:
+        /// <code>
+        /// "SkipQuest": {
+        ///   "Traider": ["579dc531d53a0658a154be4f", "579dc531d53a0658a154be50"],
+        ///   "Types": ["PickUp", "MainQuest"]
+        /// }
+        /// </code>
+        /// In this example, all quests from the listed traders and of the listed types will be skipped.
+        /// </example>
+        private bool ShouldSkipQuest(Quest quest, SkipQuestConfig skipConfig)
+        {
+            if (skipConfig == null)
+                return false;
+
+            if (skipConfig.Traider?.Count > 0)
+            {
+                if (skipConfig.Traider.Contains(quest.TraderId))
+                {
+                    if (Plugin.Config.Debug)
+                        _logger.Info($"[QuestFilterMod][ShouldSkipQuest] ✓ Skipping: quest '{quest.Name}' ({quest.Id}) — trader '{quest.TraderId}' is in exclusion list.");
+
+                    return true;
+                }
+            }
+            if (skipConfig.Types?.Count > 0)
+            {
+                string questTypeStr = quest.Type.ToString(); 
+                if (skipConfig.Types.Any(t => t == questTypeStr))
+                {
+                    if (Plugin.Config.Debug)
+                        _logger.Info($"[QuestFilterMod][ShouldSkipQuest] ✓ Skipping: quest '{quest.Name}' ({quest.Id}) — type '{questTypeStr}' is in exclusion list.");
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+
     }
 
 }

@@ -15,6 +15,10 @@
     "Type": [ "Exploration", "Delivery", "Beacon", "Kills", "Transfer" ],
     "CountCond": [ 1, 3 ]
   },
+  "SkipQuest": {
+    "Traider": [],
+    "Types": []
+  },
   "RemoveStandartQuests": false,
   "RemoveStartConditionsQuest": false,
   "RemoveFinishConditionTypes": [],

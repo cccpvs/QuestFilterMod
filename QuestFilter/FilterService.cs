@@ -37,6 +37,7 @@ public partial class FilterService
     int filter_DelFinish = 0;
     int filter_Modify = 0;
     int filter_Linked = 0;
+    int filter_skip = 0;
 
 
     public FilterService(
@@ -52,11 +53,60 @@ public partial class FilterService
     }
 
     /// <summary>
-    /// Applies configured filters to the quest pool: removes standard quests, selects random quests by location, generates new random quests, and applies modifications.
-    /// Ensures filters are applied only once per session.
+    /// Applies quest filtering, selection, generation, and modification logic to the in-memory quest database.
+    /// The operation is **idempotent**: filters are applied only once per server session.
+    /// All changes are made directly to the quest collection returned by <see cref="DatabaseService.GetQuests"/>.
     /// </summary>
-    /// <param name="Config">Configuration object controlling filtering behavior (enabled, quest types, locations, random generation, linked quests, etc.).</param>
-
+    /// <param name="Config">Configuration object that defines filtering rules, selection constraints, and feature flags (e.g., random quest generation, linked quest chains, base quest modifications).</param>
+    /// 
+    /// <remarks>
+    /// <para>
+    /// This method executes the following high-level pipeline:
+    /// </para>
+    /// <list type="number">
+    /// <item><description>Filters out quests not matching the configured <see cref="ModelConfig.QuestTypes"/> or excluded by <see cref="ModelConfig.SkipQuest"/> rules.</description></item>
+    /// <item><description>Selects a subset of quests according to per-location quotas and global count limits (see <see cref="SelectQuests"/>).</description></item>
+    /// <item><description>If <see cref="ModelConfig.RemoveStandartQuests"/> is enabled, removes *all* quests *not* in the selected pool from the database.</description></item>
+    /// <item><description>Applies in-place modifications (e.g., rewards, location overrides) to selected quests, if configured via <see cref="ModelConfig.ModifyBaseQuest"/>.</description></item>
+    /// <item><description>Generates new random quests (via <see cref="Generator.GenerateSingleQuest"/>) up to <see cref="ModelConfig.GenerateRandomQuests.Count"/>, merging them into both the database and the active quest pool.</description></item>
+    /// <item><description>If <see cref="ModelConfig.LinkedQuest.Enable"/> is true, constructs a multi-stage branching quest chain and links its stages together.</description></item>
+    /// <item><description>Ensures all selected/generated quests are registered in the quest database, even if they were previously removed or not present.</description></item>
+    /// </list>
+    /// 
+    /// <para>
+    /// <strong>Key behaviors & guarantees:</strong>
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description><strong>One-time only:</strong> If called multiple times within the same session, subsequent invocations are no-ops (unless the filter state is reset).</description></item>
+    /// <item><description><strong>Non-destructive to skipped quests:</strong> Quests excluded by <see cref="ModelConfig.SkipQuest"/> are *not* removed from the DB — they are preserved and re-added at the end.</description></item>
+    /// <item><description><strong>Random quest IDs are tracked:</strong> Generated quests' IDs are stored in <see cref="_randomQuestIds"/> for potential future validation or analytics.</description></item>
+    /// <item><description><strong>Safe fallbacks:</strong> Missing or malformed location IDs are handled gracefully with fallbacks and debug logging (see <see cref="GetNormalizedLocationKey"/>).</description></item>
+    /// <item><description><strong>Debug-first:</strong> When <see cref="Plugin.Config.Debug"/> is enabled, emits detailed logs per filtering step (e.g., "Picked 3 quests from group 'factory_day'").</description></item>
+    /// </list>
+    /// 
+    /// <para>
+    /// <strong>Side effects:</strong>
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>Modifies the <em>in-memory</em> quest dictionary obtained from <see cref="DatabaseService.GetQuests"/>.</description></item>
+    /// <item><description>Updates internal counters for filtering statistics (<see cref="filter_Deleted"/>, <see cref="filter_Filter"/>, <see cref="filter_Random"/>, etc.).</description></item>
+    /// <item><description>Logs summary metrics (total quests, deleted, random, skipped, etc.) to the SPTARKOV logger.</description></item>
+    /// </list>
+    /// </remarks>
+    /// 
+    /// <example>
+    /// <code>
+    /// // Example workflow:
+    /// // 1. Load all quests → 500 quests
+    /// // 2. Filter by type & skip rules → 420 quests remain
+    /// // 3. Select 30 quests (e.g., 10 for "factory_day", 5 for "any", + 15 random)
+    /// // 4. Remove 400 unselected standard quests (if RemoveStandartQuests=true)
+    /// // 5. Modify selected quests' rewards (e.g., increase $ prize)
+    /// // 6. Generate 5 additional random quests → 35 total in pool
+    /// // 7. Link quest 123 → 456 → 789 as a chain
+    /// // 8. Final DB: all selected + generated quests, plus preserved skipped quests
+    /// </code>
+    /// </example>
     public void ApplyFilters(ModelConfig Config)
     {
 
@@ -82,18 +132,39 @@ public partial class FilterService
         var random = new Random();
 
         var allowedTypes = GetAllowedTypes(Config);
-        var allQuestList = quests.Values
-            .Where(q => allowedTypes.Contains(q.Type))
-            .Where(q => !ShouldExcludeByProgressSource(q, Config))
-            .ToList();
 
+        var skippedQuests = new List<Quest>();
+        var filteredQuests = new List<Quest>();
 
-        var OriginalQuestList = SelectQuests(allQuestList, Config, random);
+        var shouldCheckSkip = Config.SkipQuest != null &&
+                              (Config.SkipQuest.Traider?.Count > 0 || Config.SkipQuest.Types?.Count > 0);
+
+        foreach (var q in quests.Values)
+        {
+            if (!allowedTypes.Contains(q.Type)) continue;
+            if (ShouldExcludeByProgressSource(q, Config)) continue;
+
+            if (shouldCheckSkip && ShouldSkipQuest(q, Config.SkipQuest))
+                skippedQuests.Add(q);
+            else
+                filteredQuests.Add(q);
+        }
+
+        filter_skip = shouldCheckSkip ? skippedQuests.Count : 0;
+
+        if (Plugin.Config.Debug && skippedQuests.Count > 0)
+            _logger.Info($"[QuestFilterMod][FilterService] ✅ Excluded {skippedQuests.Count} quests from filtering (SkipQuest rules).");
+
+        var OriginalQuestList = SelectQuests(filteredQuests, Config, random);
 
         if (Config.RemoveStandartQuests)
         {
             var selectedIds = OriginalQuestList.Select(q => q.Id).ToHashSet();
-            var toRemoveIds = quests.Keys.Where(id => !selectedIds.Contains(id)).ToHashSet();
+            var skippedIds = skippedQuests.Select(q => q.Id).ToHashSet();
+
+            var toRemoveIds = quests.Keys
+                    .Where(id => !selectedIds.Contains(id) && !skippedIds.Contains(id))
+                    .ToHashSet();
 
             if (toRemoveIds.Count > 0)
             {
@@ -116,7 +187,7 @@ public partial class FilterService
         if (Config.ModifyBaseQuest.Enabled == true && OriginalQuestList.Count>0)
         {
             _logger.Warning($"Modification of basic quests [{OriginalQuestList.Count}]. Wait...");
-            _logger.Warning($"-------------------------------------------------------------------------");
+            _logger.Warning($"-----------------------------------------------------------------------------");
         }
 
 
@@ -178,20 +249,26 @@ public partial class FilterService
         if (Config.LinkedQuest.Enable == true)
         {
             _logger.Warning($"Linked Quest [{OriginalQuestList.Count}]. Wait...");
-            _logger.Warning($"-------------------------------------------------------------------------");
+            _logger.Warning($"-----------------------------------------------------------------------------");
             var (startQuest, finishMin, finishMax) = ResolveRandomLinkedQuest(Config.LinkedQuest);
             ApplyBranchingQuestChain(OriginalQuestList, quests, Config, startQuest, finishMin, finishMax);
             //_logger.Warning($"selectedQuests={selectedQuests.Count}, quests={quests.Count}");
         }
 
         filter_Filter = OriginalQuestList.Count;
-#if DEBUG
-        //_logger.Success($"Reward={filter_Reward}, Traider={filter_Trader}, AvailableForStart={filter_DelStart}, RemoveFinish={filter_DelFinish}, Modify={filter_Modify}");
-#endif
 
-        _logger.Warning($"{"AllBase",-7}|{"Deleted",-7}|{"Traider",-7}|{"delStar",-7}|{"delFins",-7}|{"Modify",-7}|{"Linked",-7}|{"Random",-7}|{"Filter",-7}");
-        _logger.Warning($"-------------------------------------------------------------------------");
-        _logger.Warning($"{quests.Count,-7}|{filter_Deleted,-7}|{filter_Trader,-7}|{filter_DelStart,-7}|{filter_DelFinish,-7}|{filter_Modify,-7}|{filter_Linked,-7}|{filter_Random,-7}|{filter_Filter,-7}");
+
+        _logger.Warning($"{"AllBase",-7}|{"Deleted",-7}|{"Traider",-7}|{"Start",-7}|{"Finish",-7}|{"Modify",-7}|{"Linked",-7}|{"Random",-7}|{"Filter",-7}|{"Skip",-7}");
+        _logger.Warning($"-----------------------------------------------------------------------------");
+        _logger.Warning($"{quests.Count,-7}|{filter_Deleted,-7}|{filter_Trader,-7}|{filter_DelStart,-7}|{filter_DelFinish,-7}|{filter_Modify,-7}|{filter_Linked,-7}|{filter_Random,-7}|{filter_Filter,-7}|{filter_skip,-7}");
+
+
+        foreach (var q in skippedQuests)
+        {
+            if (!quests.ContainsKey(q.Id))
+                quests[q.Id] = q;
+        }
+
 
         var tables = _databaseService.GetTables();
         foreach (var quest in OriginalQuestList)

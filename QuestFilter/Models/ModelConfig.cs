@@ -54,6 +54,19 @@ public class QuestFilterModifyBaseQuest
     public int[] CountCond { get; set; } = [1, 3];
 }
 
+public class SkipQuestConfig
+{
+    /// <summary>
+    /// Список ID торговцев, квесты от которых будут пропущены из модификации.
+    /// </summary>
+    public List<string> Traider { get; set; } = new();
+
+    /// <summary>
+    /// Список типов квестов, которые будут пропущены из модификации.
+    /// </summary>
+    public List<string> Types { get; set; } = new();
+}
+
 
 public class ModelConfig
 {
@@ -71,4 +84,5 @@ public class ModelConfig
     public GenerateRandomQuestsConfig GenerateRandomQuests { get; set; } = new();
     public QuestFilterLinkedQuest LinkedQuest { get; set; } = null;
     public QuestFilterModifyBaseQuest ModifyBaseQuest { get; set; } = null;
+    public SkipQuestConfig SkipQuest { get; set; } = new();
 }

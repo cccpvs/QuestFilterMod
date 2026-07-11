@@ -483,7 +483,7 @@ namespace QuestFilterMod.RandomQuests
                 if (!locales.ContainsKey(lang)) locales[lang] = new();
                 locales[lang][key] = value;
 #if DEBUG
-                _logger.Warning($"[QuestFilterMod][Locales] Localequest_complete added [lang={lang}] key=\"{key}\" → \"{value}\"");
+                //_logger.Warning($"[QuestFilterMod][Locales] Localequest_complete added [lang={lang}] key=\"{key}\" → \"{value}\"");
 #endif
             }
 
