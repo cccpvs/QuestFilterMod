@@ -104,7 +104,7 @@ namespace QuestFilterMod.QuestFilter
                         idFactory,
                         "Exploration",
                         1,0,
-                        true, false,
+                        false, false,
                         Generator.ConditionVisitPlace(target, pascalName, idFactory)
                     );
 
@@ -122,7 +122,7 @@ namespace QuestFilterMod.QuestFilter
                         idFactory,
                         "Elimination",
                         randomKill,0,
-                        true, false,
+                        false, false,
                         Generator.ConditionKillEnemy(botType, pascalName, idFactory, killConfig, weaponId),
                         Generator.ConditionLocation(pascalName, idFactory)
                     );
