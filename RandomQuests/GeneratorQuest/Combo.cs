@@ -93,7 +93,10 @@ namespace QuestFilterMod.RandomQuests
 
                             if (ConfigRandom.KillQuest.Weapons.Started && !string.IsNullOrEmpty(weaponId))
                             {
-                                AddQuestStartedItemReward(q, weaponId, 1, idFactory);
+                                AddQuestStartedPresetReward(q, weaponId, 1, idFactory);
+#if DEBUG
+                                //AddQuestStartedItemReward(q, weaponId, 1, idFactory);
+#endif
                             }
 
                             conditions.Add(CounterCreator(
@@ -193,7 +196,7 @@ namespace QuestFilterMod.RandomQuests
             var allowed = Location.GetAllowedLocations(ConfigRandom).ToList();
             foreach (var (pascalName, locationId) in allowed)
             {
-                if (locationId == locId && ConfigRandom.ExplorationQuest.TryGetValue(pascalName, out var config))
+                if (locationId == locId && ConfigRandom.ExplorationQuest.Locations.TryGetValue(pascalName, out var config))
                 {
                     return config.Targets.Where(t => !string.IsNullOrEmpty(t)).ToList();
                 }

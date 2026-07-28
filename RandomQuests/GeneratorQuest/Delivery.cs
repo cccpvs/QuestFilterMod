@@ -29,7 +29,6 @@ namespace QuestFilterMod.RandomQuests
             if (!config.Locations.Any()) return null;
 
             var allowed = Location.GetAllowedLocations(ConfigRandom).ToList();
-
             var allPoints = new List<(LocationConfig Config, string Target)>();
 
             foreach (var (pascalName, locationId) in allowed)
@@ -71,7 +70,6 @@ namespace QuestFilterMod.RandomQuests
             foreach (var (loc, targetPoint) in allPoints.OrderBy(_ => _random.Next()))
             {
                 var itemTpl = randomItemTpl;
-
                 var key = new QuestKey(loc.Id, targetPoint, "", questType);
 
 #if DEBUG
@@ -104,10 +102,12 @@ namespace QuestFilterMod.RandomQuests
                     };
 
 #if DEBUG
+                    /*
                     q.Conditions.AvailableForStart = new List<QuestCondition>
                     {
                         ConditionRequiredLevel(1, 0, idFactory)
                     };
+                    */
 #endif
                 });
             }

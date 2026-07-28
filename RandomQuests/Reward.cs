@@ -278,8 +278,6 @@ namespace QuestFilterMod.RandomQuests
             {
                 Id = idItems,
                 Template = itemTpl,
-                
-                
                 Upd = new Upd { 
                     StackObjectsCount = count,
                     SpawnedInSession = true,
@@ -302,6 +300,92 @@ namespace QuestFilterMod.RandomQuests
                 AvailableInGameEditions = new HashSet<string>(),
                 Items = new List<Item> { item }
             });
+        }
+
+        private void AddQuestStartedPresetReward(Quest quest, string baseWeaponId, int count, Func<MongoId> idFactory)
+        {
+            var baseTpl = new MongoId(baseWeaponId);
+            var itemPresets = _databaseService.GetGlobals().ItemPresets;
+
+            var matchingPreset = itemPresets.Values
+                .Where(p =>
+                    p.Encyclopedia.HasValue &&
+                    p.Encyclopedia.Value == baseTpl &&
+                    p.Items.Count > 0
+                )
+                .FirstOrDefault();
+
+            if (matchingPreset == null)
+            {
+#if DEBUG
+                if (Plugin.Config.Debug)
+                    _logger.Error($"[QuestReward] ❌ No preset found for '{baseWeaponId}'.");
+#endif
+                AddQuestStartedItemReward(quest, baseWeaponId, count, idFactory);
+                return;
+            }
+#if DEBUG
+            if (Plugin.Config.Debug)
+                _logger.Info($"[QuestReward] ✅ Found preset '{matchingPreset.Id}' with {matchingPreset.Items.Count} items.");
+#endif
+            var oldToNewIdMap = new Dictionary<MongoId, MongoId>();
+            var newItems = new List<Item>();
+
+            foreach (var srcItem in matchingPreset.Items)
+            {
+                var newId = idFactory();
+                oldToNewIdMap[srcItem.Id] = newId;
+
+                Upd newItemUpd = null;
+                if (srcItem.Id == matchingPreset.Parent)
+                {
+                    newItemUpd = new Upd
+                    {
+                        StackObjectsCount = srcItem.Upd?.StackObjectsCount ?? count,
+                        SpawnedInSession = srcItem.Upd?.SpawnedInSession ?? true,
+                        OriginalStackObjectsCount = srcItem.Upd?.OriginalStackObjectsCount ?? count,
+                        FireMode = srcItem.Upd?.FireMode ?? new UpdFireMode { FireMode = "single" }
+                    };
+                }
+
+                string parentIdValue = srcItem.ParentId;
+                if (!string.IsNullOrEmpty(srcItem.ParentId))
+                {
+                    var parentMongoId = new MongoId(srcItem.ParentId);
+                    if (oldToNewIdMap.TryGetValue(parentMongoId, out var newParentId))
+                    {
+                        parentIdValue = newParentId.ToString();
+                    }
+                }
+
+                var newItem = new Item
+                {
+                    Id = newId,
+                    Template = srcItem.Template,
+                    Upd = newItemUpd,
+                    ParentId = parentIdValue,
+                    SlotId = srcItem.SlotId
+                };
+
+                newItems.Add(newItem);
+            }
+
+            var rootSrcItem = matchingPreset.Items.First(i => i.Id == matchingPreset.Parent);
+            var finalRootId = oldToNewIdMap[rootSrcItem.Id];
+
+            GetOrCreateRewardList(quest, "Started").Add(new Reward
+            {
+                Id = finalRootId,
+                Type = RewardType.Item,
+                Target = finalRootId,
+                Value = count,
+                FindInRaid = true,
+                Items = newItems
+            });
+#if DEBUG
+            if (Plugin.Config.Debug)
+                _logger.Info($"[QuestReward] ✅ Added preset reward (rootId={finalRootId}, {newItems.Count} items).");
+#endif
         }
     }
 }

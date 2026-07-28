@@ -56,14 +56,7 @@ public class QuestFilterModifyBaseQuest
 
 public class SkipQuestConfig
 {
-    /// <summary>
-    /// Список ID торговцев, квесты от которых будут пропущены из модификации.
-    /// </summary>
     public List<string> Traider { get; set; } = new();
-
-    /// <summary>
-    /// Список типов квестов, которые будут пропущены из модификации.
-    /// </summary>
     public List<string> Types { get; set; } = new();
 }
 

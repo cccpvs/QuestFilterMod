@@ -24,14 +24,17 @@ namespace QuestFilterMod.RandomQuests
             var itemIds = cfg.ItemIds.Where(i => !string.IsNullOrEmpty(i)).ToList();
             if (!itemIds.Any())
             {
-                _logger.Debug("[RandomQuestGenerator][Transfer] ItemIds is empty");
+                if (Plugin.Config.Debug)
+                {
+                    _logger.Debug("[RandomQuestGenerator][Transfer] ItemIds is empty");
+                }
+                    
                 return null;
             }
 
             foreach (var attempt in Enumerable.Range(0, 20))
             {
                 var pairCount = _random.Next(minPairs, maxPairs + 1);
-
                 var shuffledItemIds = itemIds.OrderBy(_ => _random.Next()).Take(pairCount).ToList();
 
                 var conditions = new List<QuestCondition>();
@@ -61,7 +64,9 @@ namespace QuestFilterMod.RandomQuests
                 });
             }
 
-            _logger.Debug("[RandomQuestGenerator][Transfer] Failed to generate TransferQuest after 20 attempts");
+            if (Plugin.Config.Debug)
+                _logger.Debug("[RandomQuestGenerator][Transfer] Failed to generate TransferQuest after 20 attempts");
+
             return null;
         }
     }

@@ -104,7 +104,10 @@ namespace QuestFilterMod.RandomQuests
 
                     if (cfg.Weapons.Started && !string.IsNullOrEmpty(weaponId))
                     {
-                        AddQuestStartedItemReward(q, weaponId, 1, idFactory);
+                        AddQuestStartedPresetReward(q, weaponId, 1, idFactory);
+#if DEBUG
+                        //AddQuestStartedItemReward(q, weaponId, 1, idFactory);
+#endif
                     }
 
                     q.Conditions.AvailableForFinish = new List<QuestCondition>

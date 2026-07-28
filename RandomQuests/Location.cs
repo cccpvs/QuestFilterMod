@@ -31,7 +31,6 @@ namespace QuestFilterMod.RandomQuests
         */
 #endif
 
-
         private static readonly FrozenDictionary<string, string> _pascalToJson = new Dictionary<string, string>
         {
             { "Bigmap", "bigmap" },
@@ -48,19 +47,25 @@ namespace QuestFilterMod.RandomQuests
             { "Woods", "Woods" },
             { "Sandbox", "Sandbox" },
             { "SandboxHigh", "Sandbox_high" }
-}.ToFrozenDictionary();
+        }.ToFrozenDictionary();
 
         private static FrozenDictionary<string, string> PascalToInverse => _pascalToJson.ToFrozenDictionary(kv => kv.Value, kv => kv.Key);
-
-
 
         public static readonly Dictionary<string, string> IdToPascalName = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Инициализирует маппинг между ID локаций и их PascalCase-именами.
-        /// Вызывается один раз при старте мода.
+        /// Initializes the internal mapping between location IDs (from EFT data) and their corresponding PascalCase names.
+        /// This method should be invoked exactly once during the mod's initialization phase (e.g., in the OnLoad event).
         /// </summary>
-        /// <param name="locations">Dictionary из Locations.GetDictionary() — ключ: PascalName</param>
+        /// <param name="locations">
+        /// A dictionary retrieved from <see cref="SPTarkov.Server.Core.Models.Eft.Common.Location.GetDictionary()"/>.
+        /// The keys represent the PascalCase names of the locations (e.g., "Woods", "Factory4Day"),
+        /// and the values are the Location objects containing metadata, including the Base ID.
+        /// </param>
+        /// <remarks>
+        /// This method clears any previously stored mapping data before repopulating it. 
+        /// Repeated calls to this method are unnecessary and may cause performance overhead.
+        /// </remarks>
         public static void Initialize(Dictionary<string, SPTarkov.Server.Core.Models.Eft.Common.Location> locations)
         {
             IdToPascalName.Clear();
@@ -77,16 +82,44 @@ namespace QuestFilterMod.RandomQuests
         }
 
         /// <summary>
-        /// Попробовать получить PascalName по ID локации.
+        /// Attempts to retrieve the PascalCase name of a location using its unique ID.
         /// </summary>
+        /// <param name="locationId">
+        /// The unique identifier (GUID) of the location as defined in the game data (e.g., "5704e3c2d2720bac5b8b4567").
+        /// </param>
+        /// <param name="pascalName">
+        /// When this method returns, contains the PascalCase name of the location (e.g., "Woods", "Lighthouse") 
+        /// if the specified ID was found in the internal map; otherwise, it contains <c>null</c>.
+        /// This parameter is passed uninitialized.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if the location ID is successfully found and mapped to a name; otherwise, <c>false</c>.
+        /// </returns>
+        /// <example>
+        /// <code>
+        /// if (Location.TryGetPascalName("5704e3c2d2720bac5b8b4567", out string name))
+        /// {
+        ///     Console.WriteLine($"Location ID found: {name}");
+        /// }
+        /// </code>
+        /// </example>
         public static bool TryGetPascalName(string locationId, out string pascalName)
         {
             return IdToPascalName.TryGetValue(locationId, out pascalName!);
         }
 
         /// <summary>
-        /// Получить PascalName по ID. Выбрасывает исключение, если не найдено.
+        /// Retrieves the PascalCase name of a location by its unique ID.
         /// </summary>
+        /// <param name="locationId">
+        /// The unique identifier (GUID) of the location.
+        /// </param>
+        /// <returns>
+        /// The PascalCase name of the location (e.g., "Woods").
+        /// </returns>
+        /// <exception cref="KeyNotFoundException">
+        /// Thrown if the specified <paramref name="locationId"/> is not found in the internal mapping.
+        /// </exception>
         public static string GetPascalName(string locationId)
         {
             if (TryGetPascalName(locationId, out var name))
@@ -95,9 +128,21 @@ namespace QuestFilterMod.RandomQuests
         }
 
         /// <summary>
-        /// Проверяет, разрешена ли локация в конфиге.
-        /// Использует PascalName напрямую (например: "Woods", а не "woods").
+        /// Checks whether the specified location is allowed for quest generation according to the current configuration.
         /// </summary>
+        /// <param name="locationId">
+        /// The unique identifier (GUID) of the location.
+        /// </param>
+        /// <param name="config">
+        /// The current <see cref="QuestConfig"/> instance containing the list of allowed locations.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if the location's PascalCase name is present in the configuration's allowed list; otherwise, <c>false</c>.
+        /// </returns>
+        /// <remarks>
+        /// This method first resolves the <paramref name="locationId"/> to its PascalCase name using <see cref="TryGetPascalName(string, out string)"/>.
+        /// It then checks if this name exists in <paramref name="config"/>.
+        /// </remarks>
         public static bool IsAllowed(string locationId, QuestConfig config)
         {
             if (!TryGetPascalName(locationId, out var pascalName))
@@ -107,24 +152,57 @@ namespace QuestFilterMod.RandomQuests
         }
 
         /// <summary>
-        /// Получить JSON-ключ по Pascal-имени (например: "Factory4Day" → "factory4_day")
+        /// Converts a PascalCase location name to its corresponding JSON configuration key.
         /// </summary>
+        /// <param name="pascalName">
+        /// The PascalCase name of the location (e.g., "Factory4Day", "Woods").
+        /// </param>
+        /// <returns>
+        /// The JSON key associated with the location (e.g., "factory4_day", "woods").
+        /// Returns <c>null</c> if the PascalCase name is not found in the predefined mappings.
+        /// </returns>
+        /// <remarks>
+        /// This mapping is hardcoded and primarily used for configuring quest generation rules via JSON.
+        /// Not all locations have specific JSON keys (some map to themselves).
+        /// </remarks>
         public static string GetJsonKey(string pascalName)
         {
             return _pascalToJson.GetValueOrDefault(pascalName);
         }
 
         /// <summary>
-        /// Получить Pascal-имя по JSON-ключу (например: "factory4_day" → "Factory4Day")
+        /// Converts a JSON configuration key back to its corresponding PascalCase location name.
         /// </summary>
+        /// <param name="jsonKey">
+        /// The JSON key representing the location (e.g., "factory4_day", "woods").
+        /// </param>
+        /// <returns>
+        /// The PascalCase name of the location (e.g., "Factory4Day", "Woods").
+        /// Returns <c>null</c> if the JSON key is not found in the predefined mappings.
+        /// </returns>
+        /// <remarks>
+        /// This is the inverse operation of <see cref="GetJsonKey(string)"/>.
+        /// </remarks>
         public static string GetPascalNameFromJsonKey(string jsonKey)
         {
             return PascalToInverse.GetValueOrDefault(jsonKey);
         }
 
         /// <summary>
-        /// Возвращает список разрешённых локаций: (PascalName, LocationId)
+        /// Enumerates all locations that are currently allowed for quest generation based on the provided configuration.
         /// </summary>
+        /// <param name="config">
+        /// The <see cref="QuestConfig"/> instance used to determine which locations are permitted.
+        /// </param>
+        /// <returns>
+        /// An enumerable sequence of tuples, where each tuple contains:
+        /// 1. <c>PascalName</c>: The PascalCase name of the location (e.g., "Woods").
+        /// 2. <c>LocationId</c>: The unique ID of the location (e.g., "5704e3c2d2720bac5b8b4567").
+        /// </returns>
+        /// <remarks>
+        /// This method performs a lazy evaluation (using <c>yield return</c>), making it efficient for use in loops.
+        /// It internally calls <see cref="IsAllowed(string, QuestConfig)"/> for each known location.
+        /// </remarks>
         public static IEnumerable<(string PascalName, string LocationId)> GetAllowedLocations(QuestConfig config)
         {
             foreach (var kvp in IdToPascalName)

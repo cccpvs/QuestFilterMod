@@ -22,7 +22,6 @@ namespace QuestFilterMod.RandomQuests
         /// <param name="OnlyFoundInRaid">If true, condition can only be completed in raid.</param>
         /// <param name="subConditions">Inner conditions to be grouped.</param>
         /// <returns>Configured QuestCondition with CounterCreator wrapper.</returns>
-
         public static QuestCondition CounterCreator(
                 Func<MongoId> idFactory,
                 string Type,
@@ -70,7 +69,6 @@ namespace QuestFilterMod.RandomQuests
         /// <param name="idFactory">Function generating unique ID.</param>
         /// <param name="random">Unused (kept for API consistency).</param>
         /// <returns>QuestCondition with FindItem type and extension metadata.</returns>
-
         public static QuestCondition ConditionFindItem(string itemId, int Index, Func<string> idFactory, Random random)
         {
             return new QuestCondition
@@ -104,7 +102,6 @@ namespace QuestFilterMod.RandomQuests
         /// <param name="idFactory">Function generating unique ID.</param>
         /// <param name="random">Unused (kept for API consistency).</param>
         /// <returns>QuestCondition with HandoverItem type and item metadata.</returns>
-
         public static QuestCondition ConditionHandoverItem(string itemId, int count, int Index, Func<string> idFactory, Random random)
         {
             return new QuestCondition
@@ -140,7 +137,6 @@ namespace QuestFilterMod.RandomQuests
         /// <param name="pascalName">PascalCase location name (for localization).</param>
         /// <param name="idFactory">Function generating unique ID.</param>
         /// <returns>QuestCondition with deployment-specific config.</returns>
-
         public static QuestCondition ConditionDeployItem(string itemTpl, string zoneId, int plantTime, int Index, string conditionType, string pascalName, Func<MongoId> idFactory)
         {
             return new QuestCondition
@@ -178,7 +174,6 @@ namespace QuestFilterMod.RandomQuests
         /// <param name="Index">Condition index.</param>
         /// <param name="idFactory">Function generating unique ID.</param>
         /// <returns>QuestCondition with Level type.</returns>
-
         private QuestCondition ConditionRequiredLevel(int minLevel, int Index,Func<MongoId> idFactory)
         {
             return new QuestCondition
@@ -310,7 +305,6 @@ namespace QuestFilterMod.RandomQuests
         /// </summary>
         /// <param name="idFactory">Function generating unique ID.</param>
         /// <returns>QuestConditionCounterCondition with status filter.</returns>
-
         private QuestConditionCounterCondition ConditionSurvivedExit(Func<MongoId> idFactory)
         {
             return new QuestConditionCounterCondition

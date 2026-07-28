@@ -10,9 +10,7 @@ namespace QuestFilterMod.Patch
     public class Patch
     {
         private static Clear _cleaner;
-
         public static void Setup(Clear cleaner) => _cleaner = cleaner;
-
         public static bool Prefix(ref global::System.Collections.Generic.List<SPTarkov.Server.Core.Models.Eft.Common.Tables.PmcDataRepeatableQuest> __result)
         {
             __result = new();

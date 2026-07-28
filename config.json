@@ -25,7 +25,7 @@
   "RemoveRepeatableQuests": false,
   "GenerateRandomQuests": {
     "enable": false,
-    "count": 10
+    "count": 5
   },
   "RandomQuests": {
     "count": 0,

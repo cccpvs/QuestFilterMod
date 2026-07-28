@@ -94,6 +94,13 @@ namespace QuestFilterMod.RandomQuests.Models
         public bool Combo { get; set; } = false;
 
     }
+
+    public class ExplorationQuestConfig
+    {
+        public bool Survive { get; set; } = true;
+        public Dictionary<string, LocationConfig> Locations { get; set; } = new();
+    }
+
     public class DeployQuestBaseConfig
     {
         public bool StartItem { get; set; } = true;
@@ -148,7 +155,7 @@ namespace QuestFilterMod.RandomQuests.Models
     }
     public class QuestConfig
     {
-        public Dictionary<string, LocationConfig> ExplorationQuest { get; set; } = new();
+        public ExplorationQuestConfig ExplorationQuest { get; set; } = new();
         public List<string> TraderIds { get; set; } = new();
         public DefaultQuestConfig DefaultQuest { get; set; } = new();
         public MoneyRewardConfig RewardMoney { get; set; } = new();

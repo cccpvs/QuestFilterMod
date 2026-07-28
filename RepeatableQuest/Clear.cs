@@ -9,11 +9,6 @@ using SPTarkov.Server.Core.Models.Common;
 namespace QuestFilterMod.RepeatableQuestCleaner
 {
 
-#if DEBUG
-    /*
-    */
-#endif
-
     public class Clear
     {
         private readonly ISptLogger<Plugin> _logger;
@@ -44,7 +39,6 @@ namespace QuestFilterMod.RepeatableQuestCleaner
                 Samples = new List<SampleQuests>(),
                 Templates = new RepeatableTemplates()
             };
-
             _questDatabase.Templates ??= new RepeatableTemplates();
             _questDatabase.Templates.Elimination ??= CreateQuestTemplate(QuestTypeEnum.Elimination);
             _questDatabase.Templates.Completion ??= CreateQuestTemplate(QuestTypeEnum.Completion);

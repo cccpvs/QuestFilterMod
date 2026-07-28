@@ -8,13 +8,11 @@ using System.Text.Json.Serialization;
 namespace QuestFilterMod.RandomQuests
 {
     public partial class Generator
-
     {
         private Quest GenerateBaseQuest(string type, Action<Quest, Func<MongoId>> build)
         {
             var idFactory = new Func<MongoId>(() => new MongoId(Guid.NewGuid().ToString("N")[..24]));
             var questId = idFactory();
-
 #if debug
 
             if (Plugin.Config.Debug)
@@ -89,6 +87,7 @@ namespace QuestFilterMod.RandomQuests
                 _logger.Info($"[QuestFilterMod][Base] ✅ Quest '{quest.Id}' ({type}) created");
 
 #if DEBUG
+            /*
             var json = System.Text.Json.JsonSerializer.Serialize(quest, new System.Text.Json.JsonSerializerOptions
             {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
@@ -96,7 +95,8 @@ namespace QuestFilterMod.RandomQuests
                 WriteIndented = true
             });
 
-            //_logger.Info($"[QuestFilterMod][Base] 📜 Quest '{quest.Id}' ({type}) generated:\n{json}");
+            _logger.Info($"[QuestFilterMod][Base] 📜 Quest '{quest.Id}' ({type}) generated:\n{json}");
+            */
 #endif
 
             return quest;

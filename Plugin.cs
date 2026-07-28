@@ -53,7 +53,6 @@ public class Plugin : IOnUpdate
         _saveServer = saveServer;
         this.databaseServer = databaseServer;
 
-
         ConfigPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Config.json");
         _logger.Info("[QuestFilterMod] QuestFilterMod Loaded...");
     }

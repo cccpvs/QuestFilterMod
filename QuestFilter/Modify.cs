@@ -4,7 +4,6 @@ using QuestFilterMod.QuestFilter.Models;
 using QuestFilterMod.RandomQuests;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 
-
 namespace QuestFilterMod.QuestFilter
 {
     public partial class FilterService

@@ -27,7 +27,7 @@ namespace QuestFilterMod.QuestFilter
             var allowed = Location.GetAllowedLocations(ConfigRandom).ToList();
             foreach (var (pascalName, locationId) in allowed)
             {
-                if (locationId == locId && ConfigRandom.ExplorationQuest.TryGetValue(pascalName, out var config))
+                if (locationId == locId && ConfigRandom.ExplorationQuest.Locations.TryGetValue(pascalName, out var config))
                 {
                     return config.Targets.Where(t => !string.IsNullOrEmpty(t)).ToList();
                 }

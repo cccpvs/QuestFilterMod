@@ -148,12 +148,11 @@ namespace QuestFilterMod.RandomQuests
                     candidates.Add(("Kill", GenerateKillQuest));
 
                 if (ConfigRandom.QuestGeneration.Types.Transfer)
-                {
                     candidates.Add(("Transfer", GenerateTransferQuest));
-                }
+                
                 if (ConfigRandom.QuestGeneration.Types.Combo)
                     candidates.Add(("ComboQuest", GenerateComboQuest));
-
+                
                 if (!candidates.Any())
                 {
                     if (Plugin.Config.Debug)
@@ -240,7 +239,6 @@ namespace QuestFilterMod.RandomQuests
                 if (pick < current)
                     return item;
             }
-
             return list[^1];
         }
     }

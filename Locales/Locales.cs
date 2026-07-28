@@ -11,7 +11,6 @@ namespace QuestFilterMod.RandomQuests
         private static readonly Dictionary<string, Dictionary<string, string>> _loadedLocales = new();
         private static bool _localesLoaded = false;
 
-
         /// <summary>
         /// Populates the provided locale dictionary with translated strings for the given quest.
         /// Handles quest type, conditions, events, and descriptions with fallback to English.

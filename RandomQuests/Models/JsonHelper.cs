@@ -8,8 +8,6 @@ namespace QuestFilterMod.RandomQuests.Utils
 {
     public static class JsonHelper
     {
-       
-
         private static readonly JsonSerializerOptions Options = new()
         {
             WriteIndented = true,

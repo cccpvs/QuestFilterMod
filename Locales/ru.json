@@ -1,7 +1,7 @@
 {
   "base_type_pickup": "Найти предмет",
   "base_type_elimination": "Устранение",
-  "base_type_multi": "Комбо",
+  "base_type_multi": "Комбо Квест",
   "base_type_discover": "Обследовать точку",
   "base_type_leave_item": "Заложить предмет",
   "base_type_place_beacon": "Пометить маяком",

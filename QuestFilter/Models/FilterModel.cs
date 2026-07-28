@@ -182,7 +182,6 @@ namespace QuestFilterMod.QuestFilter
             return string.Equals(quest.ProgressSource, "arena", StringComparison.OrdinalIgnoreCase);
         }
 
-
         /// <summary>
         /// Determines whether a quest should be skipped during filtering and modification (i.e., left untouched).
         /// A quest is skipped if it matches any of the following criteria:

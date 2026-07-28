@@ -7,7 +7,6 @@ namespace QuestFilterMod.RandomQuests
 {
     public partial class Generator
     {
-
         /// <summary>
         /// Registers a generated quest in the game's quest database, including its localized descriptions.
         /// Handles rewards initialization, fail conditions, and error logging.
@@ -62,7 +61,6 @@ namespace QuestFilterMod.RandomQuests
         /// Initializes empty lists if missing.
         /// </summary>
         /// <param name="quest">Quest to inspect and augment.</param>
-
         private void EnsureRewards(Quest quest)
         {
             if (quest.Rewards == null)

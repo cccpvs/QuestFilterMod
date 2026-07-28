@@ -287,7 +287,6 @@ public partial class FilterService
         }
     }
 
-
     /// <summary>
     /// Returns the set of quest types that are allowed based on configuration, parsed and validated as QuestTypeEnum.
     /// </summary>

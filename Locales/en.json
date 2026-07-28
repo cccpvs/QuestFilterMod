@@ -1,7 +1,7 @@
 {
   "base_type_pickup": "Pick Up",
   "base_type_elimination": "Elimination",
-  "base_type_multi": "Combo",
+  "base_type_multi": "Combo Quest",
   "base_type_discover": "Explore location",
   "base_type_leave_item": "Leave item",
   "base_type_place_beacon": "Place beacon",
