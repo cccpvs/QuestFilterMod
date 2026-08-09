@@ -2,14 +2,13 @@
 
 using QuestFilterMod.QuestFilter.Models;
 using QuestFilterMod.RandomQuests;
+using QuestFilterMod.RandomQuests.Models;
+using SPTarkov.Common.Models.Logging;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
-using SPTarkov.Server.Core.Models.Utils;
-using SPTarkov.Server.Core.Services;
-using SPTarkov.Server.Core.Services.Mod;
-using QuestFilterMod.RandomQuests.Models;
-
+using SPTarkov.Server.Core.Models.Spt.Tables;
+using SPTarkov.Server.Core.Services.Modding.Custom;
 
 namespace QuestFilterMod.QuestFilter;
 
@@ -17,13 +16,20 @@ namespace QuestFilterMod.QuestFilter;
 public partial class FilterService
 {
     private readonly ISptLogger<Plugin> _logger;
-    private readonly DatabaseService _databaseService;
+    private readonly TemplateTable _templateTable;
     private readonly Generator _randomQuestGenerator;
     private readonly CustomQuestService _customQuestService;
     private readonly HashSet<MongoId> _randomQuestIds = new();
 
     private QuestConfig ConfigRandom => _randomQuestGenerator?.ConfigRandom;
-
+    /// <summary>
+    /// Service for accessing location data (maps, triggers, etc.).
+    /// </summary>
+    private readonly LocationTable _locationTable;
+    /// <summary>
+    /// Service for accessing localized strings for items and other game data.
+    /// </summary>
+    private readonly LocaleTable _localeTable;
 
     private bool _hasAppliedFilters = false;
     private readonly System.Random _random = new();
@@ -42,14 +48,18 @@ public partial class FilterService
 
     public FilterService(
         ISptLogger<Plugin> logger,
-        DatabaseService databaseService,
+        TemplateTable templateTable,
         Generator randomQuestGenerator,
-        CustomQuestService customQuestService)
+        CustomQuestService customQuestService,
+        LocationTable locationTable,
+        LocaleTable localeTable)
     {
         _logger = logger;
-        _databaseService = databaseService;
+        _templateTable = templateTable;
         _randomQuestGenerator = randomQuestGenerator;
         _customQuestService = customQuestService;
+        _locationTable = locationTable;
+        _localeTable = localeTable;
     }
 
     /// <summary>
@@ -122,7 +132,7 @@ public partial class FilterService
 
         _randomQuestIds.Clear();
 
-        var quests = _databaseService.GetQuests();
+        var quests = _templateTable.Quests;
         if (quests == null || quests.Count == 0)
         {
             if (Plugin.Config.Debug)
@@ -198,7 +208,7 @@ public partial class FilterService
         {
 
             _logger.Warning($"Generating Random Quest [{Config.GenerateRandomQuests.Count}]. Wait...");
-            _logger.Warning($"-------------------------------------------------------------------------");
+            _logger.Warning($"-----------------------------------------------------------------------------");
             _randomQuestGenerator.ResetTracker();
 
             var generatedCount = 0;
@@ -270,7 +280,7 @@ public partial class FilterService
         }
 
 
-        var tables = _databaseService.GetTables();
+        var tables = _templateTable;
         foreach (var quest in OriginalQuestList)
         {
             if (quest.Rewards == null)
@@ -315,8 +325,8 @@ public partial class FilterService
     {
         var selected = new List<Quest>();
 
-        var tables = _databaseService.GetTables();
-        var locationDict = tables?.Locations?.GetDictionary()
+        var tables = _templateTable.Quests;
+        var locationDict = _locationTable?.GetDictionary()
             ?? throw new InvalidOperationException("Failed to load location data. Check your database service.");
 
 
@@ -330,7 +340,7 @@ public partial class FilterService
             normalizedLocationKeyMap[pascalName] = normalized;
             normalizedLocationKeyMap[normalized] = normalized;
 
-            var mappedKey = tables.Locations.GetMappedKey(pascalName);
+            var mappedKey = _locationTable.GetMappedKey(pascalName);
             if (!string.IsNullOrEmpty(mappedKey) && !normalizedLocationKeyMap.ContainsKey(mappedKey))
             {
                 normalizedLocationKeyMap[mappedKey.ToLowerInvariant()] = normalized;
@@ -346,7 +356,7 @@ public partial class FilterService
                 if (string.IsNullOrWhiteSpace(q.Location))
                     return "unknown";
 
-                var normalized = GetNormalizedLocationKey(q.Location, tables);
+                var normalized = GetNormalizedLocationKey(q.Location);
                 if (!string.IsNullOrEmpty(normalized))
                     return normalized;
 
@@ -407,14 +417,14 @@ public partial class FilterService
             _logger.Info("[QuestFilterMod][FilterService] 🔍 Sample location checks:");
             foreach (var q in allQuests.Take(5))
             {
-                var normalized = GetNormalizedLocationKey(q.Location, tables);
+                var normalized = GetNormalizedLocationKey(q.Location);
                 _logger.Info($"  - Quest '{q.Name}' → loc='{q.Location}' → normalized='{normalized}'");
             }
         }
 
         return selected;
     }
-    
+
     /// <summary>
     /// Normalizes a raw location ID (e.g., "factory_day", "55f2a33d4bdc2d8f068b4567") into its canonical PascalCase lowercase key (e.g., "factory_day").
     /// Handles aliases, mapped keys, and direct lookups against location database.
@@ -423,84 +433,61 @@ public partial class FilterService
     /// <param name="tables">Database tables containing location metadata.</param>
     /// <returns>Normalized location key (lowercase Pascal name), or null if not found.</returns>
 
-    private string GetNormalizedLocationKey(string locationId, SPTarkov.Server.Core.Models.Spt.Server.DatabaseTables tables)
+    /// <summary>
+    /// Normalizes a raw location ID into its canonical key using the new LocationTable.
+    /// </summary>
+    private string GetNormalizedLocationKey(string locationId)
     {
         if (string.Equals(locationId, "any", StringComparison.OrdinalIgnoreCase))
         {
-#if Debug
-            _logger.Info($"[QuestFilterMod] ✅ Special keyword 'any' → 'any'");
-#endif
             return "any";
         }
 
-        var locationDict = tables.Locations.GetDictionary();
+        // Используем новый _locationTable
+        var locationDict = _locationTable?.GetDictionary();
 
         if (locationDict == null || locationDict.Count == 0)
         {
-            _logger.Error($"[QuestFilterMod][FilterService] ❌ locationDict is null or empty!");
+            _logger.Error($"[QuestFilterMod][FilterService] ❌ Location dictionary is empty!");
             return null;
         }
 
+        // 1. Пробуем через стандартный хелпер SPT
         if (Location.TryGetPascalName(locationId, out var pascalName))
         {
-            _logger.Info($"[QuestFilterMod][FilterService] ✅ Matched by TryGetPascalName: '{pascalName}'");
             return pascalName.ToLowerInvariant();
         }
 
-        var mappedKey = tables.Locations.GetMappedKey(locationId);
-#if Debug
-        _logger.Info($"[QuestFilterMod][FilterService] 🧪 GetMappedKey('{locationId}') = '{mappedKey}'");
-#endif
+        // 2. Пробуем через маппинг из LocationTable
+        var mappedKey = _locationTable.GetMappedKey(locationId);
+
         if (!string.IsNullOrEmpty(mappedKey))
         {
+            // Если маппинг что-то вернул, пробуем снова получить PascalName
             if (Location.TryGetPascalName(mappedKey, out var pascal2))
             {
-                _logger.Info($"[QuestFilterMod][FilterService] ✅ Matched by GetMappedKey → Pascal: '{pascal2}'");
                 return pascal2.ToLowerInvariant();
             }
 
-#if Debug
-            _logger.Info($"[QuestFilterMod][FilterService] 🧪 mappedKey is NOT PascalCase, trying to find via dictionary...");
-#endif
-            foreach (var loc in locationDict)
-            {
-                var locObj = loc.Value;
-                if (locObj?.Base == null) continue;
-
-                if (locObj.Base.IdField.ToString() == locationId)
-                {
-#if Debug
-                    _logger.Info($"[QuestFilterMod][FilterService] ✅ Found by IdField: '{loc.Key}'");
-#endif
-                    return loc.Key.ToLowerInvariant();
-                }
-                if (locObj.Base.Id == locationId)
-                {
-                    _logger.Info($"[QuestFilterMod][FilterService] ✅ Found by Id: '{loc.Key}'");
-                    return loc.Key.ToLowerInvariant();
-                }
-            }
-
-#if Debug
-            _logger.Error($"[QuestFilterMod] ⚠️ GetMappedKey returned unmapped key '{mappedKey}', returning lowercase");
-#endif
+            // Если не вышло, возвращаем как есть
             return mappedKey.ToLowerInvariant();
         }
 
+        // 3. Фоллбэк: ручной поиск по ID в объектах локаций
         foreach (var loc in locationDict)
         {
             var locObj = loc.Value;
             if (locObj?.Base == null) continue;
 
+            // В новых версиях SPT Base может содержать IdField (MongoId) или Id (string)
             if (locObj.Base.IdField.ToString() == locationId)
             {
-                _logger.Info($"[QuestFilterMod][FilterService] ✅ Found by direct IdField lookup: '{loc.Key}'");
                 return loc.Key.ToLowerInvariant();
             }
 
+            // На всякий случай проверяем свойство Id, если оно есть
             if (locObj.Base.Id == locationId)
             {
-                _logger.Info($"[QuestFilterMod][FilterService] ✅ Found by direct Id lookup: '{loc.Key}'");
                 return loc.Key.ToLowerInvariant();
             }
         }

@@ -2,12 +2,11 @@
 
 using QuestFilterMod.RandomQuests.Models;
 using QuestFilterMod.RandomQuests.Utils;
+using SPTarkov.Common.Models.Logging;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
-using SPTarkov.Server.Core.Models.Logging;
-using SPTarkov.Server.Core.Models.Utils;
+using SPTarkov.Server.Core.Models.Spt.Tables;
 using SPTarkov.Server.Core.Servers;
-using SPTarkov.Server.Core.Services;
-using SPTarkov.Server.Core.Services.Mod;
+using SPTarkov.Server.Core.Services.Modding.Custom;
 using System.Reflection;
 
 
@@ -21,10 +20,18 @@ namespace QuestFilterMod.RandomQuests
     public partial class Generator
     {
         private readonly ISptLogger<Plugin> _logger;
-        private readonly DatabaseService _databaseService;
-        private readonly DatabaseServer databaseServer;
+        private readonly TemplateTable _templateTable;
+        private readonly GlobalTable _globalTable;
         private readonly Random _random = new();
         public readonly QuestConfig ConfigRandom;
+        /// <summary>
+        /// Service for accessing location data (maps, triggers, etc.).
+        /// </summary>
+        private readonly LocationTable _locationTable;
+        /// <summary>
+        /// Service for accessing localized strings for items and other game data.
+        /// </summary>
+        private readonly LocaleTable _localeTable;
         /// <summary>
         /// Tracks used quest configurations to prevent duplicates (e.g., same location + target + item).
         /// Used during a single generation session to ensure variety.
@@ -72,25 +79,31 @@ namespace QuestFilterMod.RandomQuests
         }
 
         /// <summary>
-        /// Initializes the quest generator by loading configuration from JSON and preparing dependencies.
-        /// Throws if config file is missing or invalid.
+        /// Initializes the quest generator by loading configuration and dependencies.
         /// </summary>
-        /// <param name="logger">Logger instance for mod-specific logging.</param>
-        /// <param name="databaseService">Database service to access locations and quests.</param>
-        /// <param name="databaseServer">Database server instance (required).</param>
-        /// <param name="customQuestService">Service for custom quests (unused in this file).</param>
-        /// <param name="saveServer">Save server instance for persistence.</param>
+        /// <param name="logger">Logger instance.</param>
+        /// <param name="templateTable">Database table containing quests, items, and location services.</param>
+        /// <param name="databaseServer">Global database server instance.</param>
+        /// <param name="customQuestService">Service for handling custom quests.</param>
+        /// <param name="saveServer">Server responsible for saving player profiles.</param>
+        /// <param name="locationTable">Table containing detailed location data (Bigmap, Woods, etc.).</param>
+        /// <param name="localeTable">Table containing localized strings for the game.</param>
         public Generator(
                 ISptLogger<Plugin> logger,
-                DatabaseService databaseService,
-                 DatabaseServer databaseServer,
+                TemplateTable _templateTable,
+                GlobalTable _globalTable,
                 CustomQuestService customQuestService,
-                SaveServer saveServer)
+                SaveServer saveServer,
+                LocationTable locationTable,
+                LocaleTable localeTable)
         {
             _logger = logger;
-            _databaseService = databaseService;
-            this.databaseServer = databaseServer ?? throw new ArgumentNullException(nameof(databaseServer));
+            this._templateTable = _templateTable ?? throw new ArgumentNullException(nameof(_globalTable));
+            this._globalTable = _globalTable ?? throw new ArgumentNullException(nameof(_globalTable));
             _customQuestService = customQuestService;
+
+            this._locationTable = locationTable;
+            this._localeTable = localeTable;
 
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
 
@@ -103,7 +116,7 @@ namespace QuestFilterMod.RandomQuests
             );
 
             if (Plugin.Config.Debug)
-                _logger.LogWithColor($"[QuestFilterMod][Generator] I'm looking for a config: {configPath}", LogTextColor.Magenta);
+                _logger.LogWithColor($"[QuestFilterMod][Generator] I'm looking for a config: {configPath}");
 
             if (!File.Exists(configPath))
             {
@@ -127,7 +140,8 @@ namespace QuestFilterMod.RandomQuests
         {
             try
             {
-                var locations = _databaseService.GetLocations()?.GetDictionary();
+                var locations = _locationTable?.GetDictionary();
+
                 if (locations != null && !Location.IdToPascalName.Any())
                 {
                     Location.Initialize(locations);

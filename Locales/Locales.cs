@@ -2,6 +2,7 @@
 
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
+
 using System.Text.Json;
 
 namespace QuestFilterMod.RandomQuests
@@ -604,47 +605,102 @@ namespace QuestFilterMod.RandomQuests
         }
         /// <summary>
         /// Retrieves the localized name of an item by its ID across all available languages.
-        /// Prioritizes requested language, falls back to English, then any other loaded language.
+        /// Prioritizes the requested language, falls back to English, then checks other loaded languages.
+        /// If no localization is found, returns the raw item ID.
         /// </summary>
-        /// <param name="itemId">The item's unique identifier (e.g., "544900f54bdc2d6f028b456f").</param>
-        /// <param name="lang">Preferred language code.</param>
-        /// <returns>The localized item name, or the raw ID if not found.</returns>
+        /// <param name="itemId">The unique identifier (tpl) of the item (e.g., "544900f54bdc2d6f028b456f").</param>
+        /// <param name="lang">The preferred language code (e.g., "en", "ru").</param>
+        /// <returns>The localized name of the item, or the itemId if not found.</returns>
         private string GetItemName(string itemId, string lang = "en")
         {
-            if (string.IsNullOrEmpty(itemId)) return "unknown item";
+            if (string.IsNullOrEmpty(itemId))
+            {
+                return "unknown item";
+            }
 
+            // The key for item names in locale files typically follows the pattern "{ItemTpl}_Name"
             string nameKey = itemId + " Name";
 
-            string GetNameInLang(string l)
+            /// <summary>
+            /// Helper local function to fetch the dictionary of localized strings for a specific language.
+            /// Handles the lazy loading mechanism present in SPT 4.x LocaleTable.
+            /// </summary>
+            /// <param name="languageCode">The language code (e.g., "en", "ru").</param>
+            /// <returns>A dictionary of localized strings, or null if the language is not found or fails to load.</returns>
+            Dictionary<string, string> GetLocaleDict(string languageCode)
             {
-                if (!_databaseService.GetLocales().Global.TryGetValue(l, out var lazy))
+                if (_localeTable == null)
+                {
                     return null;
+                }
 
-                if (lazy?.Value is not Dictionary<string, string> dict)
-                    return null;
+                // LocaleTable.Global is a Dictionary<string, LazyLoad<GlobalLocaleDictionary>>
+                if (_localeTable.Global.TryGetValue(languageCode, out var lazyDict))
+                {
+                    try
+                    {
+                        // Resolve the lazy load to get the actual dictionary
+                        // GlobalLocaleDictionary inherits from Dictionary<string, string>
+                        var dict = lazyDict.Value;
 
-                return dict.TryGetValue(nameKey, out var name) && !string.IsNullOrEmpty(name) ? name : null;
+                        if (dict == null)
+                        {
+                            return null;
+                        }
+
+                        return dict as Dictionary<string, string>;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (Plugin.Config.Debug)
+                        {
+                            _logger.Warning($"[QuestFilterMod][Generator] Failed to load locale for '{languageCode}': {ex.Message}");
+                        }
+                        return null;
+                    }
+                }
+
+                return null;
             }
 
-            if (!string.IsNullOrEmpty(lang))
+            // 1. Try to get the name in the requested language
+            var dict = GetLocaleDict(lang);
+            if (dict != null && dict.TryGetValue(nameKey, out var name) && !string.IsNullOrEmpty(name))
             {
-                string name = GetNameInLang(lang);
-                if (!string.IsNullOrEmpty(name)) return name;
+                return name;
             }
 
+            // 2. Fallback to English if the requested language is different
             if (lang != "en")
             {
-                string name = GetNameInLang("en");
-                if (!string.IsNullOrEmpty(name)) return name;
-            }
-            foreach (var (l, _) in _databaseService.GetLocales().Global)
-            {
-                if (l == lang || l == "en") continue;
-                string name = GetNameInLang(l);
-                if (!string.IsNullOrEmpty(name)) return name;
+                dict = GetLocaleDict("en");
+                if (dict != null && dict.TryGetValue(nameKey, out name) && !string.IsNullOrEmpty(name))
+                {
+                    return name;
+                }
             }
 
-            return itemId; 
+            // 3. Fallback to other common languages if primary and English failed
+            // Order of preference: RU, DE, FR, ES, PL, CZ, etc.
+            string[] otherLangs = { "ru", "de", "fr", "es", "pl", "cz", "it", "ge", "hu", "jp", "kr", "ch", "sk", "po", "ro", "tu", "es-mx" };
+
+            foreach (var otherLang in otherLangs)
+            {
+                // Skip languages already checked
+                if (otherLang == lang || otherLang == "en")
+                {
+                    continue;
+                }
+
+                dict = GetLocaleDict(otherLang);
+                if (dict != null && dict.TryGetValue(nameKey, out name) && !string.IsNullOrEmpty(name))
+                {
+                    return name;
+                }
+            }
+
+            // 4. Final fallback: Return the raw item ID if no localization was found
+            return itemId;
         }
     }
 }

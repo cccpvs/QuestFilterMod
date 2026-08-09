@@ -4,17 +4,17 @@ using Version = SemanticVersioning.Version;
 
 namespace QuestFilterMod;
 
-public record ModMetadata : AbstractModMetadata
+public class MyModMetadata : IModMetadata
 {
-    public override string ModGuid { get; init; } = "com.cccpvs.QuestFilterMod";
-    public override string Name { get; init; } = "QuestFilterMod";
-    public override string Author { get; init; } = "cccpvs";
-    public override List<string> Contributors { get; init; }
-    public override Version Version { get; init; } = new("1.0.4");
-    public override Range SptVersion { get; init; } = new("~4.0.13");
-    public override List<string> Incompatibilities { get; init; }
-    public override Dictionary<string, Range> ModDependencies { get; init; } = new();
-    public override string Url { get; init; }
-    public override bool? IsBundleMod { get; init; } = false;
-    public override string License { get; init; } = "MIT";
+    public string ModGuid { get; init; } = "com.cccpvs.QuestFilterMod";
+    public string Name { get; init; } = "QuestFilterMod";
+    public string Author { get; init; } = "cccpvs";
+    public List<string> Contributors { get; init; } = null;
+    public Version Version { get; init; } = new Version("1.0.5");
+    public Range SptVersion { get; init; } = new Range("~4.1.2");
+    public bool HasPrepatcher { get; init; } = false;
+    public List<string> Incompatibilities { get; init; } = null;
+    public Dictionary<string, Range> ModDependencies { get; init; } = null;
+    public string Url { get; init; } = null;
+    public string License { get; init; } = "MIT";
 }

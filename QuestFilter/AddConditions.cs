@@ -63,7 +63,7 @@ namespace QuestFilterMod.QuestFilter
         {
             if (!Location.IdToPascalName.Any())
             {
-                var locations = _databaseService.GetLocations()?.GetDictionary();
+                var locations = _locationTable?.GetDictionary();
                 if (locations != null)
                 {
                     Location.Initialize(locations);
@@ -171,7 +171,7 @@ namespace QuestFilterMod.QuestFilter
 
         private void AddConditionLocales(Dictionary<string, Dictionary<string, string>> locales)
         {
-            var global = _databaseService.GetLocales().Global;
+            var global = _localeTable.Global;
 
             foreach (var (lang, entries) in locales)
             {

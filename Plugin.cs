@@ -1,34 +1,36 @@
-﻿using HarmonyLib;
+﻿//Plugin.cs
+
+using HarmonyLib;
 using QuestFilterMod.QuestFilter;
 using QuestFilterMod.QuestFilter.Models;
 using QuestFilterMod.RandomQuests;
 using QuestFilterMod.RepeatableQuestCleaner;
+using SPTarkov.Common.Models.Logging;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
-using SPTarkov.Server.Core.Models.Logging;
-using SPTarkov.Server.Core.Models.Utils;
+using SPTarkov.Server.Core.Models.Spt.Tables;
 using SPTarkov.Server.Core.Servers;
-using SPTarkov.Server.Core.Services;
-using SPTarkov.Server.Core.Services.Mod;
+using SPTarkov.Server.Core.Services.Modding.Custom;
+
 using System.Reflection;
 using System.Text.Json;
 
-[assembly: AssemblyVersion("1.0.4.0")]
-[assembly: AssemblyFileVersion("1.0.4.0")]
-[assembly: AssemblyInformationalVersion("1.0.4")]
-[assembly: AssemblyTitle("QuestFilterMod Mod SPT ~4.0.13")]
+[assembly: AssemblyVersion("1.0.5.0")]
+[assembly: AssemblyFileVersion("1.0.5.0")]
+[assembly: AssemblyInformationalVersion("1.0.5")]
+[assembly: AssemblyTitle("QuestFilterMod Mod SPT ~4.1.2")]
 [assembly: AssemblyProduct("QuestFilterMod")]
 
 namespace QuestFilterMod;
 
-[Injectable(TypePriority = OnLoadOrder.PreSptModLoader + 1)]
+[Injectable(TypePriority = OnLoadOrder.Preload + 1)]
 public class Plugin : IOnUpdate
 {
-
+    
     private readonly ISptLogger<Plugin> _logger;
-    private readonly DatabaseService _databaseService;
-    private readonly DatabaseServer databaseServer;
-    private readonly ServerLocalisationService _localisationService;
+    private readonly TemplateTable _templateTable;
+    private readonly GlobalTable _globalTable;
+    private readonly LocaleTable _localisationService;
     private readonly string ConfigPath;
     public static ModelConfig Config { get; private set; } = null;
     private Generator _randomQuestGenerator = null;
@@ -37,31 +39,41 @@ public class Plugin : IOnUpdate
     private readonly CustomQuestService _customQuestService;
     private Clear _temporaryQuestCleaner = null!;
     private readonly SaveServer _saveServer;
+    private readonly LocationTable _locationTable;
+    private readonly LocaleTable _localeTable;
 
     public Plugin(
     ISptLogger<Plugin> logger,
-    DatabaseService databaseService,
+    TemplateTable databaseService,
     CustomQuestService customQuestService,
-    ServerLocalisationService localisationService,
+    LocaleTable localisationService,
     SaveServer saveServer,
-    DatabaseServer databaseServer)
+    GlobalTable databaseServer,
+    LocationTable locationTable,
+    LocaleTable localeTable)
     {
         _logger = logger;
-        _databaseService = databaseService;
+        _templateTable = databaseService;
         _customQuestService = customQuestService;
         _localisationService = localisationService;
         _saveServer = saveServer;
-        this.databaseServer = databaseServer;
+        this._globalTable = databaseServer;
+        //_locationTable = locationTable;
+
+        this._locationTable = locationTable;
+        this._localeTable = localeTable;
+
 
         ConfigPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "Config.json");
         _logger.Info("[QuestFilterMod] QuestFilterMod Loaded...");
+        _locationTable = locationTable;
     }
 
     private bool _loggedWaitingTables = false;
     private bool _loggedWaitingQuests = false;
     private bool _loggedWaitingLocations = false;
 
-    public async Task<bool> OnUpdate(long secondsSinceLastRun)
+    public async Task<bool> OnUpdateAsync(long secondsSinceLastRun, CancellationToken cancellationToken)
     {
 
         try
@@ -71,7 +83,7 @@ public class Plugin : IOnUpdate
             LoadConfig();
 
 
-            var tables = _databaseService.GetTables();
+            var tables = _templateTable;
             if (tables == null)
             {
                 if (!_loggedWaitingTables)
@@ -83,7 +95,7 @@ public class Plugin : IOnUpdate
                 return true;
             }
 
-            var quests = _databaseService.GetQuests();
+            var quests = _templateTable.Quests;
             if (quests == null || quests.Count == 0)
             {
                 if (!_loggedWaitingQuests)
@@ -95,7 +107,7 @@ public class Plugin : IOnUpdate
                 return true;
             }
 
-            var locations = _databaseService.GetLocations();
+            var locations = _templateTable.LocationServices;
             if (locations == null)
             {
                 if (!_loggedWaitingLocations)
@@ -112,7 +124,7 @@ public class Plugin : IOnUpdate
             
             if (Config.Debug)
             {
-                var locationDict = locations.GetDictionary(); 
+                var locationDict = _locationTable.GetDictionary(); 
                 _logger.Info("[QuestFilterMod][DEBUG] 📋 Location Open - (PascalName → ID):");
                 foreach (var kvp in locationDict)
                 {
@@ -135,24 +147,28 @@ public class Plugin : IOnUpdate
             {
                 _randomQuestGenerator = new Generator(
                    _logger,
-                   _databaseService,
-                   databaseServer,
+                   _templateTable,
+                   _globalTable,
                    _customQuestService,
-                   _saveServer);
+                   _saveServer,
+                   _locationTable,
+                   _localeTable);
 
                 _questFilterService = new FilterService(
                     _logger,
-                    _databaseService,
+                    _templateTable,
                     _randomQuestGenerator,
-                    _customQuestService);
+                    _customQuestService,
+                    _locationTable,
+                   _localeTable);
 
-                _temporaryQuestCleaner = new Clear(_logger, _databaseService);
+                _temporaryQuestCleaner = new Clear(_logger, _templateTable);
             }
 
 
             if (Config.RemoveRepeatableQuests)
             {
-                var repeatableDb = tables.Templates.RepeatableQuests;
+                var repeatableDb = tables.RepeatableQuests;
                 _temporaryQuestCleaner.SetQuestDatabase(repeatableDb);
 
                 var harmony = new Harmony("questfiltermod.patch");
@@ -194,7 +210,7 @@ public class Plugin : IOnUpdate
                 return;
             }
             if (Config.Debug)
-                _logger.LogWithColor($"[QuestFilterMod][Plugin] 🔍 Cleaning DroppedItems from {profiles.Count} profiles...", LogTextColor.Magenta);
+                _logger.LogWithColor($"[QuestFilterMod][Plugin] 🔍 Cleaning DroppedItems from {profiles.Count} profiles...");
 
             int cleanedCount = 0;
             foreach (var kvp in profiles)

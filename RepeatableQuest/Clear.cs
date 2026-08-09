@@ -1,10 +1,12 @@
 ﻿//Clear.cs
 
+using SPTarkov.Common.Models.Logging;
+using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
+using SPTarkov.Server.Core.Models.Enums;
+using SPTarkov.Server.Core.Models.Spt.Tables;
 using SPTarkov.Server.Core.Models.Utils;
 using SPTarkov.Server.Core.Services;
-using SPTarkov.Server.Core.Models.Enums;
-using SPTarkov.Server.Core.Models.Common;
 
 namespace QuestFilterMod.RepeatableQuestCleaner
 {
@@ -12,15 +14,15 @@ namespace QuestFilterMod.RepeatableQuestCleaner
     public class Clear
     {
         private readonly ISptLogger<Plugin> _logger;
-        private readonly DatabaseService _databaseService;
+        private readonly TemplateTable _templateTable;
         private RepeatableQuestDatabase _questDatabase;
 
         public Clear(
             ISptLogger<Plugin> logger,
-            DatabaseService databaseService)
+            TemplateTable databaseService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
+            _templateTable = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
         }
         public void SetQuestDatabase(RepeatableQuestDatabase database)
         {

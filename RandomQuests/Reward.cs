@@ -3,6 +3,7 @@
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
+using SPTarkov.Server.Core.Models.Spt.Tables;
 
 namespace QuestFilterMod.RandomQuests
 {
@@ -44,8 +45,8 @@ namespace QuestFilterMod.RandomQuests
         {
             if (!ConfigRandom.RewardItems.Enabled || !ConfigRandom.RewardItems.Parents.Any()) return;
 
-            var prices = _databaseService.GetPrices();
-            var itemsPool = _databaseService.GetTemplates().Items;
+            var prices = _templateTable.Prices;
+            var itemsPool = _templateTable.Items;
 
             if (prices == null || !prices.Any() || !itemsPool.Any())
             {
@@ -151,7 +152,7 @@ namespace QuestFilterMod.RandomQuests
                 return null;
             }
 
-            var items = _databaseService.GetTemplates().Items;
+            var items = _templateTable.Items;
 
             var candidates = items
                 .Where(kvp => allowedTpls.Contains(kvp.Key))
@@ -305,7 +306,8 @@ namespace QuestFilterMod.RandomQuests
         private void AddQuestStartedPresetReward(Quest quest, string baseWeaponId, int count, Func<MongoId> idFactory)
         {
             var baseTpl = new MongoId(baseWeaponId);
-            var itemPresets = _databaseService.GetGlobals().ItemPresets;
+            var itemPresets = _globalTable.ItemPresets;
+            
 
             var matchingPreset = itemPresets.Values
                 .Where(p =>
