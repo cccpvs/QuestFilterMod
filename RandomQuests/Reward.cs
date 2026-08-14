@@ -3,7 +3,6 @@
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
-using SPTarkov.Server.Core.Models.Spt.Tables;
 
 namespace QuestFilterMod.RandomQuests
 {
@@ -302,7 +301,6 @@ namespace QuestFilterMod.RandomQuests
                 Items = new List<Item> { item }
             });
         }
-
         private void AddQuestStartedPresetReward(Quest quest, string baseWeaponId, int count, Func<MongoId> idFactory)
         {
             var baseTpl = new MongoId(baseWeaponId);

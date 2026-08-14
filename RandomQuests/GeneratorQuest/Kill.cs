@@ -6,6 +6,13 @@ using SPTarkov.Server.Core.Models.Enums;
 
 #if DEBUG
 /*
+ * 1. Условия убийств босов и определенных целей по роли.
+ *          "savageRole": [
+                  "bossTagilla",
+                  "followerTagilla",
+                  "infectedTagilla"
+                ],
+                "target": "Savage",
  */
 
 #endif
