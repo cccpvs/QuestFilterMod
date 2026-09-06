@@ -1,0 +1,40 @@
+﻿<style>
+    .qfm-nav .mud-button-root.spt-title {
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+    .qfm-nav-item {
+        border-radius: 6px;
+        transition: background-color 0.2s, color 0.2s;
+    }
+    .qfm-nav-item-active {
+        background-color: rgba(255, 167, 38, 0.12) !important;
+        color: rgba(255, 167, 38, 1) !important;
+        font-weight: 600;
+    }
+    .qfm-nav-item:hover:not(.qfm-nav-item-active) {
+        background-color: rgba(255, 167, 38, 0.06);
+    }
+</style>
+
+<MudPaper Elevation="0" Class="spt-panel qfm-nav pa-2 mb-3">
+    <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+        <MudIcon Icon="@Icons.Material.Filled.FilterList" Color="Color.Warning" Class="ml-1 mr-2" />
+        <MudText Typo="Typo.subtitle2" Class="spt-title mr-4">QuestFilterMod</MudText>
+        <MudButton Href="/questfiltermod" Variant="Variant.Text" Class="@Cls("home")"
+                   StartIcon="@Icons.Material.Outlined.Home">Home</MudButton>
+        <MudButton Href="/questfiltermod/filter" Variant="Variant.Text" Class="@Cls("filter")"
+                   StartIcon="@Icons.Material.Outlined.Settings">Filter Settings</MudButton>
+        <MudButton Href="/questfiltermod/random" Variant="Variant.Text" Class="@Cls("random")"
+                   StartIcon="@Icons.Material.Outlined.Casino">Random Quest</MudButton>
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter] public string Current { get; set; } = string.Empty;
+
+    private string Cls(string page)
+    {
+        return "qfm-nav-item" + (string.Equals(Current, page, StringComparison.Ordinal) ? " qfm-nav-item-active" : string.Empty);
+    }
+}

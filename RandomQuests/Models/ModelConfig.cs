@@ -43,7 +43,10 @@ namespace QuestFilterMod.RandomQuests.Models
         public string Id { get; set; } = "";
 
         [JsonPropertyName("Weight")]
-        public int Weight { get; set; } = 1; 
+        public int Weight { get; set; } = 1;
+
+        [JsonPropertyName("Comment")]
+        public string Comment { get; set; } = "";
     }
     public class PriceRange
     {

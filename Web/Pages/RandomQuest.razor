@@ -1,0 +1,913 @@
+﻿@page "/questfiltermod/random"
+@using MudBlazor
+@using QuestFilterMod.RandomQuests.Models
+@using System.Linq
+@using System.Text.Json
+
+@layout BaseMudBlazorLayout
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Random Quest Config</PageTitle>
+
+<div class="spt-page">
+    <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+
+        <!-- ====== NAVIGATION ====== -->
+        <Nav Current="random" />
+
+        <MudPaper Elevation="0" Class="spt-panel hero pa-4 mb-4">
+            <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Wrap="Wrap.Wrap" Spacing="3">
+                <MudStack Row AlignItems="AlignItems.Center" Spacing="3">
+                    <MudIcon Icon="@Icons.Material.Filled.Casino" Color="Color.Success" Size="Size.Large" />
+                    <div>
+                        <MudText Typo="Typo.h5" Class="spt-title">Random Quest Config</MudText>
+                        <MudText Typo="Typo.caption" Class="spt-muted">RandomQuestConfig.json</MudText>
+                    </div>
+                </MudStack>
+                <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                    @if (_dirty)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled">Unsaved changes</MudChip>
+                    }
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Save" OnClick="SaveConfiguration">Save</MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+        <MudTabs @bind-ActiveIndex="_activeTab" PanelClass="pa-4">
+            <MudTabPanel Text="Quest Gen" ItemText="Quest Gen">
+                <MudPaper Elevation="0" Class="spt-panel pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.AutoFixHigh" Class="mr-2" />
+                        Quest Types
+                    </MudText>
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudSwitch @bind-Value="_config.QuestGeneration.Types.Exploration" Label="Exploration" Color="Color.Primary" />
+                            <MudText Typo="Typo.caption" Class="spt-muted mt-1">Find and interact with objects/locations</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudSwitch @bind-Value="_config.QuestGeneration.Types.Delivery" Label="Delivery" Color="Color.Primary" />
+                            <MudText Typo="Typo.caption" Class="spt-muted mt-1">Deliver an item to a location</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudSwitch @bind-Value="_config.QuestGeneration.Types.Beacon" Label="Beacon" Color="Color.Primary" />
+                            <MudText Typo="Typo.caption" Class="spt-muted mt-1">Place a beacon at a location</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudSwitch @bind-Value="_config.QuestGeneration.Types.Kills" Label="Kills" Color="Color.Primary" />
+                            <MudText Typo="Typo.caption" Class="spt-muted mt-1">Kill enemies</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudSwitch @bind-Value="_config.QuestGeneration.Types.Transfer" Label="Transfer" Color="Color.Primary" />
+                            <MudText Typo="Typo.caption" Class="spt-muted mt-1">Transfer items to a location</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudSwitch @bind-Value="_config.QuestGeneration.Types.Combo" Label="Combo" Color="Color.Primary" />
+                            <MudText Typo="Typo.caption" Class="spt-muted mt-1">Combo quest (multiple conditions)</MudText>
+                        </MudItem>
+                    </MudGrid>
+                    <MudDivider Class="mt-4 mb-4" />
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.Map" Class="mr-2" />
+                        Allowed Locations
+                    </MudText>
+                    <MudGrid>
+                        @foreach (var toggle in _locationToggles)
+                        {
+                            <MudItem xs="6" md="4" lg="3">
+                                <MudSwitch @bind-Value="toggle.Enabled" Label="@toggle.Name" Color="Color.Primary" />
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudPaper>
+            </MudTabPanel>
+            <MudTabPanel Text="Exploration" ItemText="Exploration">
+                <MudPaper Elevation="0" Class="spt-panel pa-4">
+                    <MudSwitch @bind-Value="_config.ExplorationQuest.Survive" Label="Survive requirement" Color="Color.Primary" Class="mb-4" />
+                    <MudAlert Color="Color.Info" Variant="Variant.Text" Dense="true">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-2" />
+                        Location targets are configured directly in RandomQuestConfig.json. This section requires manual editing.
+                    </MudAlert>
+                </MudPaper>
+            </MudTabPanel>
+            <MudTabPanel Text="Delivery" ItemText="Delivery">
+                <MudPaper Elevation="0" Class="spt-panel pa-4">
+                    <MudSwitch @bind-Value="_config.DeliveryQuest.StartItem" Label="Start Item" Color="Color.Primary" Class="mb-2" />
+                    <MudNumericField @bind-Value="_config.DeliveryQuest.PlantTime" Label="Plant Time (ms)" Variant="Variant.Outlined" Dense="true" Class="mb-4" />
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">Item Plant IDs</MudText>
+                    <div class="chips">
+                        @foreach (var id in _deliveryItemPlantIds)
+                        {
+                            <MudChip T="string" Color="Color.Default" OnClose="() => RemoveDeliveryItemPlant(id)">
+                                @id
+                            </MudChip>
+                        }
+                    </div>
+                    <MudStack Row Spacing="2" Class="mt-2">
+                        <MudTextField @bind-Value="_newDeliveryItemPlant" Variant="Variant.Outlined" Dense="true" Placeholder="Add item plant ID" />
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddDeliveryItemPlant">
+                            <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                        </MudButton>
+                    </MudStack>
+                    <MudText Typo="Typo.caption" Class="spt-muted mt-1">Template IDs of items to be delivered</MudText>
+                    <MudDivider Class="mt-4 mb-4" />
+                    <MudAlert Color="Color.Info" Variant="Variant.Text" Dense="true">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-2" />
+                        Location targets are configured directly in RandomQuestConfig.json. This section requires manual editing.
+                    </MudAlert>
+                </MudPaper>
+            </MudTabPanel>
+            <MudTabPanel Text="Beacon" ItemText="Beacon">
+                <MudPaper Elevation="0" Class="spt-panel pa-4">
+                    <MudSwitch @bind-Value="_config.BeaconQuest.StartItem" Label="Start Item" Color="Color.Primary" Class="mb-2" />
+                    <MudNumericField @bind-Value="_config.BeaconQuest.PlantTime" Label="Plant Time (ms)" Variant="Variant.Outlined" Dense="true" Class="mb-2" />
+                    <MudDivider Class="mt-4 mb-4" />
+                    <MudAlert Color="Color.Info" Variant="Variant.Text" Dense="true">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-2" />
+                        Location targets are configured directly in RandomQuestConfig.json. This section requires manual editing.
+                    </MudAlert>
+                </MudPaper>
+            </MudTabPanel>
+            <MudTabPanel Text="Kill" ItemText="Kill">
+                <MudPaper Elevation="0" Class="spt-panel pa-4">
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudNumericField @bind-Value="_config.KillQuest.MinKills" Label="Min Kills" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudNumericField @bind-Value="_config.KillQuest.MaxKills" Label="Max Kills" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">Target Types</MudText>
+                    <div class="chips">
+                        @foreach (var target in _killTargets)
+                        {
+                            <MudChip T="string" Color="Color.Default" OnClose="() => RemoveKillTarget(target)">
+                                @target
+                            </MudChip>
+                        }
+                    </div>
+                    <MudStack Row Spacing="2" Class="mt-2">
+                        <MudTextField @bind-Value="_newKillTarget" Variant="Variant.Outlined" Dense="true" Placeholder="Add target" />
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddKillTarget">
+                            <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                        </MudButton>
+                    </MudStack>
+                    <MudText Typo="Typo.caption" Class="spt-muted mt-1">Any, AnyPmc, Savage, Usec, Bear</MudText>
+                    <MudDivider Class="mt-4 mb-4" />
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">Time of Day</MudText>
+                    <MudGrid>
+                        <MudItem xs="12" md="4">
+                            <MudSwitch @bind-Value="_config.KillQuest.TimeDay.Enable" Label="Enable" Color="Color.Primary" />
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudTextField @bind-Value="_timeDayMinimalText" Label="Minimal (hour, minute)" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudNumericField @bind-Value="_config.KillQuest.TimeDay.Interval" Label="Interval (hours)" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudDivider Class="mt-4 mb-4" />
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">Weapons</MudText>
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudSwitch @bind-Value="_config.KillQuest.Weapons.Enable" Label="Enable Weapon Filter" Color="Color.Primary" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudSwitch @bind-Value="_config.KillQuest.Weapons.Started" Label="Started Item" Color="Color.Primary" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudText Typo="Typo.subtitle2" Class="mb-2 mt-2">Weapon IDs</MudText>
+                    <div class="chips">
+                        @foreach (var id in _killWeaponIds)
+                        {
+                            <MudChip T="string" Color="Color.Default" OnClose="() => RemoveKillWeaponId(id)">
+                                @id
+                            </MudChip>
+                        }
+                    </div>
+                    <MudStack Row Spacing="2" Class="mt-2">
+                        <MudTextField @bind-Value="_newKillWeaponId" Variant="Variant.Outlined" Dense="true" Placeholder="Add weapon ID" />
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddKillWeaponId">
+                            <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+            </MudTabPanel>
+            <MudTabPanel Text="Transfer" ItemText="Transfer">
+                <MudPaper Elevation="0" Class="spt-panel pa-4">
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_transferItemCountText" Label="Item Count (min, max)" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_transferConditionText" Label="Condition (min, max)" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">Item IDs</MudText>
+                    <div class="chips">
+                        @foreach (var id in _transferItemIds)
+                        {
+                            <MudChip T="string" Color="Color.Default" OnClose="() => RemoveTransferItemId(id)">
+                                @id
+                            </MudChip>
+                        }
+                    </div>
+                    <MudStack Row Spacing="2" Class="mt-2">
+                        <MudTextField @bind-Value="_newTransferItemId" Variant="Variant.Outlined" Dense="true" Placeholder="Add item ID" />
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddTransferItemId">
+                            <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                        </MudButton>
+                    </MudStack>
+                    <MudText Typo="Typo.caption" Class="spt-muted mt-1">Template IDs of items to be transferred</MudText>
+                </MudPaper>
+            </MudTabPanel>
+            <MudTabPanel Text="Combo" ItemText="Combo">
+                <MudPaper Elevation="0" Class="spt-panel pa-4">
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_comboConditionsText" Label="Conditions (min, max)" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudSwitch @bind-Value="_config.ComboQuest.Location" Label="Location-based" Color="Color.Primary" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">Quest Types</MudText>
+                    <div class="chips">
+                        @foreach (var type in _comboTypes)
+                        {
+                            <MudChip T="string" Color="Color.Default" OnClose="() => RemoveComboType(type)">
+                                @type
+                            </MudChip>
+                        }
+                    </div>
+                    <MudStack Row Spacing="2" Class="mt-2">
+                        <MudTextField @bind-Value="_newComboType" Variant="Variant.Outlined" Dense="true" Placeholder="Add type" />
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddComboType">
+                            <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                        </MudButton>
+                    </MudStack>
+                    <MudText Typo="Typo.caption" Class="spt-muted mt-1">Exploration, Delivery, Beacon, Kills, Transfer</MudText>
+                </MudPaper>
+            </MudTabPanel>
+            <MudTabPanel Text="Rewards" ItemText="Rewards">
+                <MudPaper Elevation="0" Class="spt-panel pa-4">
+                    <!-- Money Reward -->
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Class="mr-2" />
+                        Money Reward
+                    </MudText>
+                    <MudGrid>
+                        <MudItem xs="12" md="4">
+                            <MudSwitch @bind-Value="_config.RewardMoney.Enabled" Label="Enabled" Color="Color.Primary" />
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudTextField @bind-Value="_rewardMoneyTpl" Label="Money Template (TPL)" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudGrid>
+                        <MudItem xs="12" md="4">
+                            <MudNumericField @bind-Value="_config.RewardMoney.Min" Label="Min" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudNumericField @bind-Value="_config.RewardMoney.Max" Label="Max" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudNumericField @bind-Value="_config.RewardMoney.Step" Label="Step" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudDivider Class="mt-4 mb-4" />
+
+                    <!-- Items Reward -->
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="mr-2" />
+                        Items Reward
+                    </MudText>
+                    <MudGrid>
+                        <MudItem xs="12" md="4">
+                            <MudSwitch @bind-Value="_config.RewardItems.Enabled" Label="Enabled" Color="Color.Primary" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.subtitle2" Class="mb-2">Count Range</MudText>
+                            <MudNumericField @bind-Value="_config.RewardItems.Count.Min" Label="Min" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudNumericField @bind-Value="_config.RewardItems.Count.Max" Label="Max" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.subtitle2" Class="mb-2">Price Range</MudText>
+                            <MudNumericField @bind-Value="_config.RewardItems.PriceRange.Min" Label="Min" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudNumericField @bind-Value="_config.RewardItems.PriceRange.Max" Label="Max" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudDivider Class="mt-4 mb-4" />
+
+                    <!-- Parents -->
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.Category" Class="mr-2" />
+                        Item Parents (with weights)
+                    </MudText>
+                    @foreach (var item in _parentItems)
+                    {
+                        <MudGrid>
+                            <MudItem xs="12" md="4">
+                                <MudTextField @bind-Value="item.Id" Label="Parent ID" Variant="Variant.Outlined" Dense="true" />
+                            </MudItem>
+                            <MudItem xs="12" md="2">
+                                <MudNumericField @bind-Value="item.Weight" Label="Weight" Variant="Variant.Outlined" Dense="true" Min="1" />
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudTextField @bind-Value="item.Id" Label="Comment" Variant="Variant.Outlined" Dense="true" />
+                            </MudItem>
+                            <MudItem xs="12" md="2">
+                                <MudButton Variant="Variant.Text" Color="Color.Error" OnClick="() => RemoveParent(_parentItems.IndexOf(item))">
+                                    <MudIcon Icon="@Icons.Material.Filled.Delete" /> Remove
+                                </MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    }
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddParent" Class="mt-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Add" Class="mr-1" /> Add Parent
+                    </MudButton>
+                    <MudDivider Class="mt-4 mb-4" />
+
+                    <!-- Default Quest -->
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.Image" Class="mr-2" />
+                        Default Quest Icon
+                    </MudText>
+                    <MudTextField @bind-Value="_config.DefaultQuest.Image" Label="Image Path" Variant="Variant.Outlined" Dense="true" />
+
+                    <MudDivider Class="mt-4 mb-4" />
+
+                    <!-- Trader Standing -->
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.Star" Class="mr-2" />
+                        Trader Standing Reward
+                    </MudText>
+                    <MudGrid>
+                        <MudItem xs="12" md="4">
+                            <MudSwitch @bind-Value="_config.RewardTraderStanding.Enabled" Label="Enabled" Color="Color.Primary" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudNumericField @bind-Value="_config.RewardTraderStanding.Min" Label="Min" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudNumericField @bind-Value="_config.RewardTraderStanding.Max" Label="Max" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudDivider Class="mt-4 mb-4" />
+
+                    <!-- Experience -->
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.Explore" Class="mr-2" />
+                        Experience Reward
+                    </MudText>
+                    <MudGrid>
+                        <MudItem xs="12" md="4">
+                            <MudNumericField @bind-Value="_config.ExperienceRewardRange.Min" Label="Min" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudNumericField @bind-Value="_config.ExperienceRewardRange.Max" Label="Max" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudNumericField @bind-Value="_config.ExperienceRewardRange.Step" Label="Step" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudDivider Class="mt-4 mb-4" />
+
+                    <!-- Skills -->
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.School" Class="mr-2" />
+                        Skill Rewards
+                    </MudText>
+                    <MudGrid>
+                        <MudItem xs="12" md="3">
+                            <MudSwitch @bind-Value="_config.RewardSkills.Enabled" Label="Enabled" Color="Color.Primary" />
+                        </MudItem>
+                        <MudItem xs="12" md="3">
+                            <MudNumericField @bind-Value="_config.RewardSkills.Count" Label="Skill Count" Variant="Variant.Outlined" Dense="true" Min="1" />
+                        </MudItem>
+                        <MudItem xs="12" md="3">
+                            <MudNumericField @bind-Value="_config.RewardSkills.Value" Label="Value" Variant="Variant.Outlined" Dense="true" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">Skills</MudText>
+                    <div class="chips">
+                        @foreach (var skill in _skillNames)
+                        {
+                            <MudChip T="string" Color="Color.Default" OnClose="() => RemoveSkill(skill)">
+                                @skill
+                            </MudChip>
+                        }
+                    </div>
+                    <MudStack Row Spacing="2" Class="mt-2">
+                        <MudTextField @bind-Value="_newSkillName" Variant="Variant.Outlined" Dense="true" Placeholder="Add skill name" />
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddSkill">
+                            <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+            </MudTabPanel>
+            <MudTabPanel Text="Traders" ItemText="Traders">
+                <MudPaper Elevation="0" Class="spt-panel pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Class="mr-2" />
+                        Trader IDs
+                    </MudText>
+                    <div class="chips">
+                        @foreach (var id in _traderIds)
+                        {
+                            <MudChip T="string" Color="Color.Default" OnClose="() => RemoveTraderId(id)">
+                                @id
+                            </MudChip>
+                        }
+                    </div>
+                    <MudStack Row Spacing="2" Class="mt-2">
+                        <MudTextField @bind-Value="_newTraderId" Variant="Variant.Outlined" Dense="true" Placeholder="Add trader ID" />
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddTraderId">
+                            <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                        </MudButton>
+                    </MudStack>
+                    <MudText Typo="Typo.caption" Class="spt-muted mt-2">
+                        <ul class="list-unstyled">
+                            <li><code>54cb50c76803fa8b248b4571</code> — Prapor</li>
+                            <li><code>54cb57776803fa99248b456e</code> — Therapist</li>
+                            <li><code>579dc571d53a0658a154fbec</code> — Fence</li>
+                            <li><code>58330581ace78e27b8b10cee</code> — Skier</li>
+                            <li><code>5935c25fb3acc3127c3d8cd9</code> — Peacekeeper</li>
+                            <li><code>5a7c2eca46aef81a7ca2145d</code> — Mechanic</li>
+                            <li><code>5ac3b934156ae10c4430e83c</code> — Ragman</li>
+                            <li><code>5c0647fdd443bc2504c2d371</code> — Jaeger</li>
+                            <li><code>6617beeaa9cfa777ca915b7c</code> — Ref</li>
+                        </ul>
+                    </MudText>
+                </MudPaper>
+            </MudTabPanel>
+        </MudTabs>
+        <MudStack Row Justify="Justify.SpaceBetween" Class="mt-4">
+            <MudButton Variant="Variant.Text" OnClick="LoadDefaults">
+                <MudIcon Icon="@Icons.Material.Filled.Restore" Class="mr-1" />
+                Reset to Defaults
+            </MudButton>
+            <MudText Typo="Typo.caption" Class="spt-muted">Changes apply immediately. Click Save to persist.</MudText>
+        </MudStack>
+    </MudContainer>
+</div>
+
+@code {
+    private QuestConfig _config = new();
+    private bool _dirty;
+    private int _activeTab;
+
+    // --- Временные поля для строк ---
+    private string _timeDayMinimalText = "";
+    private string _transferItemCountText = "";
+    private string _transferConditionText = "";
+    private string _comboConditionsText = "";
+    private string _rewardMoneyTpl = "";
+
+    // --- Delivery Item Plant ---
+    private List<string> _deliveryItemPlantIds = new();
+    private string _newDeliveryItemPlant = "";
+
+    // --- Списки для чипов ---
+    private List<string> _killTargets = new();
+    private List<string> _killWeaponIds = new();
+    private List<string> _transferItemIds = new();
+    private List<string> _comboTypes = new();
+    private List<string> _traderIds = new();
+    private List<string> _skillNames = new();
+    private string _newKillTarget = "";
+    private string _newKillWeaponId = "";
+    private string _newTransferItemId = "";
+    private string _newComboType = "";
+    private string _newTraderId = "";
+    private string _newSkillName = "";
+
+    // --- Wrapper classes for binding ---
+    private List<LocationToggle> _locationToggles = new();
+    private List<ParentItem> _parentItems = new();
+
+    protected override void OnInitialized()
+    {
+        LoadFromJson();
+        SyncTempVars();
+    }
+
+    private void SyncTempVars()
+    {
+        if (_config.KillQuest?.TimeDay != null)
+            _timeDayMinimalText = string.Join(", ", _config.KillQuest.TimeDay.Minimal);
+        if (_config.TransferQuest?.ItemCount != null)
+            _transferItemCountText = string.Join(", ", _config.TransferQuest.ItemCount);
+        if (_config.TransferQuest?.Condition != null)
+            _transferConditionText = string.Join(", ", _config.TransferQuest.Condition);
+        if (_config.ComboQuest?.Conditions != null)
+            _comboConditionsText = string.Join(", ", _config.ComboQuest.Conditions);
+        _rewardMoneyTpl = _config.RewardMoney?.Tpl ?? "";
+        _parentItems = _config.RewardItems?.Parents?.Select(p => new ParentItem { Id = p.Id, Weight = p.Weight, Comment = p.Comment }).ToList() ?? new();
+        _killTargets = _config.KillQuest?.Target?.ToList() ?? new();
+        _killWeaponIds = _config.KillQuest?.Weapons?.Ids ?? new();
+        _transferItemIds = _config.TransferQuest?.ItemIds ?? new();
+        _comboTypes = _config.ComboQuest?.Type?.ToList() ?? new();
+        _traderIds = _config.TraderIds ?? new();
+        _skillNames = _config.RewardSkills?.Skill?.ToList() ?? new();
+        _deliveryItemPlantIds = _config.DeliveryQuest?.ItemPlant?.ToList() ?? new();
+        _locationToggles = new();
+        if (_config.QuestGeneration?.AllowedLocations != null)
+            foreach (var kvp in _config.QuestGeneration.AllowedLocations)
+                _locationToggles.Add(new LocationToggle { Name = kvp.Key, Enabled = kvp.Value });
+    }
+
+    private void LoadFromJson()
+    {
+        var configPath = System.IO.Path.Combine(
+            System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)!,
+            "RandomQuestConfig.json");
+
+        if (!File.Exists(configPath))
+        {
+            InitDefaults();
+            return;
+        }
+
+        try
+        {
+            var json = File.ReadAllText(configPath);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            _config = JsonSerializer.Deserialize<QuestConfig>(json, options) ?? new QuestConfig();
+        }
+        catch
+        {
+            InitDefaults();
+        }
+    }
+
+    // --- Сохранение конфига ---
+    private async Task SaveConfiguration()
+    {
+        try
+        {
+            // Синхронизируем строки с массивами
+            _config.KillQuest.TimeDay.Minimal = ParseIntArray(_timeDayMinimalText);
+            _config.TransferQuest.ItemCount = ParseIntArray(_transferItemCountText);
+            _config.TransferQuest.Condition = ParseIntArray(_transferConditionText);
+            _config.ComboQuest.Conditions = ParseIntArray(_comboConditionsText);
+            _config.RewardMoney.Tpl = _rewardMoneyTpl;
+            _config.KillQuest.Target = _killTargets.ToArray();
+            _config.KillQuest.Weapons.Ids = _killWeaponIds;
+            _config.TransferQuest.ItemIds = _transferItemIds;
+            _config.ComboQuest.Type = _comboTypes.ToArray();
+            _config.TraderIds = _traderIds;
+            _config.RewardSkills.Skill = _skillNames.ToArray();
+            _config.DeliveryQuest.ItemPlant = _deliveryItemPlantIds.ToList();
+
+            // Синхронизируем allowed locations
+            _config.QuestGeneration.AllowedLocations = _locationToggles.ToDictionary(t => t.Name, t => t.Enabled);
+
+            // Обновляем ID родителей из wrapper-списка
+            for (int i = 0; i < _parentItems.Count && i < _config.RewardItems.Parents.Length; i++)
+            {
+                _config.RewardItems.Parents[i].Id = _parentItems[i].Id;
+                _config.RewardItems.Parents[i].Weight = _parentItems[i].Weight;
+                _config.RewardItems.Parents[i].Comment = _parentItems[i].Comment;
+            }
+
+            var json = JsonSerializer.Serialize(_config, new JsonSerializerOptions { WriteIndented = true });
+
+            var configPath = System.IO.Path.Combine(
+                System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)!,
+                "RandomQuestConfig.json");
+
+            File.WriteAllText(configPath, json);
+
+            _dirty = false;
+            Snackbar.Add("RandomQuestConfig saved successfully!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving: {ex.Message}", Severity.Error);
+        }
+    }
+
+    // --- Сброс ---
+    private void LoadDefaults()
+    {
+        InitDefaults();
+        _dirty = false;
+        Snackbar.Add("Reset to defaults", Severity.Warning);
+    }
+
+    private void InitDefaults()
+    {
+        _config = new QuestConfig
+        {
+            QuestGeneration = new()
+            {
+                Types = new()
+                {
+                    Exploration = true,
+                    Delivery = true,
+                    Beacon = true,
+                    Kills = true,
+                    Transfer = true,
+                    Combo = false
+                },
+                AllowedLocations = new Dictionary<string, bool>
+                {
+                    { "Bigmap", true }, { "Woods", true }, { "Factory4Day", true },
+                    { "Shoreline", true }, { "RezervBase", true }, { "Lighthouse", true },
+                    { "Interchange", true }, { "TarkovStreets", true }, { "Sandbox", true },
+                    { "Laboratory", true }, { "Factory4Night", false }, { "Labyrinth", false }
+                }
+            },
+            ExplorationQuest = new() { Survive = true, Locations = new() },
+            DeliveryQuest = new()
+            {
+                StartItem = true,
+                PlantTime = 30,
+                ItemPlant = new()
+                {
+                    "56742c324bdc2d150f8b456d",
+                    "56742c2e4bdc2d95058b456d",
+                    "56742c284bdc2d98058b456d",
+                    "5672cb124bdc2d1a0f8b4568",
+                    "5672cb724bdc2dc2088b456b"
+                },
+                Locations = new()
+            },
+            BeaconQuest = new()
+            {
+                StartItem = true,
+                PlantTime = 30,
+                Locations = new()
+            },
+            KillQuest = new()
+            {
+                MinKills = 10,
+                MaxKills = 15,
+                Target = [ "Any", "AnyPmc", "Savage", "Usec", "Bear" ],
+                TimeDay = new() { Enable = false, Minimal = [0, 0], Interval = 5 },
+                Weapons = new() { Enable = false, Started = false, Ids = new() }
+            },
+            TransferQuest = new()
+            {
+                ItemIds = new()
+                {
+                    "573475fb24597737fb1379e1", "573476d324597737da2adc13",
+                    "573476f124597737e04bf328", "5734770f24597738025ee254",
+                    "57347b8b24597737dd42e192", "5734795124597738002c6176",
+                    "573477e124597737dd42e191", "573477e124597737dd42e191",
+                    "573474f924597738002c6174", "5c06782b86f77426df5407d2",
+                    "5c06779c86f77426e00dd782", "5bd073c986f7747f627e796c",
+                    "5734781f24597737e04bf32a", "57347c77245977448d35f6e2",
+                    "57347c5b245977448d35f6e1", "59e35ef086f7741777737012",
+                    "57347c1124597737fb1379e3", "61bf7b6302b3924be92fa8c3",
+                    "5d1b392c86f77425243e98fe"
+                },
+                ItemCount = [1, 5],
+                Condition = [1, 5]
+            },
+            ComboQuest = new()
+            {
+                Conditions = [2, 6],
+                Location = true,
+                Type = [ "Exploration", "Delivery", "Beacon", "Kills", "Transfer" ]
+            },
+            RewardMoney = new()
+            {
+                Enabled = true,
+                Tpl = "5449016a4bdc2d6f028b456f",
+                Min = 10000,
+                Max = 30000,
+                Step = 5000
+            },
+            RewardItems = new()
+            {
+                Enabled = true,
+                Unknown = false,
+                Count = new() { Min = 1, Max = 5 },
+                PriceRange = new() { Min = 5000, Max = 150000 },
+                Parents = new[]
+                {
+                    new ParentWeight { Id = "5448f3ac4bdc2dce718b4569", Weight = 1, Comment = "Medical" },
+                    new ParentWeight { Id = "5448f3a64bdc2d60728b456a", Weight = 1, Comment = "Stimulator" },
+                    new ParentWeight { Id = "5448e8d64bdc2dce718b4568", Weight = 1, Comment = "Drink" },
+                    new ParentWeight { Id = "5448e8d04bdc2ddf718b4569", Weight = 1, Comment = "food" },
+                    new ParentWeight { Id = "5c99f98d86f7745c314214b3", Weight = 1, Comment = "KeyMechanical" },
+                    new ParentWeight { Id = "5448e53e4bdc2d60728b4567", Weight = 1, Comment = "Backpack" },
+                    new ParentWeight { Id = "5448e54d4bdc2dcc718b4568", Weight = 1, Comment = "Armor" }
+                }
+            },
+            DefaultQuest = new() { Image = "/files/quest/icon/default.jpg" },
+            RewardTraderStanding = new() { Enabled = true, Unknown = false, Min = 0.01f, Max = 0.03f },
+            ExperienceRewardRange = new() { Unknown = false, Min = 100, Max = 1000, Step = 100 },
+            RewardSkills = new()
+            {
+                Enabled = false,
+                Unknown = false,
+                Count = 1,
+                Value = 100,
+                Skill =
+                [
+                    "Endurance", "Strength", "Vitality", "Health",
+                    "StressResistance", "Metabolism", "Immunity",
+                    "Perception", "Intellect", "Attention", "Charisma", "Memory",
+                    "MagDrills", "Pistol", "Revolver", "SMG", "Assault", "Shotgun",
+                    "Sniper", "LMG", "HMG", "Launcher", "AttachedLauncher", "Throwing",
+                    "Misc", "Melee", "DMR", "DrawMaster", "AimMaster",
+                    "RecoilControl", "TroubleShooting", "Sniping", "CovertMovement",
+                    "ProneMovement", "FirstAid", "FieldMedicine", "Surgery",
+                    "LightVests", "HeavyVests", "WeaponModding", "AdvancedModding",
+                    "NightOps", "SilentOps", "Lockpicking", "Search",
+                    "WeaponTreatment", "Freetrading", "Auctions", "Cleanoperations",
+                    "Barter", "Shadowconnections", "Taskperformance",
+                    "BearAssaultoperations", "BearAuthority", "BearAksystems",
+                    "BearHeavycaliber", "BearRawpower", "UsecArsystems",
+                    "UsecDeepweaponmodding", "UsecLongrangeoptics", "UsecNegotiations",
+                    "UsecTactics", "BotReload", "BotSound", "AimDrills",
+                    "HideoutManagement", "Crafting"
+                ]
+            },
+            TraderIds = new()
+            {
+                "54cb50c76803fa8b248b4571",
+                "54cb57776803fa99248b456e",
+                "579dc571d53a0658a154fbec",
+                "58330581ace78e27b8b10cee",
+                "5935c25fb3acc3127c3d8cd9",
+                "5a7c2eca46aef81a7ca2145d",
+                "5ac3b934156ae10c4430e83c",
+                "5c0647fdd443bc2504c2d371",
+                "6617beeaa9cfa777ca915b7c"
+            }
+        };
+    }
+
+    private void MarkDirty() => _dirty = true;
+
+    // --- Парсинг int[] ---
+    private static int[] ParseIntArray(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return [];
+        return text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                   .Select(int.Parse)
+                   .ToArray();
+    }
+
+    // --- Parents ---
+    private void AddParent()
+    {
+        var newParents = _config.RewardItems.Parents.Concat(new[] { new ParentWeight { Id = "", Weight = 1, Comment = "" } }).ToArray();
+        _config.RewardItems.Parents = newParents;
+        _parentItems.Add(new ParentItem { Id = "", Comment = "" });
+        MarkDirty();
+    }
+
+    private void RemoveParent(int index)
+    {
+        var newParents = _config.RewardItems.Parents.Where((_, i) => i != index).ToArray();
+        _config.RewardItems.Parents = newParents;
+        _parentItems.RemoveAt(index);
+        MarkDirty();
+    }
+
+    // --- Парсинг string[] ---
+    private static string[] ParseStringArray(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return [];
+        return text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                   .ToArray();
+    }
+
+    // --- Kill Targets ---
+    private void AddKillTarget()
+    {
+        if (string.IsNullOrWhiteSpace(_newKillTarget)) return;
+        _killTargets.Add(_newKillTarget);
+        _newKillTarget = "";
+        MarkDirty();
+    }
+
+    private void RemoveKillTarget(string target)
+    {
+        _killTargets.Remove(target);
+        MarkDirty();
+    }
+
+    // --- Kill Weapon IDs ---
+    private void AddKillWeaponId()
+    {
+        if (string.IsNullOrWhiteSpace(_newKillWeaponId)) return;
+        _killWeaponIds.Add(_newKillWeaponId);
+        _newKillWeaponId = "";
+        MarkDirty();
+    }
+
+    private void RemoveKillWeaponId(string id)
+    {
+        _killWeaponIds.Remove(id);
+        MarkDirty();
+    }
+
+    // --- Transfer Item IDs ---
+    private void AddTransferItemId()
+    {
+        if (string.IsNullOrWhiteSpace(_newTransferItemId)) return;
+        _transferItemIds.Add(_newTransferItemId);
+        _newTransferItemId = "";
+        MarkDirty();
+    }
+
+    private void RemoveTransferItemId(string id)
+    {
+        _transferItemIds.Remove(id);
+        MarkDirty();
+    }
+
+    // --- Combo Types ---
+    private void AddComboType()
+    {
+        if (string.IsNullOrWhiteSpace(_newComboType)) return;
+        _comboTypes.Add(_newComboType);
+        _newComboType = "";
+        MarkDirty();
+    }
+
+    private void RemoveComboType(string type)
+    {
+        _comboTypes.Remove(type);
+        MarkDirty();
+    }
+
+    // --- Trader IDs ---
+    private void AddTraderId()
+    {
+        if (string.IsNullOrWhiteSpace(_newTraderId)) return;
+        _traderIds.Add(_newTraderId);
+        _newTraderId = "";
+        MarkDirty();
+    }
+
+    private void RemoveTraderId(string id)
+    {
+        _traderIds.Remove(id);
+        MarkDirty();
+    }
+
+    // --- Skills ---
+    private void AddSkill()
+    {
+        if (string.IsNullOrWhiteSpace(_newSkillName)) return;
+        _skillNames.Add(_newSkillName);
+        _newSkillName = "";
+        MarkDirty();
+    }
+
+    private void RemoveSkill(string skill)
+    {
+        _skillNames.Remove(skill);
+        MarkDirty();
+    }
+
+    // --- Delivery Item Plant IDs ---
+    private void AddDeliveryItemPlant()
+    {
+        if (string.IsNullOrWhiteSpace(_newDeliveryItemPlant)) return;
+        _deliveryItemPlantIds.Add(_newDeliveryItemPlant);
+        _newDeliveryItemPlant = "";
+        MarkDirty();
+    }
+
+    private void RemoveDeliveryItemPlant(string id)
+    {
+        _deliveryItemPlantIds.Remove(id);
+        MarkDirty();
+    }
+
+    // --- Helper classes for binding ---
+    private class LocationToggle
+    {
+        public string Name { get; set; } = "";
+        public bool Enabled { get; set; }
+    }
+
+    private class ParentItem
+    {
+        public string Id { get; set; } = "";
+        public int Weight { get; set; } = 1;
+        public string Comment { get; set; } = "";
+    }
+}

@@ -50,29 +50,29 @@ public class QuestFilterLinkedQuest
 public class QuestFilterModifyBaseQuest
 {
     public bool Enabled { get; set; } = false;
-    public string[] Type { get; set; } = null;
+    public string[] Type { get; set; } = [];
     public int[] CountCond { get; set; } = [1, 3];
 }
 
 public class SkipQuestConfig
 {
-    public List<string> Traider { get; set; } = new();
-    public List<string> Types { get; set; } = new();
+    public string[] Traider { get; set; } = [];
+    public string[] Types { get; set; } = [];
 }
 
 
 public class ModelConfig
 {
     public bool Enabled { get; set; } = true;
-    public string[] TargetTraderIds { get; set; } = null;
+    public string[] TargetTraderIds { get; set; } = [];
     public bool Debug { get; set; } = true;
     public bool CleanDroppedItems { get; set; } = true;
-    public List<string> QuestTypes { get; set; } = new() { "PickUp" };
+    public string[] QuestTypes { get; set; } = [];
     public bool RemoveStandartQuests { get; set; } = false;
     public bool RemoveRepeatableQuests { get; set; } = false;
     public bool RemoveStartConditionsQuest { get; set; } = false;
     public bool ExcludeArenaQuests { get; set; } = true;
-    public List<string> RemoveFinishConditionTypes { get; set; } = new();
+    public string[] RemoveFinishConditionTypes { get; set; } = [];
     public RandomQuestsConfig RandomQuests { get; set; } = new();
     public GenerateRandomQuestsConfig GenerateRandomQuests { get; set; } = new();
     public QuestFilterLinkedQuest LinkedQuest { get; set; } = null;

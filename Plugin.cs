@@ -11,14 +11,15 @@ using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.Models.Spt.Tables;
 using SPTarkov.Server.Core.Servers;
 using SPTarkov.Server.Core.Services.Modding.Custom;
-
+using SPTarkov.Server.Web;
+using Microsoft.AspNetCore.Builder;
 using System.Reflection;
 using System.Text.Json;
 
-[assembly: AssemblyVersion("1.0.5.0")]
-[assembly: AssemblyFileVersion("1.0.5.0")]
-[assembly: AssemblyInformationalVersion("1.0.5")]
-[assembly: AssemblyTitle("QuestFilterMod Mod SPT ~4.1.2")]
+[assembly: AssemblyVersion("1.0.6.0")]
+[assembly: AssemblyFileVersion("1.0.6.0")]
+[assembly: AssemblyInformationalVersion("1.0.6")]
+[assembly: AssemblyTitle("QuestFilterMod Mod SPT ~4.1.5")]
 [assembly: AssemblyProduct("QuestFilterMod")]
 
 namespace QuestFilterMod;
@@ -26,7 +27,6 @@ namespace QuestFilterMod;
 [Injectable(TypePriority = OnLoadOrder.Preload + 1)]
 public class Plugin : IOnUpdate
 {
-    
     private readonly ISptLogger<Plugin> _logger;
     private readonly TemplateTable _templateTable;
     private readonly GlobalTable _globalTable;
@@ -283,6 +283,7 @@ public class Plugin : IOnUpdate
 /* 
  * 
  * Вызов через консоль игры получение точек квестов на каждой локации.
+ * Теперь частично клиент на каждой локации имеет Scene - Quest
  * sinai-dev-UnityExplorer
  * 
  * 

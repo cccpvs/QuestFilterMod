@@ -211,9 +211,9 @@ namespace QuestFilterMod.QuestFilter
             if (skipConfig == null)
                 return false;
 
-            if (skipConfig.Traider?.Count > 0)
+            if (skipConfig.Traider.ToList().Count > 0)
             {
-                if (skipConfig.Traider.Contains(quest.TraderId))
+                if (skipConfig.Traider.ToList().Contains(quest.TraderId))
                 {
                     if (Plugin.Config.Debug)
                         _logger.Info($"[QuestFilterMod][ShouldSkipQuest] ✓ Skipping: quest '{quest.Name}' ({quest.Id}) — trader '{quest.TraderId}' is in exclusion list.");
@@ -221,7 +221,7 @@ namespace QuestFilterMod.QuestFilter
                     return true;
                 }
             }
-            if (skipConfig.Types?.Count > 0)
+            if (skipConfig.Types.ToList().Count > 0)
             {
                 string questTypeStr = quest.Type.ToString(); 
                 if (skipConfig.Types.Any(t => t == questTypeStr))

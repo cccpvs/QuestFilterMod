@@ -1,0 +1,155 @@
+﻿@page "/questfiltermod/"
+@using MudBlazor
+@using QuestFilterMod.Web.Services
+@using System.Reflection
+
+@layout BaseMudBlazorLayout
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>QuestFilterMod Home</PageTitle>
+
+<div class="spt-page">
+    <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+
+        <!-- ====== NAVIGATION ====== -->
+        <Nav Current="home" />
+
+        <!-- ====== HEADER ====== -->
+        <MudPaper Elevation="0" Class="spt-panel hero pa-6 mb-6 text-center">
+            <MudIcon Icon="@Icons.Material.Filled.FilterList" Color="Color.Warning" Size="Size.Large" />
+            <MudText Typo="Typo.h4" Class="spt-title mt-2">QuestFilterMod</MudText>
+            <MudText Typo="Typo.subtitle1" Class="spt-muted">
+                Quest filtering and generation settings for SPT 4.x.x
+            </MudText>
+
+            <!-- Version info -->
+            <MudStack Row Justify="Justify.Center" Spacing="2" Class="mt-4">
+                <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">
+                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" />
+                    v@_currentVersion
+                </MudChip>
+                @if (_hasUpdate)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled"
+                             OnClick="() => Navigation.NavigateTo(_updateUrl!)">
+                        <MudIcon Icon="@Icons.Material.Filled.NewReleases" Size="Size.Small" Class="mr-1" />
+                        Update available — v@_latestVersion
+                    </MudChip>
+                }
+                @if (!string.IsNullOrEmpty(_checkError) && !_hasUpdate)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Text">
+                        <MudIcon Icon="@Icons.Material.Filled.Error" Size="Size.Small" Class="mr-1" />
+                        Version check failed
+                    </MudChip>
+                }
+            </MudStack>
+        </MudPaper>
+
+        <!-- ====== NAVIGATION CARDS ====== -->
+        <MudGrid Spacing="4">
+            <!-- QuestFilter Card -->
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-6 cursor-pointer">
+                    <MudStack Spacing="3">
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Filled.Settings" Color="Color.Primary" Size="Size.Large" />
+                            <MudText Typo="Typo.h5">QuestFilter Settings</MudText>
+                        </MudStack>
+                        <MudDivider />
+                        <MudText Typo="Typo.body1">
+                            Main quest filter settings: enable/disable mod,
+                            quest types, exclusions, random generation, quest linking.
+                        </MudText>
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.subtitle2" Class="spt-muted">Includes:</MudText>
+                            <ul class="list-unstyled spt-muted">
+                                <li>Trader-based filtering</li>
+                                <li>Quest type removal</li>
+                                <li>Random quest generation</li>
+                                <li>Quest linking (start → finish)</li>
+                                <li>Base quest editing</li>
+                            </ul>
+                        </MudStack>
+                        <MudButton Href="/questfiltermod/filter" Variant="Variant.Filled" Color="Color.Primary" FullWidth>
+                            <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Class="mr-1" />
+                            Open Settings
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <!-- RandomQuest Card -->
+            <MudItem xs="12" md="6">
+                <MudPaper Elevation="2" Class="pa-6 cursor-pointer">
+                    <MudStack Spacing="3">
+                        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Filled.Casino" Color="Color.Success" Size="Size.Large" />
+                            <MudText Typo="Typo.h5">Random Quest Config</MudText>
+                        </MudStack>
+                        <MudDivider />
+                        <MudText Typo="Typo.body1">
+                            Random quest generation settings: quest types, locations,
+                            rewards (money, items, skills), kill parameters.
+                        </MudText>
+                        <MudStack Spacing="1">
+                            <MudText Typo="Typo.subtitle2" Class="spt-muted">Includes:</MudText>
+                            <ul class="list-unstyled spt-muted">
+                                <li>Quest types (Exploration, Delivery, Beacon, Kills, Transfer, Combo)</li>
+                                <li>Available locations and target zones</li>
+                                <li>Rewards: money, items, skills, reputation</li>
+                                <li>Kill quest parameters</li>
+                                <li>Trader IDs</li>
+                            </ul>
+                        </MudStack>
+                        <MudButton Href="/questfiltermod/random" Variant="Variant.Filled" Color="Color.Success" FullWidth>
+                            <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Class="mr-1" />
+                            Open Settings
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- ====== FOOTER ====== -->
+        <MudText Typo="Typo.caption" Class="spt-muted text-center mt-8">
+            QuestFilterMod — SPT 4.x.x | Changes apply immediately. Click Save to persist.
+        </MudText>
+    </MudContainer>
+</div>
+
+@code {
+    private string _currentVersion = "1.0.6";
+    private bool _hasUpdate;
+    private string _latestVersion = "";
+    private string _updateUrl = "";
+    private string _checkError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Получаем версию из assembly
+        var asm = System.Reflection.Assembly.GetExecutingAssembly();
+        var infoVersion = asm.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>();
+        if (infoVersion != null)
+            _currentVersion = infoVersion.InformationalVersion.TrimStart('v');
+
+        await CheckForUpdates();
+    }
+
+    private async Task CheckForUpdates()
+    {
+        var (hasUpdate, latestVersion, tagName, url, error) =
+            await VersionChecker.CheckAsync(_currentVersion);
+
+        _hasUpdate = hasUpdate;
+        _latestVersion = latestVersion ?? "";
+        _updateUrl = url ?? "";
+        _checkError = error ?? "";
+
+        if (hasUpdate)
+        {
+            Snackbar.Add($"New version v{latestVersion} available!", Severity.Info);
+        }
+    }
+}

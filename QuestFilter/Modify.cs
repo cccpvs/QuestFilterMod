@@ -35,7 +35,7 @@ namespace QuestFilterMod.QuestFilter
                     EnsureRewardStatuses(q);
                     ModifyQuestTrader(q, config, random);
                     RemoveStartConditions(q, config);
-                    RemoveFinishConditions(q, config.RemoveFinishConditionTypes);
+                    RemoveFinishConditions(q, config.RemoveFinishConditionTypes.ToList());
                     AddRandomFinishConditions(q, config, random);
                 }
                 else if (Plugin.Config.Debug)

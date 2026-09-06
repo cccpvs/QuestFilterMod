@@ -1,0 +1,711 @@
+@page "/questfiltermod/filter"
+@using MudBlazor
+@using QuestFilterMod.QuestFilter.Models
+@using System.Linq
+@using System.Text.Json
+
+@layout BaseMudBlazorLayout
+@inject ISnackbar Snackbar
+
+<PageTitle>QuestFilterMod Settings</PageTitle>
+
+<div class="spt-page">
+    <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+
+        <!-- ====== NAVIGATION ====== -->
+        <Nav Current="filter" />
+
+        <!-- ====== HEADER ====== -->
+        <MudPaper Elevation="0" Class="spt-panel hero pa-4 mb-4">
+            <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Wrap="Wrap.Wrap" Spacing="3">
+                <MudStack Row AlignItems="AlignItems.Center" Spacing="3">
+                    <MudIcon Icon="@Icons.Material.Filled.FilterList" Color="Color.Warning" Size="Size.Large" />
+                    <div>
+                        <MudText Typo="Typo.h5" Class="spt-title">QuestFilterMod Settings</MudText>
+                        <MudText Typo="Typo.caption" Class="spt-muted">
+                            @if (_config.Enabled)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">Active</MudChip>
+                                @(" Editing ")
+                            }
+                            else
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined">Disabled</MudChip>
+                                @(" Editing — enable to activate filters ")
+                            }
+                        </MudText>
+                    </div>
+                </MudStack>
+                <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+                    @if (_dirty)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Filled">Unsaved changes</MudChip>
+                    }
+                    <MudSwitch T="bool" @bind-Value="_showAdvanced" Color="Color.Primary" Label="Advanced" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="SaveConfiguration">Save</MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+
+        <!-- ====== MAIN ====== -->
+        <MudStack Spacing="4">
+
+            <!-- GENERAL -->
+            <MudPaper Elevation="0" Class="spt-panel pa-4">
+                <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+                    <MudText Typo="Typo.h6">
+                        <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-2" />
+                        General
+                    </MudText>
+                    <MudSwitch T="bool" @bind-Value="_config.Enabled" Label="Enable Mod" Color="Color.Primary" />
+                </MudStack>
+
+                <MudDivider Class="mb-4" />
+
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudSwitch @bind-Value="_config.Debug" Label="Debug Mode" Color="Color.Secondary" />
+                        <MudText Typo="Typo.caption" Class="spt-muted mt-2">Enables debug logging to the console</MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSwitch @bind-Value="_config.CleanDroppedItems" Label="Clean Dropped Items" Color="Color.Secondary" />
+                        <MudText Typo="Typo.caption" Class="spt-muted mt-2">Cleans dropped items related to removed quests</MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSwitch @bind-Value="_config.ExcludeArenaQuests" Label="Exclude Arena Quests" Color="Color.Secondary" />
+                        <MudText Typo="Typo.caption" Class="spt-muted mt-2">Excludes Arena quests from processing</MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSwitch @bind-Value="_config.RemoveStandartQuests" Label="Remove Standard Quests" Color="Color.Secondary" />
+                        <MudText Typo="Typo.caption" Class="spt-muted mt-2">Removes standard (main) trader quests</MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSwitch @bind-Value="_config.RemoveRepeatableQuests" Label="Remove Repeatable Quests" Color="Color.Secondary" />
+                        <MudText Typo="Typo.caption" Class="spt-muted mt-2">Removes repeatable (cyclic) quests</MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSwitch @bind-Value="_config.RemoveStartConditionsQuest" Label="Remove Start Conditions Quests" Color="Color.Secondary" />
+                        <MudText Typo="Typo.caption" Class="spt-muted mt-2">Removes quests that haven't met start conditions yet</MudText>
+                    </MudItem>
+                </MudGrid>
+
+                <MudDivider Class="mt-4 mb-4" />
+
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Target Trader IDs</MudText>
+                <div class="chips">
+                    @foreach (var id in _config.TargetTraderIds)
+                    {
+                        <MudChip T="string" Color="Color.Default" OnClose="() => RemoveTraderId(id)">
+                            @id
+                        </MudChip>
+                    }
+                </div>
+                <MudStack Row Spacing="2">
+                <MudTextField T="string" @bind-Value="_newTraderId" Variant="Variant.Outlined"
+                              Placeholder="Enter trader ID" Dense="true" />
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddTraderId">
+                        <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                    </MudButton>
+                </MudStack>
+                <MudText Typo="Typo.caption" Class="spt-muted mt-2">Trader ID whose quests will be filtered</MudText>
+                <MudText Typo="Typo.caption" Class="spt-muted mt-2">
+                    <ul class="list-unstyled">
+                        <li><code>54cb50c76803fa8b248b4571</code> — Prapor</li>
+                        <li><code>54cb57776803fa99248b456e</code> — Therapist</li>
+                        <li><code>579dc571d53a0658a154fbec</code> — Fence</li>
+                        <li><code>58330581ace78e27b8b10cee</code> — Skier</li>
+                        <li><code>5935c25fb3acc3127c3d8cd9</code> — Peacekeeper</li>
+                        <li><code>5a7c2eca46aef81a7ca2145d</code> — Mechanic</li>
+                        <li><code>5ac3b934156ae10c4430e83c</code> — Ragman</li>
+                        <li><code>5c0647fdd443bc2504c2d371</code> — Jaeger</li>
+                        <li><code>6617beeaa9cfa777ca915b7c</code> — Ref</li>
+                    </ul>
+                </MudText>
+            </MudPaper>
+
+            <!-- FILTER TYPES -->
+            <MudPaper Elevation="0" Class="spt-panel pa-4">
+                <MudText Typo="Typo.h6" Class="mb-4">
+                    <MudIcon Icon="@Icons.Material.Filled.Category" Class="mr-2" />
+                    Filter Types
+                </MudText>
+
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Quest Types to Filter</MudText>
+                        <div class="chips">
+                            @foreach (var type in _config.QuestTypes)
+                            {
+                                <MudChip T="string" Color="Color.Default" OnClose="() => RemoveQuestType(type)">
+                                    @type
+                                </MudChip>
+                            }
+                        </div>
+                        <MudStack Row Spacing="2">
+                        <MudTextField T="string" @bind-Value="_newQuestType" Variant="Variant.Outlined"
+                                      Placeholder="Add type" Dense="true" />
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddQuestType">
+                                <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                            </MudButton>
+                        </MudStack>
+                        <MudText Typo="Typo.caption" Class="spt-muted mt-2">
+                            <ul class="list-unstyled">
+                                <li><code>Completion</code></li>
+                                <li><code>Discover</code></li>
+                                <li><code>Elimination</code></li>
+                                <li><code>Experience</code></li>
+                                <li><code>Exploration</code></li>
+                                <li><code>Loyalty</code></li>
+                                <li><code>Merchant</code></li>
+                                <li><code>Multi</code></li>
+                                <li><code>PickUp</code></li>
+                                <li><code>Skill</code></li>
+                                <li><code>Standing</code></li>
+                                <li><code>WeaponAssembly</code></li>
+                            </ul>
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudText Typo="Typo.subtitle1" Class="mb-2">Remove Finish Condition Types</MudText>
+                        <div class="chips">
+                            @foreach (var type in _config.RemoveFinishConditionTypes)
+                            {
+                                <MudChip T="string" Color="Color.Default" OnClose="() => RemoveFinishConditionType(type)">
+                                    @type
+                                </MudChip>
+                            }
+                        </div>
+                        <MudStack Row Spacing="2">
+                        <MudTextField T="string" @bind-Value="_newFinishConditionType" Variant="Variant.Outlined"
+                                      Placeholder="Add type" Dense="true" />
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddFinishConditionType">
+                                <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                            </MudButton>
+                        </MudStack>
+                        <MudText Typo="Typo.caption" Class="spt-muted mt-2">
+                            <ul class="list-unstyled">
+                                <li><code>FindItem</code></li>
+                                <li><code>GlobalVariableValue</code></li>
+                                <li><code>HandoverItem</code></li>
+                                <li><code>HideoutArea</code></li>
+                                <li><code>LeaveItemAtLocation</code></li>
+                                <li><code>PlaceBeacon</code></li>
+                                <li><code>Quest</code></li>
+                                <li><code>SellItemToTrader</code></li>
+                                <li><code>Skill</code></li>
+                                <li><code>TraderLoyalty</code></li>
+                                <li><code>TraderStanding</code></li>
+                                <li><code>VisitPlace</code></li>
+                                <li><code>WeaponAssembly</code></li>
+                                <li><code>Completion</code></li>
+                                <li><code>Discover</code></li>
+                                <li><code>Elimination</code></li>
+                                <li><code>Experience</code></li>
+                                <li><code>Exploration</code></li>
+                            </ul>
+                        </MudText>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            <!-- RANDOM QUESTS -->
+            <MudPaper Elevation="0" Class="spt-panel pa-4">
+                <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+                    <MudText Typo="Typo.h6">
+                        <MudIcon Icon="@Icons.Material.Filled.Casino" Class="mr-2" />
+                        Random Quests
+                    </MudText>
+                    <MudSwitch T="bool" @bind-Value="_config.GenerateRandomQuests.Enable" Color="Color.Primary" Label="Enable Random Generation" />
+                </MudStack>
+
+                @if (_config.GenerateRandomQuests.Enable)
+                {
+                    <MudNumericField @bind-Value="_config.GenerateRandomQuests.Count"
+                                     Label="Max Random Quests" Variant="Variant.Outlined" Dense="true"
+                                     Min="0" Max="999" />
+                    <MudText Typo="Typo.caption" Class="spt-muted mt-2">Maximum number of randomly generated quests</MudText>
+
+                    <MudDivider Class="mt-4 mb-4" />
+
+                    <MudText Typo="Typo.subtitle1" Class="mb-2">Location Distribution</MudText>
+
+                    <MudGrid>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.Any"
+                                             Label="Any" Variant="Variant.Outlined" Dense="true"
+                                             Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.Bigmap"
+                                             Label="Bigmap" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.Factory4Day"
+                                             Label="Factory 4 Day" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.Factory4Night"
+                                             Label="Factory 4 Night" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.Interchange"
+                                             Label="Interchange" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.Laboratory"
+                                             Label="Laboratory" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.Lighthouse"
+                                             Label="Lighthouse" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.RezervBase"
+                                             Label="Rezerv Base" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.Sandbox"
+                                             Label="Sandbox" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.SandboxHigh"
+                                             Label="Sandbox High" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.Shoreline"
+                                             Label="Shoreline" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.TarkovStreets"
+                                             Label="Tarkov Streets" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.Woods"
+                                             Label="Woods" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                        <MudItem xs="12" md="6" lg="4">
+                            <MudNumericField @bind-Value="_config.RandomQuests.Location.Labyrinth"
+                                             Label="Labyrinth" Variant="Variant.Outlined" Dense="true" Min="0" Max="999" />
+                        </MudItem>
+                    </MudGrid>
+                }
+            </MudPaper>
+
+            <!-- LINKED QUESTS -->
+            @if (_showAdvanced)
+            {
+                <MudPaper Elevation="0" Class="spt-panel pa-4">
+                    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+                        <MudText Typo="Typo.h6">
+                            <MudIcon Icon="@Icons.Material.Filled.Link" Class="mr-2" />
+                            Linked Quests
+                        </MudText>
+                        <MudSwitch T="bool" @bind-Value="_config.LinkedQuest.Enable" Color="Color.Primary" Label="Enable Linked Logic" />
+                    </MudStack>
+
+                    @if (_config.LinkedQuest.Enable)
+                    {
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                            <MudTextField @bind-Value="_linkedStartText"
+                                          Label="Start Quest IDs (comma separated)"
+                                          Variant="Variant.Outlined"
+                                          Dense="true" />
+                            <MudText Typo="Typo.caption" Class="spt-muted mt-2">IDs of start quests for linking (comma separated)</MudText>
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_linkedFinishText"
+                                              Label="Finish Quest IDs (comma separated)"
+                                              Variant="Variant.Outlined"
+                                              Dense="true" />
+                                <MudText Typo="Typo.caption" Class="spt-muted mt-2">IDs of finish quests for linking (comma separated)</MudText>
+                            </MudItem>
+                        </MudGrid>
+                    }
+                </MudPaper>
+            }
+
+            <!-- MODIFY BASE QUESTS -->
+            @if (_showAdvanced)
+            {
+                <MudPaper Elevation="0" Class="spt-panel pa-4">
+                    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+                        <MudText Typo="Typo.h6">
+                            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-2" />
+                            Modify Base Quests
+                        </MudText>
+                        <MudSwitch T="bool" @bind-Value="_config.ModifyBaseQuest.Enabled" Color="Color.Primary" Label="Enable Modification" />
+                    </MudStack>
+
+                    @if (_config.ModifyBaseQuest.Enabled)
+                    {
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudText Typo="Typo.subtitle1" Class="mb-2">Quest Types</MudText>
+                                <div class="chips">
+                                    @foreach (var type in _config.ModifyBaseQuest.Type)
+                                    {
+                                        <MudChip T="string" Color="Color.Default" OnClose="() => RemoveModifyType(type)">
+                                            @type
+                                        </MudChip>
+                                    }
+                                </div>  
+                                <MudStack Row Spacing="2">
+                                    <MudTextField T="string" @bind-Value="_newModifyType" Variant="Variant.Outlined"
+                                                  Placeholder="Add type" Dense="true" />
+                                    <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddModifyType">
+                                        <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                                    </MudButton>
+                                </MudStack>
+                                <MudText Typo="Typo.caption" Class="spt-muted mt-2">
+                                    <ul class="list-unstyled">
+                                        <li><code>Exploration</code></li>
+                                        <li><code>Delivery</code></li>
+                                        <li><code>Beacon</code></li>
+                                        <li><code>Kills</code></li>
+                                        <li><code>Transfer</code></li>
+                                    </ul>
+                                </MudText>
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudTextField @bind-Value="_countCondText"
+                                              Label="Count Condition Range (min, max)"
+                                              Variant="Variant.Outlined"
+                                              Dense="true" />
+                                <MudText Typo="Typo.caption" Class="spt-muted mt-2">Quest condition count range: min and max (comma separated)</MudText>
+                            </MudItem>
+                        </MudGrid>
+                    }
+                </MudPaper>
+            }
+
+            <!-- SKIP QUESTS -->
+            @if (_showAdvanced)
+            {
+                <MudPaper Elevation="0" Class="spt-panel pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">
+                        <MudIcon Icon="@Icons.Material.Filled.SkipNext" Class="mr-2" />
+                        Skip Quests
+                    </MudText>
+
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.subtitle1" Class="mb-2">Trader Names</MudText>
+                            <div class="chips">
+                                @foreach (var name in _config.SkipQuest.Traider)
+                                {
+                                    <MudChip T="string" Color="Color.Default" OnClose="() => RemoveSkipTrader(name)">
+                                        @name
+                                    </MudChip>
+                                }
+                            </div>
+                            <MudStack Row Spacing="2">
+                                <MudTextField T="string" @bind-Value="_newSkipTrader" Variant="Variant.Outlined"
+                                              Placeholder="Add trader" Dense="true" />
+                                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddSkipTrader">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                                </MudButton>
+                            </MudStack>
+                            <MudText Typo="Typo.caption" Class="spt-muted mt-2">
+                                <ul class="list-unstyled">
+                                    <li><code>54cb50c76803fa8b248b4571</code> — Prapor</li>
+                                    <li><code>54cb57776803fa99248b456e</code> — Therapist</li>
+                                    <li><code>579dc571d53a0658a154fbec</code> — Fence</li>
+                                    <li><code>58330581ace78e27b8b10cee</code> — Skier</li>
+                                    <li><code>5935c25fb3acc3127c3d8cd9</code> — Peacekeeper</li>
+                                    <li><code>5a7c2eca46aef81a7ca2145d</code> — Mechanic</li>
+                                    <li><code>5ac3b934156ae10c4430e83c</code> — Ragman</li>
+                                    <li><code>5c0647fdd443bc2504c2d371</code> — Jaeger</li>
+                                    <li><code>6617beeaa9cfa777ca915b7c</code> — Ref</li>
+                                </ul>
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.subtitle1" Class="mb-2">Quest Types to Skip</MudText>
+                            <div class="chips">
+                                @foreach (var type in _config.SkipQuest.Types)
+                                {
+                                    <MudChip T="string" Color="Color.Default" OnClose="() => RemoveSkipType(type)">
+                                        @type
+                                    </MudChip>
+                                }
+                            </div>
+                            <MudStack Row Spacing="2">
+                                <MudTextField T="string" @bind-Value="_newSkipType" Variant="Variant.Outlined"
+                                              Placeholder="Add type" Dense="true" />
+                                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="AddSkipType">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                                </MudButton>
+                            </MudStack>
+                            <MudText Typo="Typo.caption" Class="spt-muted mt-2">
+                                <ul class="list-unstyled">
+                                    <li><code>Completion</code></li>
+                                    <li><code>Discover</code></li>
+                                    <li><code>Elimination</code></li>
+                                    <li><code>Experience</code></li>
+                                    <li><code>Exploration</code></li>
+                                    <li><code>Loyalty</code></li>
+                                    <li><code>Merchant</code></li>
+                                    <li><code>Multi</code></li>
+                                    <li><code>PickUp</code></li>
+                                    <li><code>Skill</code></li>
+                                    <li><code>Standing</code></li>
+                                    <li><code>WeaponAssembly</code></li>
+                                </ul>
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            }
+
+            <!-- FOOTER -->
+            <MudStack Row Justify="Justify.SpaceBetween" Class="mt-4">
+                <MudButton Variant="Variant.Text" OnClick="LoadDefaults">
+                    <MudIcon Icon="@Icons.Material.Filled.Restore" Class="mr-1" />
+                    Reset to Defaults
+                </MudButton>
+                <MudText Typo="Typo.caption" Class="spt-muted">
+                    Changes apply immediately. Click Save to persist.
+                </MudText>
+            </MudStack>
+        </MudStack>
+    </MudContainer>
+</div>
+
+@code {
+    // --- СОСТОЯНИЕ ---
+    private ModelConfig _config = new();
+    private bool _dirty;
+    private bool _showAdvanced;
+
+    private string _linkedStartText = "";
+    private string _linkedFinishText = "";
+    private string _countCondText = "";
+
+    // --- Временные поля для чипов ---
+    private string _newTraderId = "";
+    private string _newQuestType = "";
+    private string _newFinishConditionType = "";
+    private string _newModifyType = "";
+    private string _newSkipTrader = "";
+    private string _newSkipType = "";
+
+    protected override void OnInitialized()
+    {
+        LoadFromJson();
+        SyncTempVars();
+    }
+
+    // --- Чтение конфига ---
+    private void LoadFromJson()
+    {
+        var configPath = System.IO.Path.Combine(
+            System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)!,
+            "Config.json");
+
+        if (!File.Exists(configPath))
+        {
+            InitDefaults();
+            return;
+        }
+
+        try
+        {
+            var json = File.ReadAllText(configPath);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            _config = JsonSerializer.Deserialize<ModelConfig>(json, options) ?? new ModelConfig();
+        }
+        catch
+        {
+            InitDefaults();
+        }
+    }
+
+    // --- Сохранение конфига ---
+    private async Task SaveConfiguration()
+    {
+        try
+        {
+            _config.LinkedQuest.StartQuest = ParseIntArray(_linkedStartText);
+            _config.LinkedQuest.QuestFinish = ParseIntArray(_linkedFinishText);
+            _config.ModifyBaseQuest.CountCond = ParseIntArray(_countCondText);
+
+            var json = JsonSerializer.Serialize(_config, new JsonSerializerOptions { WriteIndented = true });
+
+            var configPath = System.IO.Path.Combine(
+                System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)!,
+                "Config.json");
+
+            File.WriteAllText(configPath, json);
+
+            _dirty = false;
+            Snackbar.Add("Configuration saved successfully!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving: {ex.Message}", Severity.Error);
+        }
+    }
+
+    // --- Методы для TargetTraderIds ---
+    private void AddTraderId()
+    {
+        if (string.IsNullOrWhiteSpace(_newTraderId)) return;
+        _config.TargetTraderIds = _config.TargetTraderIds.Concat([_newTraderId]).ToArray();
+        _newTraderId = "";
+        _dirty = true;
+    }
+
+    private void RemoveTraderId(string id)
+    {
+        _config.TargetTraderIds = _config.TargetTraderIds.Where(x => x != id).ToArray();
+        _dirty = true;
+    }
+
+    // --- Методы для QuestTypes ---
+    private void AddQuestType()
+    {
+        if (string.IsNullOrWhiteSpace(_newQuestType)) return;
+        _config.QuestTypes = _config.QuestTypes.Concat([_newQuestType]).ToArray();
+        _newQuestType = "";
+        _dirty = true;
+    }
+
+    private void RemoveQuestType(string type)
+    {
+        _config.QuestTypes = _config.QuestTypes.Where(x => x != type).ToArray();
+        _dirty = true;
+    }
+
+    // --- Методы для RemoveFinishConditionTypes ---
+    private void AddFinishConditionType()
+    {
+        if (string.IsNullOrWhiteSpace(_newFinishConditionType)) return;
+        _config.RemoveFinishConditionTypes = _config.RemoveFinishConditionTypes.Concat([_newFinishConditionType]).ToArray();
+        _newFinishConditionType = "";
+        _dirty = true;
+    }
+
+    private void RemoveFinishConditionType(string type)
+    {
+        _config.RemoveFinishConditionTypes = _config.RemoveFinishConditionTypes.Where(x => x != type).ToArray();
+        _dirty = true;
+    }
+
+    // --- Методы для ModifyBaseQuest.Type ---
+    private void AddModifyType()
+    {
+        if (string.IsNullOrWhiteSpace(_newModifyType)) return;
+        _config.ModifyBaseQuest.Type = _config.ModifyBaseQuest.Type.Concat([_newModifyType]).ToArray();
+        _newModifyType = "";
+        _dirty = true;
+    }
+
+    private void RemoveModifyType(string type)
+    {
+        _config.ModifyBaseQuest.Type = _config.ModifyBaseQuest.Type.Where(x => x != type).ToArray();
+        _dirty = true;
+    }
+
+    // --- Методы для SkipQuest.Traider ---
+    private void AddSkipTrader()
+    {
+        if (string.IsNullOrWhiteSpace(_newSkipTrader)) return;
+        _config.SkipQuest.Traider = _config.SkipQuest.Traider.Concat([_newSkipTrader]).ToArray();
+        _newSkipTrader = "";
+        _dirty = true;
+    }
+
+    private void RemoveSkipTrader(string name)
+    {
+        _config.SkipQuest.Traider = _config.SkipQuest.Traider.Where(x => x != name).ToArray();
+        _dirty = true;
+    }
+
+    // --- Методы для SkipQuest.Types ---
+    private void AddSkipType()
+    {
+        if (string.IsNullOrWhiteSpace(_newSkipType)) return;
+        _config.SkipQuest.Types = _config.SkipQuest.Types.Concat([_newSkipType]).ToArray();
+        _newSkipType = "";
+        _dirty = true;
+    }
+
+    private void RemoveSkipType(string type)
+    {
+        _config.SkipQuest.Types = _config.SkipQuest.Types.Where(x => x != type).ToArray();
+        _dirty = true;
+    }
+
+    // --- Синхронизация строк с int[] ---
+    private void SyncTempVars()
+    {
+        _linkedStartText = _config.LinkedQuest?.StartQuest != null
+            ? string.Join(", ", _config.LinkedQuest.StartQuest)
+            : "";
+        _linkedFinishText = _config.LinkedQuest?.QuestFinish != null
+            ? string.Join(", ", _config.LinkedQuest.QuestFinish)
+            : "";
+        _countCondText = _config.ModifyBaseQuest?.CountCond != null
+            ? string.Join(", ", _config.ModifyBaseQuest.CountCond)
+            : "";
+    }
+
+    // --- Парсинг int[] ---
+    private static int[] ParseIntArray(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return [];
+        return text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                   .Select(int.Parse)
+                   .ToArray();
+    }
+
+    // --- Сброс ---
+    private void LoadDefaults()
+    {
+        InitDefaults();
+        SyncTempVars();
+        _dirty = false;
+        Snackbar.Add("Reset to defaults", Severity.Warning);
+    }
+
+    // --- Дефолтные значения ---
+    private void InitDefaults()
+    {
+        _config = new ModelConfig
+        {
+            Enabled = true,
+            Debug = false,
+            CleanDroppedItems = true,
+            ExcludeArenaQuests = true,
+            RemoveStandartQuests = false,
+            RemoveRepeatableQuests = false,
+            RemoveStartConditionsQuest = false,
+            TargetTraderIds = [],
+            QuestTypes = [ "Completion", "Discover", "Elimination", "Experience", "Exploration", "Loyalty", "Merchant", "Multi", "PickUp", "Skill", "Standing", "WeaponAssembly" ],
+            RemoveFinishConditionTypes = [],
+            RandomQuests = new(),
+            GenerateRandomQuests = new() { Enable = false, Count = 5 },
+            LinkedQuest = new() { Enable = false, StartQuest = [2, 4], QuestFinish = [1, 2] },
+            ModifyBaseQuest = new() { Enabled = false, Type = [ "Exploration", "Delivery", "Beacon", "Kills", "Transfer" ], CountCond = [1, 3] },
+            SkipQuest = new()
+        };
+
+        _config.RandomQuests.Location.Any = 0;
+        _config.RandomQuests.Location.Bigmap = 0;
+        _config.RandomQuests.Location.Factory4Day = 0;
+        _config.RandomQuests.Location.Factory4Night = 0;
+        _config.RandomQuests.Location.Interchange = 0;
+        _config.RandomQuests.Location.Laboratory = 0;
+        _config.RandomQuests.Location.Lighthouse = 0;
+        _config.RandomQuests.Location.RezervBase = 0;
+        _config.RandomQuests.Location.Sandbox = 0;
+        _config.RandomQuests.Location.SandboxHigh = 0;
+        _config.RandomQuests.Location.Shoreline = 0;
+        _config.RandomQuests.Location.TarkovStreets = 0;
+        _config.RandomQuests.Location.Woods = 0;
+        _config.RandomQuests.Location.Labyrinth = 0;
+    }
+}

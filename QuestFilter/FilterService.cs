@@ -147,7 +147,7 @@ public partial class FilterService
         var filteredQuests = new List<Quest>();
 
         var shouldCheckSkip = Config.SkipQuest != null &&
-                              (Config.SkipQuest.Traider?.Count > 0 || Config.SkipQuest.Types?.Count > 0);
+                              (Config.SkipQuest.Traider.ToList().Count > 0 || Config.SkipQuest.Types.ToList().Count > 0);
 
         foreach (var q in quests.Values)
         {
